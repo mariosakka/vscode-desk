@@ -97,14 +97,18 @@ function normalizeMime(ct: string | undefined): string | null {
   return base.startsWith('image/') ? base : null;
 }
 
-function defaultFetcher(url: string): Promise<{ buffer: Buffer; contentType: string | undefined }> {
+function defaultFetcher(url: string, redirectDepth = 0): Promise<{ buffer: Buffer; contentType: string | undefined }> {
   return new Promise((resolve, reject) => {
     const mod: typeof https = url.startsWith('https:') ? https : (http as unknown as typeof https);
     const req = mod.get(url, { timeout: 5000 }, (res) => {
-      // follow one redirect
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
-        defaultFetcher(res.headers.location).then(resolve, reject);
+        const location = res.headers.location;
+        if (redirectDepth >= 2 || (!location.startsWith('https://') && !location.startsWith('http://'))) {
+          reject(new Error('redirect limit reached or unsafe redirect'));
+          return;
+        }
+        defaultFetcher(location, redirectDepth + 1).then(resolve, reject);
         return;
       }
       if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {

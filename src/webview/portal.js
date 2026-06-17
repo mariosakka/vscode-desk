@@ -93,7 +93,7 @@
   // ── Helpers ────────────────────────────────────
 
   function renderIcon(icon) {
-    if (icon && (icon.startsWith('data:') || icon.startsWith('http'))) {
+    if (icon && icon.startsWith('data:')) {
       return '<img src="' + esc(icon) + '" alt="" />';
     }
     return escHtml(icon || '🌐');
