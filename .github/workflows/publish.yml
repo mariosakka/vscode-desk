@@ -1,16 +1,18 @@
 name: CI / Publish
 
 on:
+  # Tests run when a PR is approved (not on every push or PR open)
+  pull_request_review:
+    types: [submitted]
+  # Tests + publish run when a version tag is pushed
   push:
-    branches: [master]
     tags: ['v*.*.*']
-  pull_request:
-    branches: [master]
 
 jobs:
-  # ── Runs on every push and PR ──────────────────────────────────────────────
+  # ── Runs on PR approval or version tag push ────────────────────────────────
   test:
     name: Test
+    if: github.event_name == 'push' || github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
