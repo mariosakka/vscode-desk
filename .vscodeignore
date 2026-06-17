@@ -1,10 +1,21 @@
-.vscode/**
-src/**
-out/**
-*.ts
-*.map
-tsconfig.json
+# Source — compiled output in out/ is what ships
+src/
+docs/
+SPEC.md
+
+# Dev tooling
+.vscode/
 webpack.config.js
+tsconfig.json
 jest.config.js
-node_modules/**
-docs/**
+.gitignore
+.vscodeignore
+
+# Dependencies — bundled by webpack, not needed at runtime
+node_modules/
+
+# Lock file
+package-lock.json
+
+# Source maps
+out/**/*.map

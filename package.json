@@ -7,6 +7,11 @@
   "icon": "media/relay.png",
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Other"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mariosakka/vscode-relay.git"
+  },
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
