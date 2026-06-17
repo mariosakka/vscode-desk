@@ -3,26 +3,6 @@
   let currentData = null;
   let activeTabId = null;
 
-  // Theme — restore saved preference
-  const root = document.documentElement;
-  if (localStorage.getItem('ddd-theme') === 'light') {
-    root.classList.add('light');
-    updateToggleLabel(true);
-  }
-
-  document.getElementById('theme-toggle').addEventListener('click', () => {
-    const isLight = root.classList.toggle('light');
-    localStorage.setItem('ddd-theme', isLight ? 'light' : 'dark');
-    updateToggleLabel(isLight);
-  });
-
-  function updateToggleLabel(isLight) {
-    const btn = document.getElementById('theme-toggle');
-    btn.innerHTML = isLight
-      ? '☀️ <span class="tl">LIGHT</span>'
-      : '🌙 <span class="tl">DARK</span>';
-  }
-
   // ── Rendering ──────────────────────────────────
 
   function render(data) {

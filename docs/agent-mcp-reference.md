@@ -319,19 +319,19 @@ Deletes the `.relay` file. Cannot be undone.
 
 ## CSS variables available in page styles
 
-These are defined by the Relay theme and available in every page's `customStyles`:
+Relay maps its own variables onto VS Code's theme tokens, so they automatically adapt to whatever theme the user has installed. Use these in `customStyles` to stay on-theme across any VS Code color scheme:
 
-| Variable | Dark value | Light value | Usage |
-|----------|-----------|-------------|-------|
-| `--bg` | `#0f1117` | `#f4f6fb` | Page background |
-| `--surface` | `#1a1d27` | `#ffffff` | Cards, code blocks |
-| `--surface2` | `#22263a` | `#eef1f8` | Hover, table headers |
-| `--border` | `#2e3250` | `#d0d7e8` | Borders, dividers |
-| `--text` | `#e2e8f0` | `#1a1f36` | Body text |
-| `--muted` | `#8892a4` | `#5a6481` | Secondary text |
-| `--accent` | `#7c6af7` | `#5b4de8` | Purple — headings, highlights |
-| `--accent2` | `#5eead4` | `#0d9488` | Teal — links, code, tips |
-| `--radius` | `10px` | `10px` | Border radius |
+| Variable | Maps to (VS Code token) | Usage |
+|----------|------------------------|-------|
+| `--bg` | `--vscode-editor-background` | Page background |
+| `--surface` | `--vscode-editorWidget-background` | Cards, code blocks |
+| `--surface2` | `--vscode-list-hoverBackground` | Hover states, table headers |
+| `--border` | `--vscode-editorWidget-border` | Borders, dividers |
+| `--text` | `--vscode-editor-foreground` | Body text |
+| `--muted` | `--vscode-descriptionForeground` | Secondary/hint text |
+| `--accent` | `--vscode-button-background` | Primary accent — highlights |
+| `--accent2` | `--vscode-textLink-foreground` | Links, code, tip callouts |
+| `--radius` | *(fixed)* `10px` | Border radius |
 
 ---
 

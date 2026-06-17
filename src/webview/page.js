@@ -1,12 +1,6 @@
 (function () {
   const vscode = acquireVsCodeApi();
 
-  // Theme — mirror whatever the sidebar chose
-  const savedTheme = localStorage.getItem('ddd-theme');
-  if (savedTheme === 'light') {
-    document.documentElement.classList.add('light');
-  }
-
   // Back button
   document.getElementById('back-btn').addEventListener('click', () => {
     vscode.postMessage({ type: 'back' });

@@ -147,8 +147,8 @@
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">vscode.ts</span> &nbsp;&nbsp;<span class="note">Jest mock for the VS Code API</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">webview/</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">portal.html</span> &nbsp;&nbsp;<span class="note">webview template (placeholders replaced at runtime)</span></div>
-      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">portal.css</span> &nbsp;&nbsp;<span class="note">ddd design-system CSS variables + layout</span></div>
-      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">portal.js</span> &nbsp;&nbsp;<span class="note">vanilla JS — render, theme toggle, VS Code bridge</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">portal.css</span> &nbsp;&nbsp;<span class="note">CSS variables mapped from VS Code theme tokens + layout</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">portal.js</span> &nbsp;&nbsp;<span class="note">vanilla JS — render, VS Code bridge</span></div>
       <div>&nbsp;&nbsp;<span class="dir">media/</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">relay.png</span> &nbsp;&nbsp;<span class="note">extension logo (marketplace / extensions panel)</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">icon.svg</span> &nbsp;&nbsp;<span class="note">Activity Bar icon (must be monochrome SVG)</span></div>
@@ -264,8 +264,8 @@ npm test          <span class="cm"># jest — all test files under src/</span></
     <h3>Content Security Policy</h3>
     <p>The webview CSP allows scripts and styles only from VS Code's trusted <code>${cspSource}</code>, plus <code>img-src data:</code> so base64 favicon data URLs render without external network requests. No <code>http:</code> or <code>https:</code> image sources are permitted.</p>
 
-    <h3>Theme toggle</h3>
-    <p>The <code>☀️</code> / <code>🌙</code> button toggles a <code>.light</code> class on <code>&lt;html&gt;</code> and persists the choice in <code>localStorage</code> under the key <code>ddd-theme</code>. CSS custom properties handle the full visual switch — no JavaScript duplication of colour values.</p>
+    <h3>Theming</h3>
+    <p>Both CSS files map Relay's internal variables (<code>--bg</code>, <code>--text</code>, <code>--accent</code>, etc.) directly onto VS Code's injected theme tokens (<code>--vscode-editor-background</code>, <code>--vscode-textLink-foreground</code>, etc.) with hardcoded fallbacks. No JavaScript theme logic is needed — VS Code re-injects its tokens whenever the user changes theme, and the CSS cascade handles the rest.</p>
 
     <h3>Message protocol</h3>
     <table>

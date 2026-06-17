@@ -1,24 +1,14 @@
-/* ── Theme variables (shared with portal.css) ── */
+/* ── Theme variables — mapped from VS Code's own theme tokens ── */
 :root {
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --surface2: #22263a;
-  --border: #2e3250;
-  --accent: #7c6af7;
-  --accent2: #5eead4;
-  --text: #e2e8f0;
-  --muted: #8892a4;
+  --bg:      var(--vscode-editor-background,      #0f1117);
+  --surface: var(--vscode-editorWidget-background, var(--vscode-input-background, #1a1d27));
+  --surface2: var(--vscode-list-hoverBackground,  rgba(128,128,128,0.12));
+  --border:  var(--vscode-editorWidget-border,     var(--vscode-widget-border, rgba(128,128,128,0.25)));
+  --text:    var(--vscode-editor-foreground,       #e2e8f0);
+  --muted:   var(--vscode-descriptionForeground,  rgba(160,160,160,0.75));
+  --accent:  var(--vscode-button-background,       #7c6af7);
+  --accent2: var(--vscode-textLink-foreground,     #5eead4);
   --radius: 10px;
-}
-:root.light {
-  --bg: #f4f6fb;
-  --surface: #ffffff;
-  --surface2: #eef1f8;
-  --border: #d0d7e8;
-  --accent: #5b4de8;
-  --accent2: #0d9488;
-  --text: #1a1f36;
-  --muted: #5a6481;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
