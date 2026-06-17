@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP API Reference — Relay</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #21253a;
+      --border: #2a2d3a;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --accent: #7c6af7;
+      --accent2: #5eead4;
+      --green: #4ade80;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --radius: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.75;
+      padding: 48px 24px;
+    }
+
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .breadcrumb { font-size: 0.85rem; color: var(--muted); margin-bottom: 32px; }
+    .breadcrumb a { color: var(--accent2); text-decoration: none; }
+
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.4px; }
+    .subtitle { color: var(--muted); margin-bottom: 48px; }
+
+    h2 {
+      font-size: 1.2rem; font-weight: 600; margin-top: 56px; margin-bottom: 16px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--accent);
+    }
+    h3 { font-size: 1rem; font-weight: 600; margin-top: 28px; margin-bottom: 10px; color: var(--accent2); }
+
+    p { margin-bottom: 14px; }
+
+    code {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 6px; font-size: 0.88em;
+      font-family: "JetBrains Mono", "Fira Code", Menlo, monospace;
+      color: var(--accent2);
+    }
+
+    pre {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      overflow-x: auto; margin: 20px 0;
+    }
+    pre code {
+      background: none; border: none; padding: 0;
+      font-size: 0.87rem; color: var(--text); line-height: 1.6;
+    }
+
+    /* syntax colour helpers */
+    .kw  { color: var(--accent); }
+    .str { color: var(--green); }
+    .num { color: var(--yellow); }
+    .cm  { color: var(--muted); font-style: italic; }
+
+    .tool-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-top: 20px; overflow: hidden;
+    }
+    .tool-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tool-name {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1rem; font-weight: 700; color: var(--accent2);
+    }
+    .tool-badge {
+      font-size: 0.72rem; font-weight: 600; border-radius: 4px;
+      padding: 2px 7px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-read   { background: #1a3a2a; color: var(--green); }
+    .badge-write  { background: #3a1a2a; color: var(--red); }
+    .badge-rw     { background: #3a3020; color: var(--yellow); }
+
+    .tool-body { padding: 16px 20px; }
+    .tool-desc { color: var(--muted); margin-bottom: 16px; font-size: 0.93rem; }
+
+    table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.9rem; }
+    th { text-align: left; padding: 8px 12px; background: var(--surface2); color: var(--muted); font-weight: 600; }
+    td { padding: 8px 12px; border-top: 1px solid var(--border); vertical-align: top; }
+    .req { color: var(--red); font-size: 0.75rem; font-weight: 700; }
+    .opt { color: var(--muted); font-size: 0.75rem; }
+
+    .callout {
+      background: var(--surface); border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 14px 18px; margin: 20px 0; font-size: 0.93rem;
+    }
+    .callout.tip { border-color: var(--accent2); }
+
+    footer {
+      margin-top: 80px; padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 0.85rem;
+      display: flex; justify-content: space-between;
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="breadcrumb"><a href="index.html">Relay Docs</a> / MCP API Reference</div>
+
+    <h1>MCP API Reference</h1>
+    <p class="subtitle">How AI agents connect to Relay and the full tool catalogue.</p>
+
+    <!-- CONNECTING -->
+    <h2>Connecting an AI Agent</h2>
+
+    <p>Relay starts a local HTTP server (default port <code>3333</code>) when VS Code loads. It speaks <strong>JSON-RPC 2.0</strong> over HTTP POST at <code>/mcp</code>, following the <a href="https://spec.modelcontextprotocol.io" style="color:var(--accent2)">Model Context Protocol</a> (Streamable HTTP transport).</p>
+
+    <h3>Claude Code (<code>~/.claude/settings.json</code>)</h3>
+    <pre><code>{
+  <span class="str">"mcpServers"</span>: {
+    <span class="str">"vscode-relay"</span>: {
+      <span class="str">"type"</span>: <span class="str">"http"</span>,
+      <span class="str">"url"</span>: <span class="str">"http://localhost:3333/mcp"</span>
+    }
+  }
+}</code></pre>
+
+    <h3>Raw HTTP (curl)</h3>
+    <pre><code>curl -s -X POST http://localhost:3333/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": { "name": "list_tabs", "arguments": {} },
+    "id": 1
+  }'</code></pre>
+
+    <h3>Initialization handshake</h3>
+    <p>MCP clients send an <code>initialize</code> request first. Relay responds with:</p>
+    <pre><code>{
+  <span class="str">"protocolVersion"</span>: <span class="str">"2024-11-05"</span>,
+  <span class="str">"capabilities"</span>: { <span class="str">"tools"</span>: {} },
+  <span class="str">"serverInfo"</span>: { <span class="str">"name"</span>: <span class="str">"vscode-relay"</span>, <span class="str">"version"</span>: <span class="str">"0.0.1"</span> }
+}</code></pre>
+
+    <!-- TOOLS -->
+    <h2>Tools</h2>
+
+    <!-- list_tabs -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">list_tabs</span>
+        <span class="tool-badge badge-read">read</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Returns all tabs with their IDs, names, and bookmark counts.</p>
+        <p><strong>Parameters:</strong> none</p>
+        <h3>Example response</h3>
+        <pre><code>[
+  { <span class="str">"id"</span>: <span class="str">"tab_abc123"</span>, <span class="str">"name"</span>: <span class="str">"Work"</span>, <span class="str">"bookmarkCount"</span>: <span class="num">4</span> },
+  { <span class="str">"id"</span>: <span class="str">"tab_def456"</span>, <span class="str">"name"</span>: <span class="str">"Research"</span>, <span class="str">"bookmarkCount"</span>: <span class="num">2</span> }
+]</code></pre>
+      </div>
+    </div>
+
+    <!-- list_bookmarks -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">list_bookmarks</span>
+        <span class="tool-badge badge-read">read</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Returns bookmarks. Optionally scoped to a single tab.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>tab_id</code></td><td>string</td><td><span class="opt">optional</span></td><td>If provided, returns only bookmarks in that tab. If omitted, returns all bookmarks with an added <code>tab_id</code> field.</td></tr>
+        </table>
+        <h3>Example response (single tab)</h3>
+        <pre><code>[
+  {
+    <span class="str">"id"</span>: <span class="str">"bm_xyz789"</span>,
+    <span class="str">"title"</span>: <span class="str">"MDN Web Docs"</span>,
+    <span class="str">"url"</span>: <span class="str">"https://developer.mozilla.org"</span>,
+    <span class="str">"icon"</span>: <span class="str">"data:image/png;base64,..."</span>,
+    <span class="str">"description"</span>: <span class="str">"Web platform reference"</span>
+  }
+]</code></pre>
+      </div>
+    </div>
+
+    <!-- add_bookmark -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">add_bookmark</span>
+        <span class="tool-badge badge-write">write</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Adds a new bookmark to a tab. If <code>icon</code> is omitted, Relay auto-fetches and caches the site's favicon.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>tab_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the target tab.</td></tr>
+          <tr><td><code>title</code></td><td>string</td><td><span class="req">required</span></td><td>Display name shown on the bookmark card.</td></tr>
+          <tr><td><code>url</code></td><td>string</td><td><span class="req">required</span></td><td>Full URL including scheme (<code>https://…</code>).</td></tr>
+          <tr><td><code>icon</code></td><td>string</td><td><span class="opt">optional</span></td><td>Emoji or base64 data URL. Omit to auto-fetch favicon.</td></tr>
+          <tr><td><code>description</code></td><td>string</td><td><span class="opt">optional</span></td><td>Short description shown below the title.</td></tr>
+        </table>
+        <h3>Example</h3>
+        <pre><code>{
+  <span class="str">"tab_id"</span>: <span class="str">"tab_abc123"</span>,
+  <span class="str">"title"</span>: <span class="str">"GitHub"</span>,
+  <span class="str">"url"</span>: <span class="str">"https://github.com"</span>
+  <span class="cm">// icon omitted → favicon auto-fetched</span>
+}</code></pre>
+      </div>
+    </div>
+
+    <!-- remove_bookmark -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">remove_bookmark</span>
+        <span class="tool-badge badge-write">write</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Permanently removes a bookmark from a tab.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>tab_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the tab that contains the bookmark.</td></tr>
+          <tr><td><code>bookmark_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the bookmark to remove.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- create_tab -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">create_tab</span>
+        <span class="tool-badge badge-write">write</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Creates a new empty tab group.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>name</code></td><td>string</td><td><span class="req">required</span></td><td>Human-readable label shown in the tab bar.</td></tr>
+        </table>
+        <h3>Example response</h3>
+        <pre><code>{ <span class="str">"id"</span>: <span class="str">"tab_new111"</span>, <span class="str">"name"</span>: <span class="str">"AI Tools"</span>, <span class="str">"bookmarks"</span>: [] }</code></pre>
+      </div>
+    </div>
+
+    <!-- remove_tab -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">remove_tab</span>
+        <span class="tool-badge badge-write">write</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Removes a tab and all its bookmarks. This cannot be undone.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>tab_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the tab to remove.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- update_bookmark -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">update_bookmark</span>
+        <span class="tool-badge badge-rw">read/write</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Partially updates a bookmark's fields. Only the fields present in <code>fields</code> are changed.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>tab_id</code></td><td>string</td><td><span class="req">required</span></td><td>Tab containing the bookmark.</td></tr>
+          <tr><td><code>bookmark_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the bookmark to update.</td></tr>
+          <tr><td><code>fields</code></td><td>object</td><td><span class="req">required</span></td><td>Any subset of <code>title</code>, <code>url</code>, <code>icon</code>, <code>description</code>.</td></tr>
+        </table>
+        <h3>Example — rename a bookmark</h3>
+        <pre><code>{
+  <span class="str">"tab_id"</span>: <span class="str">"tab_abc123"</span>,
+  <span class="str">"bookmark_id"</span>: <span class="str">"bm_xyz789"</span>,
+  <span class="str">"fields"</span>: { <span class="str">"title"</span>: <span class="str">"MDN — HTML"</span>, <span class="str">"url"</span>: <span class="str">"https://developer.mozilla.org/en-US/docs/Web/HTML"</span> }
+}</code></pre>
+      </div>
+    </div>
+
+    <!-- ERROR HANDLING -->
+    <h2>Error Handling</h2>
+    <p>On success, the JSON-RPC <code>result</code> is populated. On failure, an <code>error</code> object is returned with code <code>-32603</code> and a human-readable <code>message</code>. HTTP status is always <code>200</code> for valid JSON-RPC calls.</p>
+
+    <pre><code>{
+  <span class="str">"jsonrpc"</span>: <span class="str">"2.0"</span>,
+  <span class="str">"error"</span>: {
+    <span class="str">"code"</span>: <span class="num">-32603</span>,
+    <span class="str">"message"</span>: <span class="str">"Tab not found: tab_abc123"</span>
+  },
+  <span class="str">"id"</span>: <span class="num">1</span>
+}</code></pre>
+
+    <div class="callout">
+      <strong>Parse errors</strong> (<code>-32700</code>) and <strong>unknown routes</strong> return HTTP 400 / 404 respectively.
+    </div>
+
+    <!-- FAVICON -->
+    <h2>Favicon Auto-fetch Behaviour</h2>
+    <p>When <code>add_bookmark</code> is called without an <code>icon</code>, Relay:</p>
+    <ol style="padding-left: 20px; margin-bottom: 14px;">
+      <li>Checks an in-memory cache keyed by hostname (TTL: 30 days).</li>
+      <li>If not cached, fetches <code>/favicon.ico</code> from the host.</li>
+      <li>If that fails, parses the homepage HTML for a <code>&lt;link rel="icon"&gt;</code> tag and fetches that URL.</li>
+      <li>Stores the result as a base64 <code>data:</code> URL in VS Code <code>globalState</code>.</li>
+      <li>Falls back to <code>🌐</code> if all attempts fail.</li>
+    </ol>
+    <div class="callout tip">
+      To skip auto-fetch and use a specific emoji or data URL, pass the <code>icon</code> field explicitly.
+    </div>
+
+    <footer>
+      <a href="user-guide.html">← User Guide</a>
+      <a href="developer-guide.html">Developer Guide →</a>
+    </footer>
+
+  </div>
+</body>
+</html>

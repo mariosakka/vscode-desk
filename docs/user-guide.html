@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Guide — Relay</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #21253a;
+      --border: #2a2d3a;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --accent: #7c6af7;
+      --accent2: #5eead4;
+      --radius: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.75;
+      padding: 48px 24px;
+    }
+
+    .container { max-width: 760px; margin: 0 auto; }
+
+    .breadcrumb { font-size: 0.85rem; color: var(--muted); margin-bottom: 32px; }
+    .breadcrumb a { color: var(--accent2); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.4px; }
+    .subtitle { color: var(--muted); margin-bottom: 48px; }
+
+    h2 {
+      font-size: 1.2rem; font-weight: 600; margin-top: 48px; margin-bottom: 16px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--border);
+      color: var(--accent);
+    }
+    h3 { font-size: 1rem; font-weight: 600; margin-top: 24px; margin-bottom: 10px; color: var(--accent2); }
+
+    p { margin-bottom: 14px; }
+
+    code {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 6px; font-size: 0.88em;
+      font-family: "JetBrains Mono", "Fira Code", Menlo, monospace;
+      color: var(--accent2);
+    }
+
+    pre {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      overflow-x: auto; margin: 20px 0;
+    }
+    pre code {
+      background: none; border: none; padding: 0;
+      font-size: 0.88rem; color: var(--text);
+    }
+
+    .step-list { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .step-list li {
+      display: flex; gap: 16px; align-items: flex-start;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      font-size: 0.8rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .callout {
+      background: var(--surface); border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 14px 18px; margin: 20px 0; font-size: 0.93rem;
+    }
+    .callout.tip { border-color: var(--accent2); }
+
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.93rem; }
+    th { text-align: left; padding: 10px 14px; background: var(--surface2); color: var(--muted); font-weight: 600; }
+    td { padding: 10px 14px; border-top: 1px solid var(--border); }
+    tr:hover td { background: var(--surface2); }
+
+    .kbd {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 8px; font-size: 0.82rem;
+      font-family: inherit; box-shadow: 0 1px 0 var(--border);
+    }
+
+    footer {
+      margin-top: 80px; padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 0.85rem;
+      display: flex; justify-content: space-between;
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="breadcrumb"><a href="index.html">Relay Docs</a> / User Guide</div>
+
+    <h1>User Guide</h1>
+    <p class="subtitle">Everything you need to install Relay and start using it day-to-day.</p>
+
+    <!-- INSTALLATION -->
+    <h2>Installation</h2>
+    <p>Relay ships as a standard VS Code extension (<code>.vsix</code> file). Install it from the Extension Development Host during development, or from the VS Code Marketplace once published.</p>
+
+    <h3>Install from a .vsix file</h3>
+    <ol class="step-list">
+      <li><span class="step-num">1</span><div>Open VS Code and press <kbd class="kbd">Ctrl+Shift+P</kbd> (macOS: <kbd class="kbd">⌘⇧P</kbd>) to open the Command Palette.</div></li>
+      <li><span class="step-num">2</span><div>Type <strong>Extensions: Install from VSIX…</strong> and press Enter.</div></li>
+      <li><span class="step-num">3</span><div>Browse to the <code>relay-0.0.1.vsix</code> file and confirm. VS Code will reload.</div></li>
+      <li><span class="step-num">4</span><div>Look for the Relay icon in the Activity Bar on the left edge of the window.</div></li>
+    </ol>
+
+    <h3>Run in development mode</h3>
+    <ol class="step-list">
+      <li><span class="step-num">1</span><div>Clone the repository and run <code>npm install &amp;&amp; npm run compile</code>.</div></li>
+      <li><span class="step-num">2</span><div>Open the folder in VS Code and press <kbd class="kbd">F5</kbd>. A new Extension Development Host window opens with Relay active.</div></li>
+    </ol>
+
+    <!-- SIDEBAR -->
+    <h2>The Sidebar Panel</h2>
+    <p>Click the Relay icon in the Activity Bar to open the sidebar. The panel has three areas:</p>
+
+    <table>
+      <tr><th>Area</th><th>What it does</th></tr>
+      <tr><td><strong>Header</strong></td><td>Shows the Relay name and a theme toggle button (☀️ / 🌙).</td></tr>
+      <tr><td><strong>Tab bar</strong></td><td>Horizontal tabs for each bookmark group. Click a tab to switch.</td></tr>
+      <tr><td><strong>Bookmark grid</strong></td><td>Cards for each bookmark in the selected tab. Click a card to open the URL.</td></tr>
+    </table>
+
+    <!-- CREATING TABS -->
+    <h2>Creating a Tab</h2>
+    <p>Tabs are named groups that hold bookmarks. You must create at least one tab before you can add bookmarks.</p>
+
+    <ol class="step-list">
+      <li><span class="step-num">1</span><div>Open the Command Palette (<kbd class="kbd">Ctrl+Shift+P</kbd>).</div></li>
+      <li><span class="step-num">2</span><div>Run <strong>Relay: Add Tab</strong>.</div></li>
+      <li><span class="step-num">3</span><div>Type a name for the tab (e.g. <em>Work</em>, <em>Research</em>, <em>Tools</em>) and press Enter.</div></li>
+    </ol>
+
+    <p>The new tab appears immediately in the sidebar. You can create as many tabs as you like.</p>
+
+    <!-- ADDING BOOKMARKS -->
+    <h2>Adding a Bookmark</h2>
+    <ol class="step-list">
+      <li><span class="step-num">1</span><div>Run <strong>Relay: Add Bookmark</strong> from the Command Palette.</div></li>
+      <li><span class="step-num">2</span><div>Select the tab to add it to from the quick-pick list.</div></li>
+      <li><span class="step-num">3</span><div>Enter a <strong>title</strong> for the bookmark.</div></li>
+      <li><span class="step-num">4</span><div>Enter the <strong>URL</strong> (e.g. <code>https://example.com</code>).</div></li>
+      <li><span class="step-num">5</span><div>Optionally enter an <strong>emoji icon</strong>. Leave blank to have Relay auto-fetch the site's favicon.</div></li>
+      <li><span class="step-num">6</span><div>Optionally enter a <strong>description</strong>. Press Enter or Escape to skip.</div></li>
+    </ol>
+
+    <div class="callout tip">
+      <strong>Tip:</strong> When you leave the icon field blank, Relay fetches the favicon from the site's <code>/favicon.ico</code> or <code>&lt;link rel="icon"&gt;</code> tag and stores it locally. This happens once and is cached for 30 days.
+    </div>
+
+    <!-- REMOVING -->
+    <h2>Removing Bookmarks and Tabs</h2>
+
+    <h3>Remove a bookmark</h3>
+    <p>Run <strong>Relay: Remove Bookmark</strong> from the Command Palette. Pick the tab, then the bookmark. The card disappears immediately.</p>
+
+    <h3>Remove a tab</h3>
+    <p>Run <strong>Relay: Remove Tab</strong>. Removing a tab also removes all bookmarks inside it — this cannot be undone.</p>
+
+    <div class="callout">
+      <strong>Note:</strong> You can also remove bookmarks directly from the sidebar by clicking the × button on a bookmark card.
+    </div>
+
+    <!-- THEME -->
+    <h2>Dark / Light Theme</h2>
+    <p>Click the toggle button in the sidebar header to switch between dark and light mode. The choice is saved in <code>localStorage</code> and restored the next time the panel loads — independently of VS Code's own theme setting.</p>
+
+    <!-- SETTINGS -->
+    <h2>Settings</h2>
+    <table>
+      <tr><th>Setting</th><th>Default</th><th>Description</th></tr>
+      <tr>
+        <td><code>relay.mcpPort</code></td>
+        <td><code>3333</code></td>
+        <td>Port the embedded MCP HTTP server listens on. Change if 3333 conflicts with another local service. Requires a VS Code window reload to take effect.</td>
+      </tr>
+    </table>
+
+    <p>Open VS Code Settings (<kbd class="kbd">Ctrl+,</kbd>), search for <strong>Relay</strong>, and adjust there, or add it to your <code>settings.json</code>:</p>
+
+    <pre><code>{
+  "relay.mcpPort": 4444
+}</code></pre>
+
+    <!-- COMMANDS TABLE -->
+    <h2>All Commands</h2>
+    <table>
+      <tr><th>Command</th><th>Description</th></tr>
+      <tr><td><code>Relay: Add Tab</code></td><td>Create a new tab group.</td></tr>
+      <tr><td><code>Relay: Add Bookmark</code></td><td>Add a bookmark to an existing tab.</td></tr>
+      <tr><td><code>Relay: Remove Bookmark</code></td><td>Remove a specific bookmark.</td></tr>
+      <tr><td><code>Relay: Remove Tab</code></td><td>Remove a tab and all its bookmarks.</td></tr>
+    </table>
+
+    <footer>
+      <a href="index.html">← Back to Docs</a>
+      <a href="mcp-api.html">MCP API Reference →</a>
+    </footer>
+
+  </div>
+</body>
+</html>
