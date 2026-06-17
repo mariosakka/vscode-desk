@@ -73,6 +73,20 @@ describe('McpServer', () => {
     expect(names).toContain('delete_page');
   });
 
+  it('lists 2 resources', async () => {
+    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 3 });
+    expect(res.result.resources).toHaveLength(2);
+    const uris = res.result.resources.map((r: any) => r.uri);
+    expect(uris).toContain('relay://guide/quick-start');
+    expect(uris).toContain('relay://guide/relay-page-format');
+  });
+
+  it('reads the quick-start resource', async () => {
+    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'relay://guide/quick-start' }, id: 4 });
+    expect(res.result.contents[0].text).toContain('list_tabs');
+    expect(res.result.contents[0].mimeType).toBe('text/markdown');
+  });
+
   it('calls list_tabs and returns tab summaries', async () => {
     mockDataService.get.mockReturnValue({
       tabs: [{ id: 'tab_1', name: 'Work', bookmarks: [{ id: 'bm_1' }, { id: 'bm_2' }] }],

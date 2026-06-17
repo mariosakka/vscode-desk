@@ -4,6 +4,7 @@ import { FaviconService } from '../services/faviconService';
 import { PortalViewProvider } from '../portalViewProvider';
 import { PageReader } from '../pages/pageReader';
 import { TOOLS } from './toolSchemas';
+import { RESOURCES, RESOURCE_CONTENT } from './resources';
 
 export class McpServer {
   private server: http.Server | null = null;
@@ -81,7 +82,7 @@ export class McpServer {
     if (method === 'initialize') {
       return {
         protocolVersion: '2024-11-05',
-        capabilities: { tools: {} },
+        capabilities: { tools: {}, resources: {} },
         serverInfo: { name: 'vscode-relay', version: '0.0.1' },
       };
     }
@@ -90,6 +91,14 @@ export class McpServer {
     }
     if (method === 'tools/call') {
       return this.callTool(params.name, params.arguments ?? {});
+    }
+    if (method === 'resources/list') {
+      return { resources: RESOURCES };
+    }
+    if (method === 'resources/read') {
+      const content = RESOURCE_CONTENT[params.uri];
+      if (!content) throw new Error(`Unknown resource: ${params.uri}`);
+      return { contents: [{ uri: params.uri, mimeType: 'text/markdown', text: content }] };
     }
     throw new Error(`Unknown method: ${method}`);
   }
