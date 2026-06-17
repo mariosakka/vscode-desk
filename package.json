@@ -1,9 +1,10 @@
 {
-  "name": "vscode-portal",
-  "displayName": "Portal",
-  "description": "Personal developer portal: tabbed bookmarks with an embedded MCP server",
+  "name": "vscode-relay",
+  "displayName": "Relay",
+  "description": "Your developer relay — tabbed bookmarks with an embedded MCP server",
   "version": "0.0.1",
   "publisher": "mmswflow",
+  "icon": "media/relay.png",
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
@@ -11,28 +12,28 @@
   "contributes": {
     "viewsContainers": {
       "activitybar": [{
-        "id": "portal",
-        "title": "Portal",
+        "id": "relay",
+        "title": "Relay",
         "icon": "media/icon.svg"
       }]
     },
     "views": {
-      "portal": [{
+      "relay": [{
         "type": "webview",
-        "id": "portal.sidebar",
-        "name": "Portal"
+        "id": "relay.sidebar",
+        "name": "Relay"
       }]
     },
     "commands": [
-      { "command": "portal.addBookmark",    "title": "Portal: Add Bookmark" },
-      { "command": "portal.addTab",         "title": "Portal: Add Tab" },
-      { "command": "portal.removeBookmark", "title": "Portal: Remove Bookmark" },
-      { "command": "portal.removeTab",      "title": "Portal: Remove Tab" }
+      { "command": "relay.addBookmark",    "title": "Relay: Add Bookmark" },
+      { "command": "relay.addTab",         "title": "Relay: Add Tab" },
+      { "command": "relay.removeBookmark", "title": "Relay: Remove Bookmark" },
+      { "command": "relay.removeTab",      "title": "Relay: Remove Tab" }
     ],
     "configuration": {
-      "title": "Portal",
+      "title": "Relay",
       "properties": {
-        "portal.mcpPort": {
+        "relay.mcpPort": {
           "type": "number",
           "default": 3333,
           "description": "Port for the embedded MCP HTTP server"

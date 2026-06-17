@@ -14,15 +14,15 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
   );
 
-  const port = vscode.workspace.getConfiguration('portal').get<number>('mcpPort', 3333);
+  const port = vscode.workspace.getConfiguration('relay').get<number>('mcpPort', 3333);
   mcpServer.start(port);
   context.subscriptions.push({ dispose: () => mcpServer.stop() });
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('portal.addBookmark', () => cmdAddBookmark(dataService, faviconService, provider)),
-    vscode.commands.registerCommand('portal.addTab',      () => cmdAddTab(dataService, provider)),
-    vscode.commands.registerCommand('portal.removeBookmark', () => cmdRemoveBookmark(dataService, provider)),
-    vscode.commands.registerCommand('portal.removeTab',   () => cmdRemoveTab(dataService, provider)),
+    vscode.commands.registerCommand('relay.addBookmark',    () => cmdAddBookmark(dataService, faviconService, provider)),
+    vscode.commands.registerCommand('relay.addTab',         () => cmdAddTab(dataService, provider)),
+    vscode.commands.registerCommand('relay.removeBookmark', () => cmdRemoveBookmark(dataService, provider)),
+    vscode.commands.registerCommand('relay.removeTab',      () => cmdRemoveTab(dataService, provider)),
   );
 }
 
@@ -109,7 +109,7 @@ async function cmdRemoveTab(dataService: DataService, provider: PortalViewProvid
 async function pickTab(dataService: DataService): Promise<string | undefined> {
   const data = dataService.get();
   if (data.tabs.length === 0) {
-    vscode.window.showErrorMessage('No tabs yet. Run "Portal: Add Tab" first.');
+    vscode.window.showErrorMessage('No tabs yet. Run "Relay: Add Tab" first.');
     return undefined;
   }
   const pick = await vscode.window.showQuickPick(

@@ -1,6 +1,6 @@
-# VS Code Portal
+# Relay for VS Code
 
-A VS Code sidebar extension showing a personal developer portal — tabbed bookmark groups with link cards. Click a card to open the URL in your browser.
+A VS Code sidebar extension with tabbed bookmark groups and link cards. Click a card to open the URL in your browser.
 
 Also exposes a local MCP HTTP server so AI agents (Claude Code, etc.) can manage bookmarks programmatically.
 
@@ -18,10 +18,10 @@ Also exposes a local MCP HTTP server so AI agents (Claude Code, etc.) can manage
 
 | Command | Description |
 |---------|-------------|
-| `Portal: Add Tab` | Create a new tab |
-| `Portal: Add Bookmark` | Add a bookmark to a tab (favicon auto-fetched) |
-| `Portal: Remove Bookmark` | Remove a bookmark |
-| `Portal: Remove Tab` | Remove a tab and all its bookmarks |
+| `Relay: Add Tab` | Create a new tab |
+| `Relay: Add Bookmark` | Add a bookmark to a tab (favicon auto-fetched) |
+| `Relay: Remove Bookmark` | Remove a bookmark |
+| `Relay: Remove Tab` | Remove a tab and all its bookmarks |
 
 ### MCP Server (for AI agents)
 
@@ -30,7 +30,7 @@ Add to `~/.claude/settings.json`:
 ```json
 {
   "mcpServers": {
-    "vscode-portal": {
+    "vscode-relay": {
       "type": "http",
       "url": "http://localhost:3333/mcp"
     }
@@ -44,7 +44,7 @@ Available tools: `list_tabs`, `list_bookmarks`, `add_bookmark`, `remove_bookmark
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `portal.mcpPort` | `3333` | Port for the embedded MCP HTTP server |
+| `relay.mcpPort` | `3333` | Port for the embedded MCP HTTP server |
 
 ## Development
 

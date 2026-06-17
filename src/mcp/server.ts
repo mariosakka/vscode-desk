@@ -80,7 +80,7 @@ export class McpServer {
       return {
         protocolVersion: '2024-11-05',
         capabilities: { tools: {} },
-        serverInfo: { name: 'vscode-portal', version: '0.0.1' },
+        serverInfo: { name: 'vscode-relay', version: '0.0.1' },
       };
     }
     if (method === 'tools/list') {

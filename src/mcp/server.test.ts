@@ -52,7 +52,7 @@ describe('McpServer', () => {
 
   it('responds to initialize', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'initialize', params: {}, id: 1 });
-    expect(res.result.serverInfo.name).toBe('vscode-portal');
+    expect(res.result.serverInfo.name).toBe('vscode-relay');
     expect(res.result.protocolVersion).toBeDefined();
   });
 

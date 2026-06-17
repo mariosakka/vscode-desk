@@ -4,7 +4,7 @@ import * as path from 'path';
 import { DataService } from './services/dataService';
 
 export class PortalViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'portal.sidebar';
+  public static readonly viewType = 'relay.sidebar';
   private _view?: vscode.WebviewView;
 
   constructor(
