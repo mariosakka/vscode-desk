@@ -49,7 +49,7 @@ MCP clients send `initialize` before any tool call. Relay responds with its capa
 // response
 {
   "protocolVersion": "2024-11-05",
-  "capabilities": { "tools": {} },
+  "capabilities": { "tools": {}, "resources": {} },
   "serverInfo": { "name": "vscode-relay", "version": "0.0.1" }
 }
 ```

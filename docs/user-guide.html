@@ -180,6 +180,27 @@
       <strong>Note:</strong> You can also remove bookmarks directly from the sidebar by clicking the × button on a bookmark card.
     </div>
 
+    <!-- PAGES -->
+    <h2>Creating and Viewing Pages</h2>
+    <p>Pages are <code>.relay</code> files stored in <code>relay-pages/</code> inside the open workspace. They use a simple XML format with optional per-page CSS and render in a full VS Code editor tab.</p>
+
+    <h3>Create a new page</h3>
+    <ol class="step-list">
+      <li><span class="step-num">1</span><div>Run <strong>Relay: New Page</strong> from the Command Palette.</div></li>
+      <li><span class="step-num">2</span><div>Enter a title. Relay creates the <code>.relay</code> file in <code>relay-pages/</code> and names it from the title.</div></li>
+      <li><span class="step-num">3</span><div>Edit the file in VS Code's editor, or ask an AI agent to populate it via <code>create_page</code> / <code>update_page</code>.</div></li>
+    </ol>
+
+    <h3>Open a page</h3>
+    <ol class="step-list">
+      <li><span class="step-num">1</span><div>Run <strong>Relay: Open Page</strong> from the Command Palette and pick a page from the list.</div></li>
+      <li><span class="step-num">2</span><div>Or add a bookmark with <code>relay-page:filename.relay</code> as the URL — clicking the card opens the viewer directly.</div></li>
+    </ol>
+
+    <div class="callout tip">
+      <strong>Navigation:</strong> Click any <code>.relay</code> link inside the viewer to navigate to another page. The ← Back button traces your history. External <code>https://</code> links open in your browser.
+    </div>
+
     <!-- THEME -->
     <h2>Theming</h2>
     <p>Relay reads VS Code's active color theme automatically — backgrounds, text, borders, and accent colors all adapt to whatever theme you have installed (One Dark Pro, Catppuccin, Solarized, etc.). Change your VS Code theme and Relay updates instantly; no separate toggle needed.</p>
@@ -209,6 +230,8 @@
       <tr><td><code>Relay: Add Bookmark</code></td><td>Add a bookmark to an existing tab.</td></tr>
       <tr><td><code>Relay: Remove Bookmark</code></td><td>Remove a specific bookmark.</td></tr>
       <tr><td><code>Relay: Remove Tab</code></td><td>Remove a tab and all its bookmarks.</td></tr>
+      <tr><td><code>Relay: New Page</code></td><td>Create a new <code>.relay</code> page file in <code>relay-pages/</code>.</td></tr>
+      <tr><td><code>Relay: Open Page</code></td><td>Pick and open a <code>.relay</code> page in the viewer panel.</td></tr>
     </table>
 
     <footer>

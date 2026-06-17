@@ -152,7 +152,7 @@
     <p>MCP clients send an <code>initialize</code> request first. Relay responds with:</p>
     <pre><code>{
   <span class="str">"protocolVersion"</span>: <span class="str">"2024-11-05"</span>,
-  <span class="str">"capabilities"</span>: { <span class="str">"tools"</span>: {} },
+  <span class="str">"capabilities"</span>: { <span class="str">"tools"</span>: {}, <span class="str">"resources"</span>: {} },
   <span class="str">"serverInfo"</span>: { <span class="str">"name"</span>: <span class="str">"vscode-relay"</span>, <span class="str">"version"</span>: <span class="str">"0.0.1"</span> }
 }</code></pre>
 
@@ -297,6 +297,111 @@
 }</code></pre>
       </div>
     </div>
+
+    <!-- PAGE TOOLS -->
+    <h2>Page Tools</h2>
+
+    <p>Pages are <code>.relay</code> files in <code>&lt;workspace&gt;/relay-pages/</code>. All page tools return an error if VS Code has no workspace folder open. See the <a href="developer-guide.html" style="color:var(--accent2)">Developer Guide</a> for the <code>.relay</code> file format.</p>
+
+    <!-- list_pages -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">list_pages</span>
+        <span class="tool-badge badge-read">read</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Returns all <code>.relay</code> files in <code>relay-pages/</code>.</p>
+        <p><strong>Parameters:</strong> none</p>
+        <h3>Example response</h3>
+        <pre><code>[
+  { <span class="str">"filename"</span>: <span class="str">"auth-flow.relay"</span>, <span class="str">"title"</span>: <span class="str">"Auth Flow"</span> },
+  { <span class="str">"filename"</span>: <span class="str">"api-spec.relay"</span>, <span class="str">"title"</span>: <span class="str">"API Specification"</span> }
+]</code></pre>
+      </div>
+    </div>
+
+    <!-- create_page -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">create_page</span>
+        <span class="tool-badge badge-write">write</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Creates a new <code>.relay</code> file. The file must not already exist — use <code>update_page</code> to modify it.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>filename</code></td><td>string</td><td><span class="req">required</span></td><td>Must end in <code>.relay</code>, e.g. <code>"auth-flow.relay"</code></td></tr>
+          <tr><td><code>title</code></td><td>string</td><td><span class="req">required</span></td><td>Shown in the page header and panel tab.</td></tr>
+          <tr><td><code>content</code></td><td>string</td><td><span class="req">required</span></td><td>HTML body (no <code>&lt;script&gt;</code> tags).</td></tr>
+          <tr><td><code>customStyles</code></td><td>string</td><td><span class="opt">optional</span></td><td>CSS scoped to this page only. Use <code>var(--accent)</code>, <code>var(--text)</code> etc. to stay on-theme.</td></tr>
+        </table>
+        <h3>Returns</h3>
+        <pre><code><span class="str">"created auth-flow.relay"</span></code></pre>
+        <div class="callout tip">
+          To add a sidebar link to this page, create a bookmark with <code>"url": "relay-page:auth-flow.relay"</code>. Clicking the card opens the viewer.
+        </div>
+      </div>
+    </div>
+
+    <!-- update_page -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">update_page</span>
+        <span class="tool-badge badge-rw">read/write</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Partially updates a <code>.relay</code> file. Only the fields you include are overwritten; everything else is preserved.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>filename</code></td><td>string</td><td><span class="req">required</span></td><td>Must already exist.</td></tr>
+          <tr><td><code>title</code></td><td>string</td><td><span class="opt">optional</span></td><td>New title.</td></tr>
+          <tr><td><code>content</code></td><td>string</td><td><span class="opt">optional</span></td><td>New full body HTML (replaces the entire body).</td></tr>
+          <tr><td><code>customStyles</code></td><td>string</td><td><span class="opt">optional</span></td><td>New CSS block (replaces the entire style block).</td></tr>
+        </table>
+        <h3>Example — rename only</h3>
+        <pre><code>{ <span class="str">"filename"</span>: <span class="str">"api-auth.relay"</span>, <span class="str">"title"</span>: <span class="str">"Auth API v2"</span> }</code></pre>
+      </div>
+    </div>
+
+    <!-- delete_page -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">delete_page</span>
+        <span class="tool-badge badge-write">write</span>
+      </div>
+      <div class="tool-body">
+        <p class="tool-desc">Permanently deletes a <code>.relay</code> file. Cannot be undone.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>filename</code></td><td>string</td><td><span class="req">required</span></td><td>Must already exist.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- RESOURCES -->
+    <h2>Resources (Agent Self-Documentation)</h2>
+
+    <p>Relay exposes two MCP resources that describe itself. Well-behaved MCP clients read these automatically after <code>initialize</code>. You can also fetch them manually.</p>
+
+    <h3>List resources</h3>
+    <pre><code>{ <span class="str">"jsonrpc"</span>: <span class="str">"2.0"</span>, <span class="str">"method"</span>: <span class="str">"resources/list"</span>, <span class="str">"params"</span>: {}, <span class="str">"id"</span>: <span class="num">1</span> }
+
+<span class="cm">// response</span>
+{
+  <span class="str">"resources"</span>: [
+    { <span class="str">"uri"</span>: <span class="str">"relay://guide/quick-start"</span>,      <span class="str">"name"</span>: <span class="str">"Relay Agent Quick-Start"</span>,        <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span> },
+    { <span class="str">"uri"</span>: <span class="str">"relay://guide/relay-page-format"</span>, <span class="str">"name"</span>: <span class="str">"Relay Page Format (.relay)"</span>, <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span> }
+  ]
+}</code></pre>
+
+    <h3>Read a resource</h3>
+    <pre><code>{ <span class="str">"jsonrpc"</span>: <span class="str">"2.0"</span>, <span class="str">"method"</span>: <span class="str">"resources/read"</span>,
+  <span class="str">"params"</span>: { <span class="str">"uri"</span>: <span class="str">"relay://guide/quick-start"</span> }, <span class="str">"id"</span>: <span class="num">2</span> }
+
+<span class="cm">// response</span>
+{
+  <span class="str">"contents"</span>: [{ <span class="str">"uri"</span>: <span class="str">"relay://guide/quick-start"</span>, <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span>, <span class="str">"text"</span>: <span class="str">"# Relay Agent Quick-Start\n..."</span> }]
+}</code></pre>
 
     <!-- ERROR HANDLING -->
     <h2>Error Handling</h2>
