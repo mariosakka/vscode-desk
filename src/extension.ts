@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { DataService } from './services/dataService';
 import { FaviconService } from './services/faviconService';
-import { McpServer } from './services/mcpServer';
+import { McpServer } from './mcp/server';
 import { PortalViewProvider } from './portalViewProvider';
 
 export function activate(context: vscode.ExtensionContext): void {

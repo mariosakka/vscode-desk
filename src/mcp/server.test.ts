@@ -1,5 +1,5 @@
 import * as http from 'http';
-import { McpServer } from './mcpServer';
+import { McpServer } from './server';
 
 const mockDataService = {
   get: jest.fn(),
