@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Examples &amp; Patterns — Relay</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #21253a;
+      --border: #2a2d3a;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --accent: #7c6af7;
+      --accent2: #5eead4;
+      --green: #4ade80;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --radius: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.75;
+      padding: 48px 24px;
+    }
+
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .breadcrumb { font-size: 0.85rem; color: var(--muted); margin-bottom: 32px; }
+    .breadcrumb a { color: var(--accent2); text-decoration: none; }
+
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.4px; }
+    .subtitle { color: var(--muted); margin-bottom: 48px; }
+
+    h2 {
+      font-size: 1.2rem; font-weight: 600; margin-top: 56px; margin-bottom: 16px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--accent);
+    }
+    h3 { font-size: 1rem; font-weight: 600; margin-top: 28px; margin-bottom: 12px; color: var(--accent2); }
+
+    p { margin-bottom: 14px; }
+
+    code {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 6px; font-size: 0.88em;
+      font-family: "JetBrains Mono", "Fira Code", Menlo, monospace;
+      color: var(--accent2);
+    }
+
+    pre {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      overflow-x: auto; margin: 16px 0;
+      position: relative;
+    }
+    pre code {
+      background: none; border: none; padding: 0;
+      font-size: 0.87rem; color: var(--text); line-height: 1.65;
+    }
+
+    .kw  { color: var(--accent); }
+    .str { color: var(--green); }
+    .num { color: var(--yellow); }
+    .cm  { color: var(--muted); font-style: italic; }
+    .key { color: var(--accent2); }
+
+    .step-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+    .step-list li {
+      display: flex; gap: 14px; align-items: flex-start;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+    }
+    .step-num {
+      flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      font-size: 0.78rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step-num.teal { background: #0d9488; }
+
+    .callout {
+      background: var(--surface); border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 14px 18px; margin: 20px 0; font-size: 0.93rem;
+    }
+    .callout.tip { border-color: var(--accent2); }
+
+    .badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 700;
+      border-radius: 4px; padding: 2px 7px; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-left: 8px;
+    }
+    .badge-agent { background: #1a1a3a; color: var(--accent); border: 1px solid var(--accent); }
+    .badge-human { background: #1a3a2a; color: var(--green); border: 1px solid var(--green); }
+
+    .two-col {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
+    }
+    @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+    .col-label {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px;
+    }
+
+    footer {
+      margin-top: 80px; padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 0.85rem;
+      display: flex; justify-content: space-between;
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="breadcrumb"><a href="index.html">Relay Docs</a> / Examples &amp; Patterns</div>
+
+    <h1>Examples &amp; Patterns</h1>
+    <p class="subtitle">Real workflows showing how humans and AI agents use Relay together.</p>
+
+    <!-- ── EXAMPLE 1 ── -->
+    <h2>1. Agent builds a prototype doc <span class="badge badge-agent">agent</span></h2>
+
+    <p>An agent is asked to document a new API endpoint. It creates a structured <code>.relay</code> page with a custom callout style, then adds a bookmark linking to it.</p>
+
+    <h3>Step 1 — create the page</h3>
+    <pre><code>{
+  <span class="key">"name"</span>: <span class="str">"create_page"</span>,
+  <span class="key">"arguments"</span>: {
+    <span class="key">"filename"</span>: <span class="str">"api-auth.relay"</span>,
+    <span class="key">"title"</span>: <span class="str">"Auth API"</span>,
+    <span class="key">"content"</span>: <span class="str">"&lt;h2&gt;POST /auth/login&lt;/h2&gt;
+&lt;div class=\"callout tip\"&gt;
+  &lt;strong&gt;Base URL:&lt;/strong&gt; https://api.example.com
+&lt;/div&gt;
+&lt;h3&gt;Request body&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;{ \"email\": string, \"password\": string }&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Response&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;{ \"token\": string, \"expiresIn\": 3600 }&lt;/code&gt;&lt;/pre&gt;"</span>,
+    <span class="key">"customStyles"</span>: <span class="str">"h3 { margin-top: 20px; }"</span>
+  }
+}</code></pre>
+
+    <h3>Step 2 — find the right tab</h3>
+    <pre><code>{ <span class="key">"name"</span>: <span class="str">"list_tabs"</span>, <span class="key">"arguments"</span>: {} }
+<span class="cm">// → [{ "id": "tab_abc123", "name": "Docs", "bookmarkCount": 2 }]</span></code></pre>
+
+    <h3>Step 3 — add a bookmark that opens the page</h3>
+    <pre><code>{
+  <span class="key">"name"</span>: <span class="str">"add_bookmark"</span>,
+  <span class="key">"arguments"</span>: {
+    <span class="key">"tab_id"</span>: <span class="str">"tab_abc123"</span>,
+    <span class="key">"title"</span>: <span class="str">"Auth API"</span>,
+    <span class="key">"url"</span>: <span class="str">"relay-page:api-auth.relay"</span>,
+    <span class="key">"icon"</span>: <span class="str">"🔐"</span>,
+    <span class="key">"description"</span>: <span class="str">"Login & token endpoints"</span>
+  }
+}</code></pre>
+
+    <p>The bookmark card now appears in the sidebar. Clicking it opens the page viewer directly — no browser needed.</p>
+
+    <!-- ── EXAMPLE 2 ── -->
+    <h2>2. Bookmark roundtrip with dedup <span class="badge badge-agent">agent</span></h2>
+
+    <p>Before adding a bookmark an agent should check whether the URL already exists to avoid duplicates.</p>
+
+    <pre><code><span class="cm">// 1. List all bookmarks across all tabs</span>
+{ <span class="key">"name"</span>: <span class="str">"list_bookmarks"</span>, <span class="key">"arguments"</span>: {} }
+
+<span class="cm">// → [{ "id": "bm_x", "url": "https://github.com", "tab_id": "tab_abc123", ... }, ...]</span>
+
+<span class="cm">// 2. Check if the target URL already exists</span>
+<span class="cm">// If found → update_bookmark to refresh title/description</span>
+<span class="cm">// If not found → add_bookmark</span>
+
+{ <span class="key">"name"</span>: <span class="str">"update_bookmark"</span>,
+  <span class="key">"arguments"</span>: {
+    <span class="key">"tab_id"</span>: <span class="str">"tab_abc123"</span>,
+    <span class="key">"bookmark_id"</span>: <span class="str">"bm_x"</span>,
+    <span class="key">"fields"</span>: { <span class="key">"description"</span>: <span class="str">"Updated description"</span> }
+  }
+}</code></pre>
+
+    <!-- ── EXAMPLE 3 ── -->
+    <h2>3. Linked multi-page doc set <span class="badge badge-agent">agent</span></h2>
+
+    <p>An agent creates a set of interconnected pages — an index that links to sub-pages.</p>
+
+    <div class="two-col">
+      <div>
+        <div class="col-label">index.relay</div>
+        <pre style="margin:0"><code><span class="str">"&lt;h2&gt;Project Docs&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=\"setup.relay\"&gt;Setup guide&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=\"api.relay\"&gt;API reference&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=\"deploy.relay\"&gt;Deployment&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;"</span></code></pre>
+      </div>
+      <div>
+        <div class="col-label">setup.relay</div>
+        <pre style="margin:0"><code><span class="str">"&lt;h2&gt;Setup&lt;/h2&gt;
+&lt;p&gt;Back to
+  &lt;a href=\"index.relay\"&gt;index&lt;/a&gt;
+&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Clone repo&lt;/li&gt;
+  &lt;li&gt;npm install&lt;/li&gt;
+&lt;/ol&gt;"</span></code></pre>
+      </div>
+    </div>
+
+    <p>Clicking any <code>.relay</code> link navigates in the same panel tab with a back button. External <code>https://</code> links still open in the browser.</p>
+
+    <!-- ── EXAMPLE 4 ── -->
+    <h2>4. Human organises tabs manually <span class="badge badge-human">human</span></h2>
+
+    <ol class="step-list">
+      <li><span class="step-num">1</span><div>Press <kbd style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:0.85em">Ctrl+Shift+P</kbd> and run <strong>Relay: Add Tab</strong>. Name it <em>Work</em>.</div></li>
+      <li><span class="step-num">2</span><div>Run <strong>Relay: Add Bookmark</strong>. Choose <em>Work</em>, enter a title and URL. Leave the icon blank — the favicon is fetched automatically.</div></li>
+      <li><span class="step-num">3</span><div>Click any card in the Relay sidebar to open the URL in your browser.</div></li>
+      <li><span class="step-num">4</span><div>Hover a card to reveal the <strong>×</strong> remove button.</div></li>
+    </ol>
+
+    <!-- ── EXAMPLE 5 ── -->
+    <h2>5. Human creates and opens a page <span class="badge badge-human">human</span></h2>
+
+    <ol class="step-list">
+      <li><span class="step-num teal">1</span><div>Run <strong>Relay: New Page</strong>. Enter a title — Relay creates the <code>.relay</code> file in <code>relay-pages/</code> and names the file from the title.</div></li>
+      <li><span class="step-num teal">2</span><div>Open the file directly in VS Code's editor to write content, or ask an agent to populate it via <code>update_page</code>.</div></li>
+      <li><span class="step-num teal">3</span><div>Run <strong>Relay: Open Page</strong>, pick the page from the list — it opens in a full editor tab with the Relay ddd theme applied.</div></li>
+      <li><span class="step-num teal">4</span><div>Navigate between pages by clicking <code>.relay</code> links inside the viewer. Use the ← Back button to go back.</div></li>
+    </ol>
+
+    <!-- ── EXAMPLE 6 ── -->
+    <h2>6. Iterative page editing by an agent <span class="badge badge-agent">agent</span></h2>
+
+    <p>Because <code>update_page</code> preserves fields you don't provide, an agent can make surgical changes without rewriting the whole document.</p>
+
+    <pre><code><span class="cm">// Only change the title — body and styles are untouched</span>
+{
+  <span class="key">"name"</span>: <span class="str">"update_page"</span>,
+  <span class="key">"arguments"</span>: {
+    <span class="key">"filename"</span>: <span class="str">"api-auth.relay"</span>,
+    <span class="key">"title"</span>: <span class="str">"Auth API v2"</span>
+  }
+}
+
+<span class="cm">// Only add custom styles — title and body are untouched</span>
+{
+  <span class="key">"name"</span>: <span class="str">"update_page"</span>,
+  <span class="key">"arguments"</span>: {
+    <span class="key">"filename"</span>: <span class="str">"api-auth.relay"</span>,
+    <span class="key">"customStyles"</span>: <span class="str">".endpoint { font-family: monospace; color: var(--accent2); }"</span>
+  }
+}</code></pre>
+
+    <div class="callout tip">
+      <strong>Pattern:</strong> for multi-section documents that an agent builds incrementally — create the page with a skeleton, then call <code>update_page</code> once per section with the full accumulated content. Relay always replaces the entire <code>content</code> field, so include previous sections in each update call.
+    </div>
+
+    <!-- ── EXAMPLE 7 ── -->
+    <h2>7. Per-page prototype styling <span class="badge badge-agent">agent</span></h2>
+
+    <p>Custom styles apply only to the page they're defined in and can reference the full Relay theme palette.</p>
+
+    <pre><code><span class="key">"customStyles"</span>: <span class="str">"
+  /* two-column layout */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* status badge */
+  .status-ok   { background: #1a3a2a; color: #4ade80; border-radius: 4px; padding: 2px 8px; }
+  .status-warn { background: #3a2a10; color: #fbbf24; border-radius: 4px; padding: 2px 8px; }
+
+  /* accent box */
+  .highlight {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+"</span></code></pre>
+
+    <p>Because all pages load the same base CSS variables, styles like <code>var(--accent)</code> automatically adapt if the user switches to light mode.</p>
+
+    <footer>
+      <a href="mcp-api.html">← MCP API Reference</a>
+      <a href="developer-guide.html">Developer Guide →</a>
+    </footer>
+
+  </div>
+</body>
+</html>
