@@ -116,6 +116,12 @@ body {
 .bookmark-card:hover { border-color: var(--accent); background: var(--surface2); }
 
 .bm-icon { font-size: 20px; flex-shrink: 0; line-height: 1; padding-top: 1px; }
+.bm-icon img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 3px;
+}
 .bm-body { flex: 1; min-width: 0; }
 .bm-title {
   font-size: 12px;

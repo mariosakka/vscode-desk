@@ -65,7 +65,7 @@
 
     grid.innerHTML = bookmarks.map(b =>
       '<div class="bookmark-card" data-url="' + esc(b.url) + '" data-tab-id="' + esc(tabId) + '" data-bm-id="' + esc(b.id) + '">' +
-        '<div class="bm-icon">' + escHtml(b.icon) + '</div>' +
+        '<div class="bm-icon">' + renderIcon(b.icon) + '</div>' +
         '<div class="bm-body">' +
           '<div class="bm-title">' + escHtml(b.title) + '</div>' +
           '<div class="bm-desc">' + escHtml(b.description) + '</div>' +
@@ -91,6 +91,13 @@
   }
 
   // ── Helpers ────────────────────────────────────
+
+  function renderIcon(icon) {
+    if (icon && (icon.startsWith('data:') || icon.startsWith('http'))) {
+      return '<img src="' + esc(icon) + '" alt="" />';
+    }
+    return escHtml(icon || '🌐');
+  }
 
   function escHtml(s) {
     return String(s)
