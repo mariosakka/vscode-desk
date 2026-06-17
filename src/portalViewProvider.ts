@@ -60,15 +60,15 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
 
   private _getHtmlForWebview(webview: vscode.Webview): string {
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'portal.js'),
+      vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'sidebar', 'index.js'),
     );
     const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'portal.css'),
+      vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'sidebar', 'index.css'),
     );
     const nonce = getNonce();
 
     const templatePath = path.join(
-      this._extensionUri.fsPath, 'out', 'webview', 'portal.html',
+      this._extensionUri.fsPath, 'out', 'webview', 'sidebar', 'index.html',
     );
     const template = fs.readFileSync(templatePath, 'utf-8');
 

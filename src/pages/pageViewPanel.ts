@@ -81,14 +81,14 @@ export class PageViewPanel {
   private _render(page: PageContent): string {
     const webview = this._panel.webview;
     const cssUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'page.css'),
+      vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'page', 'index.css'),
     );
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'page.js'),
+      vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'page', 'index.js'),
     );
     const nonce = getNonce();
 
-    const templatePath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'page.html');
+    const templatePath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'page', 'index.html');
     const template = fs.readFileSync(templatePath, 'utf-8');
 
     const hasBack = this._history.length > 1;

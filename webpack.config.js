@@ -16,6 +16,11 @@ module.exports = {
     rules: [{ test: /\.ts$/, exclude: /node_modules/, use: 'ts-loader' }],
   },
   plugins: [
-    new CopyPlugin({ patterns: [{ from: 'src/webview', to: 'webview' }] }),
+    new CopyPlugin({
+      patterns: [
+        { from: 'src/webview/sidebar', to: 'webview/sidebar' },
+        { from: 'src/webview/page',    to: 'webview/page' },
+      ],
+    }),
   ],
 };
