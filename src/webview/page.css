@@ -1,0 +1,196 @@
+/* ── Theme variables (shared with portal.css) ── */
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: #2e3250;
+  --accent: #7c6af7;
+  --accent2: #5eead4;
+  --text: #e2e8f0;
+  --muted: #8892a4;
+  --radius: 10px;
+}
+:root.light {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface2: #eef1f8;
+  --border: #d0d7e8;
+  --accent: #5b4de8;
+  --accent2: #0d9488;
+  --text: #1a1f36;
+  --muted: #5a6481;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+/* ── Nav bar ── */
+.page-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 32px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.page-back-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.page-back-btn:hover { color: var(--text); border-color: var(--accent); }
+
+/* hide back button when there's no history */
+.page-nav[data-has-back="false"] .page-back-btn { visibility: hidden; }
+
+.page-nav-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Page layout ── */
+.page-main {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 48px 32px 80px;
+}
+
+/* ── Page header ── */
+.page-header { margin-bottom: 36px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.page-title { font-size: 2rem; font-weight: 700; letter-spacing: -.5px; color: var(--text); }
+
+/* ── Body typography ── */
+.page-body h1 { font-size: 1.7rem; font-weight: 700; margin: 36px 0 16px; }
+.page-body h2 { font-size: 1.3rem; font-weight: 600; margin: 32px 0 12px; color: var(--accent); }
+.page-body h3 { font-size: 1.05rem; font-weight: 600; margin: 24px 0 10px; color: var(--accent2); }
+.page-body h4, .page-body h5, .page-body h6 { font-size: 0.95rem; font-weight: 600; margin: 18px 0 8px; }
+
+.page-body p { margin-bottom: 16px; }
+
+.page-body a {
+  color: var(--accent2);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color .15s;
+}
+.page-body a:hover { border-bottom-color: var(--accent2); }
+
+.page-body ul, .page-body ol {
+  padding-left: 24px;
+  margin-bottom: 16px;
+}
+.page-body li { margin-bottom: 6px; }
+
+.page-body strong { font-weight: 600; color: var(--text); }
+.page-body em { font-style: italic; color: var(--muted); }
+
+/* ── Code ── */
+.page-body code {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.88em;
+  font-family: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
+  color: var(--accent2);
+}
+.page-body pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  overflow-x: auto;
+  margin: 20px 0;
+}
+.page-body pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.875rem;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+/* ── Blockquote ── */
+.page-body blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 20px;
+  margin: 20px 0;
+  background: var(--surface);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--muted);
+  font-style: italic;
+}
+.page-body blockquote p { margin: 0; }
+
+/* ── Table ── */
+.page-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 0.93rem;
+}
+.page-body th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.page-body td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+.page-body tr:hover td { background: var(--surface2); }
+
+/* ── Horizontal rule ── */
+.page-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 32px 0;
+}
+
+/* ── Image ── */
+.page-body img {
+  max-width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+/* ── Callout shorthand (agents can use <div class="callout">) ── */
+.callout {
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px 18px;
+  margin: 20px 0;
+}
+.callout.tip  { border-color: var(--accent2); }
+.callout.warn { border-color: #fbbf24; }
+.callout.danger { border-color: #f87171; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }

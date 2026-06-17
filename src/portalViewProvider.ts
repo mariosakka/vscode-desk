@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DataService } from './services/dataService';
+import { PageReader } from './pages/pageReader';
+import { PageViewPanel } from './pages/pageViewPanel';
 
 export class PortalViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'relay.sidebar';
@@ -10,6 +12,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
   constructor(
     private readonly _extensionUri: vscode.Uri,
     private readonly _dataService: DataService,
+    private readonly _pageReader: PageReader | null = null,
   ) {}
 
   resolveWebviewView(
@@ -31,9 +34,16 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
         case 'ready':
           this.refresh();
           break;
-        case 'openUrl':
-          vscode.env.openExternal(vscode.Uri.parse(message.url));
+        case 'openUrl': {
+          const url: string = message.url;
+          if (url.startsWith('relay-page:') && this._pageReader) {
+            const filename = url.slice('relay-page:'.length);
+            PageViewPanel.open(this._extensionUri, this._pageReader, filename);
+          } else {
+            vscode.env.openExternal(vscode.Uri.parse(url));
+          }
           break;
+        }
         case 'removeBookmark':
           this._dataService.removeBookmark(message.tabId, message.bookmarkId);
           this.refresh();

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src data: ${cspSource};">
+  <link rel="stylesheet" href="${cssUri}">
+  <style>${customStyles}</style>
+</head>
+<body>
+  <nav class="page-nav" id="page-nav" data-has-back="${hasBack}">
+    <button class="page-back-btn" id="back-btn" aria-label="Go back">← Back</button>
+    <span class="page-nav-label">Relay</span>
+  </nav>
+  <main class="page-main">
+    <header class="page-header">
+      <h1 class="page-title">${title}</h1>
+    </header>
+    <article class="page-body">
+      ${content}
+    </article>
+  </main>
+  <script nonce="${nonce}" src="${scriptUri}"></script>
+</body>
+</html>

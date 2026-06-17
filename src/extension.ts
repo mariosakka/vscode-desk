@@ -3,12 +3,19 @@ import { DataService } from './services/dataService';
 import { FaviconService } from './services/faviconService';
 import { McpServer } from './mcp/server';
 import { PortalViewProvider } from './portalViewProvider';
+import { PageReader } from './pages/pageReader';
+import { PageViewPanel } from './pages/pageViewPanel';
 
 export function activate(context: vscode.ExtensionContext): void {
   const dataService = new DataService(context);
   const faviconService = new FaviconService(context);
-  const provider = new PortalViewProvider(context.extensionUri, dataService);
-  const mcpServer = new McpServer(dataService, provider, faviconService);
+
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null;
+  const pageReader = workspaceRoot ? new PageReader(workspaceRoot) : null;
+
+  const provider = new PortalViewProvider(context.extensionUri, dataService, pageReader);
+
+  const mcpServer = new McpServer(dataService, provider, faviconService, pageReader);
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
@@ -23,6 +30,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('relay.addTab',         () => cmdAddTab(dataService, provider)),
     vscode.commands.registerCommand('relay.removeBookmark', () => cmdRemoveBookmark(dataService, provider)),
     vscode.commands.registerCommand('relay.removeTab',      () => cmdRemoveTab(dataService, provider)),
+    vscode.commands.registerCommand('relay.openPage',       () => cmdOpenPage(context.extensionUri, pageReader)),
+    vscode.commands.registerCommand('relay.newPage',        () => cmdNewPage(pageReader)),
   );
 }
 
@@ -117,4 +126,48 @@ async function pickTab(dataService: DataService): Promise<string | undefined> {
     { placeHolder: 'Select tab' },
   );
   return pick?.id;
+}
+
+async function cmdOpenPage(extensionUri: vscode.Uri, pageReader: PageReader | null): Promise<void> {
+  if (!pageReader) {
+    vscode.window.showErrorMessage('Relay: Open a workspace folder first to use pages.');
+    return;
+  }
+  const pages = pageReader.list();
+  if (pages.length === 0) {
+    vscode.window.showErrorMessage('No pages yet. Run "Relay: New Page" to create one.');
+    return;
+  }
+  const pick = await vscode.window.showQuickPick(
+    pages.map(p => ({ label: p.title, description: p.filename, filename: p.filename })),
+    { placeHolder: 'Select a page to open' },
+  );
+  if (!pick) return;
+  PageViewPanel.open(extensionUri, pageReader, pick.filename);
+}
+
+async function cmdNewPage(pageReader: PageReader | null): Promise<void> {
+  if (!pageReader) {
+    vscode.window.showErrorMessage('Relay: Open a workspace folder first to use pages.');
+    return;
+  }
+  const title = await vscode.window.showInputBox({ prompt: 'Page title', ignoreFocusOut: true });
+  if (!title) return;
+
+  const rawFilename = await vscode.window.showInputBox({
+    prompt: 'File name (leave blank to derive from title)',
+    ignoreFocusOut: true,
+  });
+  const filename = normalizeFilename(rawFilename?.trim() || title) + '.relay';
+
+  pageReader.write(filename, title, `<p>Start writing your <strong>${escHtml(title)}</strong> page here.</p>`);
+  vscode.window.showInformationMessage(`Relay: created ${filename} in relay-pages/`);
+}
+
+function normalizeFilename(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

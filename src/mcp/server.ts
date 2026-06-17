@@ -2,6 +2,7 @@ import * as http from 'http';
 import { DataService } from '../services/dataService';
 import { FaviconService } from '../services/faviconService';
 import { PortalViewProvider } from '../portalViewProvider';
+import { PageReader } from '../pages/pageReader';
 import { TOOLS } from './toolSchemas';
 
 export class McpServer {
@@ -11,6 +12,7 @@ export class McpServer {
     private readonly dataService: DataService,
     private readonly provider: PortalViewProvider,
     private readonly faviconService: FaviconService,
+    private readonly pageReader: PageReader | null,
   ) {}
 
   start(port: number): void {
@@ -140,6 +142,35 @@ export class McpServer {
         this.provider.refresh();
         return { content: [{ type: 'text', text: JSON.stringify(bm) }] };
       }
+
+      // ── Page tools ────────────────────────────────────────────────────────
+      case 'list_pages': {
+        if (!this.pageReader) throw new Error('No workspace open — pages unavailable');
+        const pages = this.pageReader.list();
+        return { content: [{ type: 'text', text: JSON.stringify(pages) }] };
+      }
+      case 'create_page': {
+        if (!this.pageReader) throw new Error('No workspace open — pages unavailable');
+        this.pageReader.write(args.filename, args.title, args.content, args.customStyles ?? '');
+        return { content: [{ type: 'text', text: `created ${args.filename}` }] };
+      }
+      case 'update_page': {
+        if (!this.pageReader) throw new Error('No workspace open — pages unavailable');
+        const existing = this.pageReader.read(args.filename);
+        this.pageReader.write(
+          args.filename,
+          args.title ?? existing.title,
+          args.content ?? existing.bodyHtml,
+          args.customStyles ?? existing.customStyles,
+        );
+        return { content: [{ type: 'text', text: `updated ${args.filename}` }] };
+      }
+      case 'delete_page': {
+        if (!this.pageReader) throw new Error('No workspace open — pages unavailable');
+        this.pageReader.delete(args.filename);
+        return { content: [{ type: 'text', text: `deleted ${args.filename}` }] };
+      }
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }

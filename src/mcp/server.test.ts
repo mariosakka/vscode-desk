@@ -40,7 +40,7 @@ describe('McpServer', () => {
 
   beforeEach(done => {
     jest.clearAllMocks();
-    server = new McpServer(mockDataService as any, mockProvider as any, mockFaviconService as any);
+    server = new McpServer(mockDataService as any, mockProvider as any, mockFaviconService as any, null);
     server.start(PORT);
     setTimeout(done, 30);
   });
@@ -56,9 +56,9 @@ describe('McpServer', () => {
     expect(res.result.protocolVersion).toBeDefined();
   });
 
-  it('lists 7 tools', async () => {
+  it('lists 11 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 2 });
-    expect(res.result.tools).toHaveLength(7);
+    expect(res.result.tools).toHaveLength(11);
     const names = res.result.tools.map((t: any) => t.name);
     expect(names).toContain('list_tabs');
     expect(names).toContain('list_bookmarks');
@@ -67,6 +67,10 @@ describe('McpServer', () => {
     expect(names).toContain('create_tab');
     expect(names).toContain('remove_tab');
     expect(names).toContain('update_bookmark');
+    expect(names).toContain('list_pages');
+    expect(names).toContain('create_page');
+    expect(names).toContain('update_page');
+    expect(names).toContain('delete_page');
   });
 
   it('calls list_tabs and returns tab summaries', async () => {

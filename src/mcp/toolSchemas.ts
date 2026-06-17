@@ -93,4 +93,51 @@ export const TOOLS: McpTool[] = [
       additionalProperties: false,
     },
   },
+
+  // ── Page tools ────────────────────────────────────────────────────────────
+  {
+    name: 'list_pages',
+    description: 'Returns all .relay page files in the workspace relay-pages/ folder',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'create_page',
+    description: 'Creates a new .relay page file. content is the HTML body; customStyles is optional CSS injected only for this page.',
+    inputSchema: {
+      type: 'object',
+      required: ['filename', 'title', 'content'],
+      properties: {
+        filename: { type: 'string', description: 'File name including .relay extension, e.g. "auth-flow.relay"' },
+        title: { type: 'string' },
+        content: { type: 'string', description: 'HTML body content (no <script> tags)' },
+        customStyles: { type: 'string', description: 'Optional CSS rules scoped to this page' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'update_page',
+    description: 'Overwrites fields on an existing .relay page. Only provided fields are changed.',
+    inputSchema: {
+      type: 'object',
+      required: ['filename'],
+      properties: {
+        filename: { type: 'string' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+        customStyles: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'delete_page',
+    description: 'Deletes a .relay page file from the workspace',
+    inputSchema: {
+      type: 'object',
+      required: ['filename'],
+      properties: { filename: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
 ];

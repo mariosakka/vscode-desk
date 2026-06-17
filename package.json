@@ -28,7 +28,9 @@
       { "command": "relay.addBookmark",    "title": "Relay: Add Bookmark" },
       { "command": "relay.addTab",         "title": "Relay: Add Tab" },
       { "command": "relay.removeBookmark", "title": "Relay: Remove Bookmark" },
-      { "command": "relay.removeTab",      "title": "Relay: Remove Tab" }
+      { "command": "relay.removeTab",      "title": "Relay: Remove Tab" },
+      { "command": "relay.openPage",       "title": "Relay: Open Page" },
+      { "command": "relay.newPage",        "title": "Relay: New Page" }
     ],
     "configuration": {
       "title": "Relay",

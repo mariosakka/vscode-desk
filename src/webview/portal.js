@@ -29,7 +29,7 @@
     if (!data || !data.tabs || data.tabs.length === 0) {
       document.getElementById('tabs-bar').innerHTML = '';
       document.getElementById('bookmarks-grid').innerHTML =
-        '<p class="empty">No tabs yet. Use the command palette (Ctrl+Shift+P) and run "Portal: Add Tab".</p>';
+        '<p class="empty">No tabs yet. Use the command palette (Ctrl+Shift+P) and run "Relay: Add Tab".</p>';
       return;
     }
 
@@ -59,7 +59,7 @@
   function renderBookmarks(bookmarks, tabId) {
     const grid = document.getElementById('bookmarks-grid');
     if (bookmarks.length === 0) {
-      grid.innerHTML = '<p class="empty">No bookmarks yet. Run "Portal: Add Bookmark" to add one.</p>';
+      grid.innerHTML = '<p class="empty">No bookmarks yet. Run "Relay: Add Bookmark" to add one.</p>';
       return;
     }
 
