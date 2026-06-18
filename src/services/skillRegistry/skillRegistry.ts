@@ -134,7 +134,15 @@ function parseFrontmatter(content: string): {
         result.name = rawValue;
         break;
       case 'description':
-        result.description = rawValue === '>-' ? (lines[++i]?.trim() ?? '') : rawValue;
+        if (rawValue === '>-') {
+          const parts: string[] = [];
+          while (i + 1 < lines.length && /^\s+/.test(lines[i + 1])) {
+            parts.push(lines[++i].trim());
+          }
+          result.description = parts.join(' ');
+        } else {
+          result.description = rawValue;
+        }
         break;
       case 'agents':
         if (rawValue === 'all') {

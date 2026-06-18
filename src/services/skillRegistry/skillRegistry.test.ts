@@ -65,6 +65,12 @@ describe('SkillRegistry', () => {
       expect(result.valid).toBe(false);
       expect(result.error).toMatch(/description/);
     });
+
+    it('parses multi-line description block scalar correctly', () => {
+      const content = `---\nname: dev-flow\ndescription: >-\n  First line.\n  Second line.\nagents: all\n---\nbody`;
+      const result = new SkillRegistry(makeCtx()).validateFrontmatter(content);
+      expect(result.valid).toBe(true);
+    });
   });
 
   describe('confirmPending()', () => {
@@ -121,6 +127,14 @@ describe('SkillRegistry', () => {
       reg.setPending('dev-flow', VALID_SKILL, 'Custom override description');
       await reg.confirmPending([]);
       expect(reg.getAll()[0].description).toBe('Custom override description');
+    });
+
+    it('captures multi-line description block scalar', async () => {
+      const content = `---\nname: dev-flow\ndescription: >-\n  First line.\n  Second line.\nagents: all\n---\nbody`;
+      const reg = new SkillRegistry(makeCtx());
+      reg.setPending('dev-flow', content);
+      await reg.confirmPending([]);
+      expect(reg.getAll()[0].description).toBe('First line. Second line.');
     });
   });
 
