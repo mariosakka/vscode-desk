@@ -41,7 +41,6 @@ export abstract class JsonFileAdapter implements AgentAdapter {
     try {
       config = JSON.parse(fs.readFileSync(this.configPath, 'utf-8'));
     } catch {
-      // file missing or invalid JSON — start fresh
     }
     if (!config.mcpServers) {
       config.mcpServers = {};
