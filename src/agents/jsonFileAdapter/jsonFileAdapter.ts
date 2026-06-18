@@ -49,4 +49,16 @@ export abstract class JsonFileAdapter implements AgentAdapter {
     fs.mkdirSync(path.dirname(this.configPath), { recursive: true });
     fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
   }
+
+  get skillInstallPath(): string | null {
+    return null;
+  }
+
+  async isSkillInstalled(_skillName: string): Promise<boolean> {
+    return false;
+  }
+
+  async installSkill(_skillName: string, _content: string): Promise<void> {}
+
+  async uninstallSkill(_skillName: string): Promise<void> {}
 }

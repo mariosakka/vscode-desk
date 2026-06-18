@@ -113,4 +113,22 @@ describe('JsonFileAdapter', () => {
       expect(fs.mkdirSync).toHaveBeenCalledWith('/home/user/.testagent', { recursive: true });
     });
   });
+
+  describe('skill defaults (no-ops)', () => {
+    it('skillInstallPath is null by default', () => {
+      expect(new TestAdapter().skillInstallPath).toBeNull();
+    });
+
+    it('isSkillInstalled returns false by default', async () => {
+      expect(await new TestAdapter().isSkillInstalled('any-skill')).toBe(false);
+    });
+
+    it('installSkill resolves without error by default', async () => {
+      await expect(new TestAdapter().installSkill('any-skill', 'content')).resolves.toBeUndefined();
+    });
+
+    it('uninstallSkill resolves without error by default', async () => {
+      await expect(new TestAdapter().uninstallSkill('any-skill')).resolves.toBeUndefined();
+    });
+  });
 });
