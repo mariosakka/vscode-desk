@@ -2,7 +2,8 @@ node_modules/
 out/
 package-lock.json
 *.vsix
-docs/superpowers/
+docs/superpowers/*
+!docs/superpowers/specs/
 SPEC.md
 playwright-report/
 test-results
