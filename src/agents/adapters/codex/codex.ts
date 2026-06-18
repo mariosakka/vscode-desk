@@ -1,7 +1,7 @@
 import * as os from 'os';
 import * as path from 'path';
-import { JsonFileAdapter } from '../jsonFileAdapter';
-import { AgentId, ConfigDir, ConfigFile, McpTransport } from '../constants';
+import { JsonFileAdapter } from '../../jsonFileAdapter/jsonFileAdapter';
+import { AgentId, ConfigDir, ConfigFile, McpTransport } from '../../constants';
 
 export class CodexAdapter extends JsonFileAdapter {
   readonly id = AgentId.Codex;

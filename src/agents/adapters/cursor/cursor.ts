@@ -1,7 +1,7 @@
 import * as os from 'os';
 import * as path from 'path';
-import { JsonFileAdapter } from '../jsonFileAdapter';
-import { AgentId, ConfigDir, ConfigFile } from '../constants';
+import { JsonFileAdapter } from '../../jsonFileAdapter/jsonFileAdapter';
+import { AgentId, ConfigDir, ConfigFile } from '../../constants';
 
 export class CursorAdapter extends JsonFileAdapter {
   readonly id = AgentId.Cursor;

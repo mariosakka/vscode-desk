@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { AgentRegistry } from './registry';
-import { AgentAdapter } from './agentAdapter';
+import { AgentAdapter } from '../agentAdapter';
 
 function makeAdapter(installed: boolean, configured: boolean): AgentAdapter & { configure: jest.Mock } {
   return {

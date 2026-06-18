@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentAdapter } from './agentAdapter';
+import { AgentAdapter } from '../agentAdapter';
 
 export abstract class JsonFileAdapter implements AgentAdapter {
   abstract readonly id: string;

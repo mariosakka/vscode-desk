@@ -5,11 +5,11 @@ import { McpServer } from './mcp/server';
 import { PortalViewProvider } from './portalViewProvider';
 import { PageReader } from './pages/pageReader';
 import { PageViewPanel } from './pages/pageViewPanel';
-import { AgentRegistry } from './agents/registry';
-import { ClaudeCodeAdapter } from './agents/adapters/claudeCode';
-import { CursorAdapter } from './agents/adapters/cursor';
-import { CodexAdapter } from './agents/adapters/codex';
-import { GeminiAdapter } from './agents/adapters/gemini';
+import { AgentRegistry } from './agents/registry/registry';
+import { ClaudeCodeAdapter } from './agents/adapters/claudeCode/claudeCode';
+import { CursorAdapter } from './agents/adapters/cursor/cursor';
+import { CodexAdapter } from './agents/adapters/codex/codex';
+import { GeminiAdapter } from './agents/adapters/gemini/gemini';
 
 export function activate(context: vscode.ExtensionContext): void {
   const dataService = new DataService(context);

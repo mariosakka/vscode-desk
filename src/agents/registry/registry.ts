@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { AgentAdapter } from './agentAdapter';
+import { AgentAdapter } from '../agentAdapter';
 
 export class AgentRegistry {
   constructor(
