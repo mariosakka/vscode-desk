@@ -11,9 +11,11 @@ const vscode = {
     showInformationMessage: jest.fn(),
     showErrorMessage: jest.fn(),
     registerWebviewViewProvider: jest.fn(),
+    showTextDocument: jest.fn().mockResolvedValue(undefined),
   },
   workspace: {
     getConfiguration: jest.fn(() => ({ get: jest.fn() })),
+    openTextDocument: jest.fn().mockResolvedValue({}),
   },
   env: {
     openExternal: jest.fn(),

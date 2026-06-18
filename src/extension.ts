@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
 import { DataService } from './services/dataService/dataService';
 import { FaviconService } from './services/faviconService/faviconService';
+import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
+import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { McpServer } from './mcp/server/server';
 import { PortalViewProvider } from './portalViewProvider';
 import { PageReader } from './pages/pageReader';
 import { PageViewPanel } from './pages/pageViewPanel';
+import { AgentAdapter } from './agents/agentAdapter';
 import { AgentRegistry } from './agents/registry/registry';
 import { ClaudeCodeAdapter } from './agents/adapters/claudeCode/claudeCode';
 import { CursorAdapter } from './agents/adapters/cursor/cursor';
@@ -18,9 +21,31 @@ export function activate(context: vscode.ExtensionContext): void {
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null;
   const pageReader = workspaceRoot ? new PageReader(workspaceRoot) : null;
 
+  const workflowConfigService = new WorkflowConfigService(context);
+  const skillRegistry = new SkillRegistry(context);
+
   const provider = new PortalViewProvider(context.extensionUri, dataService, pageReader);
 
-  const mcpServer = new McpServer(dataService, provider, faviconService, pageReader);
+  const adapters = [
+    new ClaudeCodeAdapter(),
+    new CursorAdapter(workspaceRoot),
+    new CodexAdapter(workspaceRoot),
+    new GeminiAdapter(),
+  ];
+
+  const agentRegistry = new AgentRegistry(adapters, context, skillRegistry);
+
+  const mcpServer = new McpServer(
+    dataService,
+    provider,
+    faviconService,
+    pageReader,
+    workflowConfigService,
+    skillRegistry,
+    adapters,
+    () => showConfigConfirmPrompt(context.extensionUri, workflowConfigService, pageReader),
+    () => showSkillConfirmPrompt(skillRegistry, adapters),
+  );
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
@@ -30,20 +55,18 @@ export function activate(context: vscode.ExtensionContext): void {
   mcpServer.start(port);
   context.subscriptions.push({ dispose: () => mcpServer.stop() });
 
-  const agentRegistry = new AgentRegistry(
-    [new ClaudeCodeAdapter(), new CursorAdapter(), new CodexAdapter(), new GeminiAdapter()],
-    context,
-  );
-  agentRegistry.showSetupPrompt(port);
+  agentRegistry.showSetupPrompt(port).then(() => agentRegistry.showSkillInstallPrompt()).catch(() => {});
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('relay.addBookmark',    () => cmdAddBookmark(dataService, faviconService, provider)),
-    vscode.commands.registerCommand('relay.addTab',         () => cmdAddTab(dataService, provider)),
-    vscode.commands.registerCommand('relay.removeBookmark', () => cmdRemoveBookmark(dataService, provider)),
-    vscode.commands.registerCommand('relay.removeTab',      () => cmdRemoveTab(dataService, provider)),
-    vscode.commands.registerCommand('relay.openPage',       () => cmdOpenPage(context.extensionUri, pageReader)),
-    vscode.commands.registerCommand('relay.newPage',        () => cmdNewPage(pageReader)),
-    vscode.commands.registerCommand('relay.setupAgents',    () => agentRegistry.showSetupPromptForced(port)),
+    vscode.commands.registerCommand('relay.addBookmark',           () => cmdAddBookmark(dataService, faviconService, provider)),
+    vscode.commands.registerCommand('relay.addTab',                () => cmdAddTab(dataService, provider)),
+    vscode.commands.registerCommand('relay.removeBookmark',        () => cmdRemoveBookmark(dataService, provider)),
+    vscode.commands.registerCommand('relay.removeTab',             () => cmdRemoveTab(dataService, provider)),
+    vscode.commands.registerCommand('relay.openPage',              () => cmdOpenPage(context.extensionUri, pageReader)),
+    vscode.commands.registerCommand('relay.newPage',               () => cmdNewPage(pageReader)),
+    vscode.commands.registerCommand('relay.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
+    vscode.commands.registerCommand('relay.configureWorkflow',     () => cmdConfigureWorkflow(workflowConfigService)),
+    vscode.commands.registerCommand('relay.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
   );
 }
 
@@ -182,4 +205,99 @@ function normalizeFilename(s: string): string {
 
 function escHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function showConfigConfirmPrompt(
+  extensionUri: vscode.Uri,
+  svc: WorkflowConfigService,
+  pageReader: PageReader | null,
+): Promise<void> {
+  const pending = svc.getPending();
+  if (!pending) return;
+
+  const action = await vscode.window.showInformationMessage(
+    'An agent submitted workflow config. Review before saving?',
+    'Save',
+    'Review first',
+  );
+
+  if (action === 'Review first' && pageReader) {
+    const json = JSON.stringify(pending, null, 2);
+    pageReader.write(
+      '_pending-workflow-config.relay',
+      'Pending Workflow Config',
+      `<pre><code>${escHtml(json)}</code></pre>`,
+    );
+    PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.relay');
+    const confirm = await vscode.window.showInformationMessage('Save workflow config?', 'Save');
+    if (confirm !== 'Save') { svc.clearPending(); return; }
+  } else if (action !== 'Save') {
+    svc.clearPending();
+    return;
+  }
+
+  svc.confirmPending();
+  vscode.window.showInformationMessage('Relay: workflow config saved.');
+}
+
+async function showSkillConfirmPrompt(
+  skillRegistry: SkillRegistry,
+  adapters: AgentAdapter[],
+): Promise<void> {
+  const pending = skillRegistry.getPending();
+  if (!pending) return;
+
+  const description = pending.descriptionOverride ?? extractFrontmatterDescription(pending.content) ?? '';
+
+  const action = await vscode.window.showInformationMessage(
+    `Agent submitted skill '${pending.name}': ${description}. Install on all agents?`,
+    'Install',
+    'Review first',
+    'Dismiss',
+  );
+
+  if (action === 'Review first') {
+    const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: pending.content });
+    await vscode.window.showTextDocument(doc);
+    const confirm = await vscode.window.showInformationMessage(`Install '${pending.name}' skill?`, 'Install');
+    if (confirm !== 'Install') { skillRegistry.clearPending(); return; }
+  } else if (action !== 'Install') {
+    skillRegistry.clearPending();
+    return;
+  }
+
+  await skillRegistry.confirmPending(adapters);
+  vscode.window.showInformationMessage(`Relay: skill '${pending.name}' installed.`);
+}
+
+async function cmdConfigureWorkflow(svc: WorkflowConfigService): Promise<void> {
+  const existing = svc.get();
+  const s = existing?.slack;
+
+  const prompts: Array<{ prompt: string; value: string }> = [
+    { prompt: 'Slack status channel (e.g. #status)', value: s?.status ?? '' },
+    { prompt: 'Slack general channel (e.g. #general)', value: s?.general ?? '' },
+    { prompt: 'Slack weekly channel (e.g. #weekly)', value: s?.weekly ?? '' },
+    { prompt: 'Slack pulse channel (e.g. #pulse)', value: s?.pulse ?? '' },
+    { prompt: 'Slack deploy channel (e.g. #deploy)', value: s?.deploy ?? '' },
+    { prompt: 'Language code (e.g. en, ro)', value: existing?.language ?? '' },
+    { prompt: 'GitHub org', value: existing?.githubOrg ?? '' },
+    { prompt: 'PR account', value: existing?.prAccount ?? '' },
+  ];
+
+  const results: string[] = [];
+  for (const { prompt, value } of prompts) {
+    const input = await vscode.window.showInputBox({ prompt, value, ignoreFocusOut: true });
+    if (input === undefined) return;
+    results.push(input);
+  }
+
+  const [status, general, weekly, pulse, deploy, language, githubOrg, prAccount] = results;
+  svc.save({ slack: { status, general, weekly, pulse, deploy }, language, githubOrg, prAccount });
+  vscode.window.showInformationMessage('Relay: workflow config saved.');
+}
+
+function extractFrontmatterDescription(content: string): string | undefined {
+  const match = content.match(/^description:\s*(.+)$/m);
+  return match?.[1]?.replace(/^>-\s*/, '').trim();
 }
