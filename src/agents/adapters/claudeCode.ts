@@ -8,12 +8,12 @@ export class ClaudeCodeAdapter extends JsonFileAdapter {
   readonly id = AgentId.ClaudeCode;
   readonly label = 'Claude Code';
   readonly configDir = path.join(os.homedir(), ConfigDir.ClaudeCode);
-  readonly configPath = path.join(os.homedir(), ConfigDir.ClaudeCode, ConfigFile.ClaudeCode);
+  readonly configPath = path.join(os.homedir(), '.claude.json');
 
   protected async configureViaCli(port: number): Promise<void | false> {
     try {
       childProcess.execSync(
-        `${CliBinary.ClaudeCode} mcp add vscode-relay -t ${McpTransport.Http} http://127.0.0.1:${port}/mcp`,
+        `${CliBinary.ClaudeCode} mcp add vscode-relay -t ${McpTransport.Http} http://127.0.0.1:${port}/mcp --scope user`,
         { stdio: 'pipe' },
       );
     } catch {
