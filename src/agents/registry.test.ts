@@ -89,6 +89,22 @@ describe('AgentRegistry', () => {
         'Relay: configured 1 agent(s).',
       );
     });
+
+    it('shows error message when an adapter fails to configure', async () => {
+      const adapter = makeAdapter(true, false);
+      adapter.configure.mockRejectedValue(new Error('write failed'));
+      (vscode.window.showInformationMessage as jest.Mock)
+        .mockResolvedValueOnce('Set up')
+        .mockResolvedValue(undefined);
+      (vscode.window.showQuickPick as jest.Mock).mockResolvedValue([
+        { label: 'Test Agent', picked: true, adapter },
+      ]);
+      const registry = new AgentRegistry([adapter], mockContext);
+      await registry.showSetupPrompt(3333);
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'Relay: failed to configure 1 agent(s).',
+      );
+    });
   });
 
   describe('showSetupPromptForced()', () => {
