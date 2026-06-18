@@ -5,6 +5,11 @@ import { McpServer } from './mcp/server';
 import { PortalViewProvider } from './portalViewProvider';
 import { PageReader } from './pages/pageReader';
 import { PageViewPanel } from './pages/pageViewPanel';
+import { AgentRegistry } from './agents/registry';
+import { ClaudeCodeAdapter } from './agents/adapters/claudeCode';
+import { CursorAdapter } from './agents/adapters/cursor';
+import { CodexAdapter } from './agents/adapters/codex';
+import { GeminiAdapter } from './agents/adapters/gemini';
 
 export function activate(context: vscode.ExtensionContext): void {
   const dataService = new DataService(context);
@@ -25,6 +30,12 @@ export function activate(context: vscode.ExtensionContext): void {
   mcpServer.start(port);
   context.subscriptions.push({ dispose: () => mcpServer.stop() });
 
+  const agentRegistry = new AgentRegistry(
+    [new ClaudeCodeAdapter(), new CursorAdapter(), new CodexAdapter(), new GeminiAdapter()],
+    context,
+  );
+  agentRegistry.showSetupPrompt(port);
+
   context.subscriptions.push(
     vscode.commands.registerCommand('relay.addBookmark',    () => cmdAddBookmark(dataService, faviconService, provider)),
     vscode.commands.registerCommand('relay.addTab',         () => cmdAddTab(dataService, provider)),
@@ -32,6 +43,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('relay.removeTab',      () => cmdRemoveTab(dataService, provider)),
     vscode.commands.registerCommand('relay.openPage',       () => cmdOpenPage(context.extensionUri, pageReader)),
     vscode.commands.registerCommand('relay.newPage',        () => cmdNewPage(pageReader)),
+    vscode.commands.registerCommand('relay.setupAgents',    () => agentRegistry.showSetupPromptForced(port)),
   );
 }
 
