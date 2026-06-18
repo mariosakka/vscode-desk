@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Bookmark, Tab, PortalData } from '../models';
+import { Bookmark, Tab, PortalData } from '../../models';
 
 const STORAGE_KEY = 'relay.data';
 

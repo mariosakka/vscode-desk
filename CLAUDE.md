@@ -6,10 +6,11 @@ Guidelines for AI agents and contributors working on this codebase.
 
 ## What Relay is
 
-A VS Code extension with three features:
+A VS Code extension with four features:
 1. **Tabbed bookmark sidebar** — named tab groups each holding bookmark cards with auto-fetched favicons.
 2. **`.relay` page viewer** — an XML-based lightweight doc format that renders in a VS Code editor tab, with shared theme variables and per-page custom CSS.
-3. **Embedded MCP server** — a local JSON-RPC 2.0 HTTP server so AI agents can read and write bookmarks and pages programmatically.
+3. **Embedded MCP server** — a local JSON-RPC 2.0 HTTP server so AI agents can read and write bookmarks, pages, workflow config, and skills programmatically.
+4. **Workflow companion** — stores team workflow config and a skill registry; agents submit config and skills via MCP, the extension installs skills on all detected AI agents after user confirmation.
 
 **Non-negotiable constraint:** Relay must be fully general-purpose. No hardcoded URLs, no org-specific content, no assumptions about what the user has installed. Everything must work for any developer on any machine.
 
@@ -18,27 +19,30 @@ A VS Code extension with three features:
 ## Architecture
 
 ```
-┌──────────────────────────────────────────┐
-│  Webview (sandboxed HTML/CSS/JS)         │
-│  src/webview/sidebar/  src/webview/page/ │
-│         ↕ postMessage                   │
-├──────────────────────────────────────────┤
-│  Extension Host (Node.js)                │
-│  PortalViewProvider  PageViewPanel       │
-│         ↕ method calls                  │
-├──────────────────────────────────────────┤
-│  Services                                │
-│  DataService   FaviconService  PageReader│
-│         ↕                               │
-│  VS Code globalState   workspace fs      │
-└──────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  Webview (sandboxed HTML/CSS/JS)                             │
+│  src/webview/sidebar/  src/webview/page/                     │
+│         ↕ postMessage                                        │
+├──────────────────────────────────────────────────────────────┤
+│  Extension Host (Node.js)                                    │
+│  PortalViewProvider  PageViewPanel                           │
+│         ↕ method calls                                       │
+├──────────────────────────────────────────────────────────────┤
+│  Services                                                    │
+│  DataService   FaviconService   PageReader                   │
+│  WorkflowConfigService          SkillRegistry                │
+│         ↕                                                    │
+│  VS Code globalState   workspace fs                          │
+└──────────────────────────────────────────────────────────────┘
          ↑ HTTP JSON-RPC 2.0
   McpServer (127.0.0.1:3333 by default)
 ```
 
-**DataService** owns all reads and writes to `globalState`. No other class touches it directly.  
+**DataService** owns all reads and writes to `relay.data` in `globalState`. No other class touches it directly.  
 **FaviconService** fetches and caches favicons. No other class fetches favicons.  
 **PageReader** reads and writes `.relay` files. No other class touches the `relay-pages/` directory.  
+**WorkflowConfigService** owns `relay.workflowConfig` and pending review state. No other class reads or writes workflow config directly.  
+**SkillRegistry** owns `relay.skills`, validates skill frontmatter, and drives installation via `AgentAdapter`. No other class installs skill files directly.  
 **McpServer** has no business logic — it parses JSON-RPC and delegates to the services above.
 
 ---
@@ -54,15 +58,46 @@ src/
     pageReader.ts               Read/write .relay files in relay-pages/
     pageViewPanel.ts            Full-width WebviewPanel for the page viewer
   services/
-    dataService.ts              globalState CRUD (key: relay.data)
-    dataService.test.ts
-    faviconService.ts           Favicon fetch + cache (key: relay.favicon-cache)
-    faviconService.test.ts
+    dataService/
+      dataService.ts            globalState CRUD (key: relay.data)
+      dataService.test.ts
+    faviconService/
+      faviconService.ts         Favicon fetch + cache (key: relay.favicon-cache)
+      faviconService.test.ts
+    workflowConfigService/
+      workflowConfigService.ts  WorkflowConfig read/write + pending review state
+      workflowConfigService.test.ts
+    skillRegistry/
+      skillRegistry.ts          Skill storage + agent-format installation
+      skillRegistry.test.ts
   mcp/
-    server.ts                   JSON-RPC 2.0 HTTP server
-    toolSchemas.ts              JSON schemas for all 11 tools
-    resources.ts                2 MCP resources (self-documentation for agents)
-    server.test.ts
+    server/
+      server.ts                 JSON-RPC 2.0 HTTP server
+      server.test.ts
+    toolSchemas.ts              JSON schemas for all 16 tools
+    resources.ts                3 MCP resources (self-documentation for agents)
+  agents/
+    constants.ts                AgentId, ConfigDir, ConfigFile, CliBinary enums
+    agentAdapter.ts             AgentAdapter interface
+    jsonFileAdapter/
+      jsonFileAdapter.ts        Abstract base — Template Method for JSON-file agents
+      jsonFileAdapter.test.ts
+    adapters/
+      claudeCode/
+        claudeCode.ts
+        claudeCode.test.ts
+      cursor/
+        cursor.ts
+        cursor.test.ts
+      codex/
+        codex.ts
+        codex.test.ts
+      gemini/
+        gemini.ts
+        gemini.test.ts
+    registry/
+      registry.ts               AgentRegistry — MCP setup + skill install prompts
+      registry.test.ts
   __mocks__/
     vscode.ts                   Jest mock for the VS Code API
   webview/
@@ -131,8 +166,8 @@ The variables are defined at the top of both `index.css` files and map to `--vsc
 ### Adding a new MCP tool
 Three files always change together:
 1. `src/mcp/toolSchemas.ts` — add the JSON schema to the `TOOLS` array.
-2. `src/mcp/server.ts` — add a `case` for it in `McpServer.callTool()`.
-3. `src/mcp/server.test.ts` — add at minimum one round-trip test.
+2. `src/mcp/server/server.ts` — add a `case` for it in `McpServer.callTool()`.
+3. `src/mcp/server/server.test.ts` — add at minimum one round-trip test.
 
 ### Adding a new VS Code command
 Three steps:
@@ -165,6 +200,27 @@ Always go through `PageReader`. It enforces the `relay-pages/` directory, parses
 |---|---|---|
 | `relay.data` | `PortalData` | All tabs and bookmarks |
 | `relay.favicon-cache` | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
+| `relay.workflowConfig` | `WorkflowConfig` | Team workflow config submitted by agent and confirmed by user |
+| `relay.skills` | `Skill[]` | Workflow skills submitted by agent and confirmed by user |
+| `relay.workflowSkillDismissed` | `boolean` | Dismissed flag for the skill install activation prompt |
+
+---
+
+## VS Code commands
+
+Registered in `package.json` under `contributes.commands` and wired in `src/extension.ts`.
+
+| Command ID | Title | Description |
+|---|---|---|
+| `relay.addBookmark` | Relay: Add Bookmark | Interactive prompt to add a bookmark |
+| `relay.addTab` | Relay: Add Tab | Interactive prompt to create a tab |
+| `relay.removeBookmark` | Relay: Remove Bookmark | QuickPick to remove a bookmark |
+| `relay.removeTab` | Relay: Remove Tab | QuickPick to remove a tab |
+| `relay.openPage` | Relay: Open Page | QuickPick to open a `.relay` page |
+| `relay.newPage` | Relay: New Page | Interactive prompt to create a new page |
+| `relay.setupAgents` | Relay: Setup Agents | Force-shows MCP setup prompt for all agents |
+| `relay.configureWorkflow` | Relay: Configure Workflow | Series of input boxes to set `WorkflowConfig` fields manually |
+| `relay.installWorkflowSkills` | Relay: Install Workflow Skills | Shows skill install picker for all stored skills × detected agents |
 
 ---
 
@@ -200,7 +256,7 @@ Always go through `PageReader`. It enforces the `relay-pages/` directory, parses
 - **Capabilities:** `{ tools: {}, resources: {} }`
 - **HTTP status:** always `200` for valid JSON-RPC. Errors arrive as `{ error: { code, message } }` in the response body.
 
-**11 tools:**
+**16 tools:**
 
 | Tool | R/W | Required args |
 |------|-----|---------------|
@@ -215,12 +271,19 @@ Always go through `PageReader`. It enforces the `relay-pages/` directory, parses
 | `create_page` | W | `filename`, `title`, `content` |
 | `update_page` | W | `filename` (+ any fields) |
 | `delete_page` | W | `filename` |
+| `get_workflow_config` | R | — |
+| `submit_workflow_config` | W | `config` (partial WorkflowConfig) |
+| `add_skill` | W | `name`, `content` (`description` optional) |
+| `list_skills` | R | — |
+| `remove_skill` | W | `name` |
 
-**2 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
+**3 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
 - `relay://guide/quick-start`
 - `relay://guide/relay-page-format`
+- `relay://guide/skill-format`
 
-Page tools return an error when VS Code has no workspace folder open.
+Page tools return an error when VS Code has no workspace folder open.  
+`submit_workflow_config` and `add_skill` queue for user confirmation and return `{ status: "submitted" }` immediately — they do not block.
 
 ---
 
@@ -237,12 +300,67 @@ npm run package   # create .vsix
 
 Tests run in Node via Jest. The `vscode` module is mocked at `src/__mocks__/vscode.ts` — no real VS Code instance is needed.
 
-Current test count: **30 total** (13 dataService + 7 faviconService + 10 server).
+Current test count: **127 total**
+
+| File | Count |
+|------|-------|
+| `services/dataService/dataService.test.ts` | 13 |
+| `services/faviconService/faviconService.test.ts` | 7 |
+| `services/workflowConfigService/workflowConfigService.test.ts` | 6 |
+| `services/skillRegistry/skillRegistry.test.ts` | 15 |
+| `mcp/server/server.test.ts` | 19 |
+| `agents/jsonFileAdapter/jsonFileAdapter.test.ts` | 14 |
+| `agents/adapters/claudeCode/claudeCode.test.ts` | 10 |
+| `agents/adapters/cursor/cursor.test.ts` | 9 |
+| `agents/adapters/codex/codex.test.ts` | 11 |
+| `agents/adapters/gemini/gemini.test.ts` | 8 |
+| `agents/registry/registry.test.ts` | 15 |
 
 Rules:
-- All 30 tests must pass before any PR can merge.
-- Every new MCP tool needs at minimum a round-trip test in `server.test.ts`.
+- All tests must pass before any PR can merge.
+- Every new MCP tool needs at minimum a round-trip test in `server/server.test.ts`.
+- Every new service needs its own test file in its subfolder.
 - Pass `null` as the `pageReader` argument to `new McpServer(...)` in tests that don't exercise page tools.
+- Pass `null` as `workflowConfigService` and `skillRegistry` arguments in tests that don't exercise those tools.
+
+---
+
+## Skill format
+
+Skills submitted via `add_skill` must use YAML frontmatter + markdown body:
+
+```markdown
+---
+name: dev-flow
+description: >-
+  One-line description used by agents to decide when to invoke.
+triggers:
+  - starting a new task
+  - reviewing a PR
+agents: all
+version: 1
+---
+
+Skill body — plain markdown, works across all agents.
+Call `get_workflow_config` at startup to read team-specific values.
+```
+
+**Required:** `name` (kebab-case), `description`  
+**Optional:** `triggers`, `agents` (`all` or `[claude-code, cursor, gemini, codex]`), `version` (integer, default 1, auto-incremented on resubmit)
+
+Content rules:
+- No hardcoded values — channel names, usernames, org names always come from `get_workflow_config`
+- Reference MCP tools by name only — each agent knows how to call them
+- No agent-specific syntax in the shared body — put agent-specific content in a separate skill with `agents: [agent-id]`
+
+Install paths per agent (managed by `SkillRegistry` via `AgentAdapter.installSkill`):
+
+| Agent | Path | Format |
+|---|---|---|
+| Claude Code | `~/.claude/skills/<name>.md` | markdown as-is |
+| Cursor | `.cursor/rules/<name>.mdc` (workspace) | wrapped in Cursor rule format |
+| Gemini | `~/.gemini/skills/<name>.md` | markdown as-is |
+| Codex | workspace `AGENTS.md` | named section appended |
 
 ---
 

@@ -63,6 +63,18 @@
       {
         "command": "relay.newPage",
         "title": "Relay: New Page"
+      },
+      {
+        "command": "relay.setupAgents",
+        "title": "Relay: Set Up Agent MCP Integration"
+      },
+      {
+        "command": "relay.configureWorkflow",
+        "title": "Relay: Configure Workflow"
+      },
+      {
+        "command": "relay.installWorkflowSkills",
+        "title": "Relay: Install Workflow Skills"
       }
     ],
     "configuration": {
