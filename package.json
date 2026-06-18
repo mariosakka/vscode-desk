@@ -2,7 +2,7 @@
   "name": "vscode-relay",
   "displayName": "Relay",
   "description": "Your developer relay — tabbed bookmarks with an embedded MCP server",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "publisher": "mmswflow",
   "icon": "media/relay.png",
   "engines": {
