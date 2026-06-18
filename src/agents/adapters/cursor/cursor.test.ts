@@ -71,4 +71,9 @@ describe('skill methods', () => {
     await new CursorAdapter('/ws').uninstallSkill('dev-flow');
     expect(fs.unlinkSync).toHaveBeenCalledWith(expect.stringContaining('dev-flow.mdc'));
   });
+
+  it('uninstallSkill does nothing when no workspace', async () => {
+    await new CursorAdapter(null).uninstallSkill('dev-flow');
+    expect(fs.unlinkSync).not.toHaveBeenCalled();
+  });
 });

@@ -88,4 +88,9 @@ describe('skill methods', () => {
     expect(written).not.toContain('## Skill: dev-flow');
     expect(written).toContain('## Skill: other');
   });
+
+  it('uninstallSkill does nothing when no workspace', async () => {
+    await new CodexAdapter(null).uninstallSkill('dev-flow');
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
 });

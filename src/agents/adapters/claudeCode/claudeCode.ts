@@ -27,7 +27,7 @@ export class ClaudeCodeAdapter extends JsonFileAdapter {
   }
 
   get skillInstallPath(): string {
-    return path.join(os.homedir(), '.claude', 'skills');
+    return path.join(this.configDir, 'skills');
   }
 
   async isSkillInstalled(skillName: string): Promise<boolean> {

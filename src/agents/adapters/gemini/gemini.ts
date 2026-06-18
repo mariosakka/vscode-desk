@@ -15,7 +15,7 @@ export class GeminiAdapter extends JsonFileAdapter {
   }
 
   get skillInstallPath(): string {
-    return path.join(os.homedir(), '.gemini', 'skills');
+    return path.join(this.configDir, 'skills');
   }
 
   async isSkillInstalled(skillName: string): Promise<boolean> {
