@@ -1,0 +1,63 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open VS Code with Relay installed
+        2. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of Relay is affected?
+      options:
+        - Sidebar / bookmarks
+        - Page viewer (.relay files)
+        - MCP server
+        - Other / unsure
+    validations:
+      required: true
+
+  - type: input
+    id: relay-version
+    attributes:
+      label: Relay version
+      placeholder: "e.g. 1.0.0 — found in Extensions panel"
+    validations:
+      required: true
+
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      placeholder: "e.g. 1.95.0 — Help → About"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [macOS, Windows, Linux]
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Logs, screenshots, or additional context.
