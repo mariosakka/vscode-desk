@@ -18,6 +18,12 @@ export const RESOURCES: McpResource[] = [
     description: 'The .relay XML file format, available CSS variables, and built-in callout classes for customStyles.',
     mimeType: 'text/markdown',
   },
+  {
+    uri: 'relay://guide/skill-format',
+    name: 'Relay Skill Format',
+    description: 'YAML frontmatter spec, content rules, and install paths for workflow skills submitted via add_skill.',
+    mimeType: 'text/markdown',
+  },
 ];
 
 export const RESOURCE_CONTENT: Record<string, string> = {
@@ -71,7 +77,7 @@ delete_page         → remove a page
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
 - **HTTP 200 always** — errors arrive as a JSON-RPC \`error\` object, not as HTTP 4xx/5xx.
 
-## All 11 tools
+## All 16 tools
 
 | Tool | R | W | Required args |
 |------|---|---|---------------|
@@ -86,6 +92,11 @@ delete_page         → remove a page
 | create_page | | ✓ | filename, title, content |
 | update_page | | ✓ | filename (+ any fields) |
 | delete_page | | ✓ | filename |
+| get_workflow_config | ✓ | | — |
+| submit_workflow_config | | ✓ | config |
+| list_skills | ✓ | | — |
+| add_skill | | ✓ | name, content |
+| remove_skill | | ✓ | name |
 `,
 
   'relay://guide/relay-page-format': `# Relay Page Format (.relay)
@@ -139,5 +150,43 @@ Use these in content without adding customStyles:
 <div class="callout warn">warning (yellow border)</div>
 <div class="callout danger">danger (red border)</div>
 \`\`\`
+`,
+
+  'relay://guide/skill-format': `# Relay Skill Format
+
+Skills submitted via \`add_skill\` use YAML frontmatter + a markdown body.
+
+## Frontmatter
+
+\`\`\`yaml
+---
+name: dev-flow
+description: >-
+  One-line description used by agents to decide when to invoke this skill.
+triggers:
+  - starting a new task
+  - reviewing a PR
+agents: all
+version: 1
+---
+\`\`\`
+
+**Required:** \`name\` (kebab-case, e.g. \`dev-flow\`), \`description\`
+**Optional:** \`triggers\`, \`agents\` (\`all\` or \`[claude-code, cursor, gemini, codex]\`), \`version\` (auto-incremented on resubmit)
+
+## Content rules
+
+- No hardcoded values — channel names, usernames, org names, and URLs always come from \`get_workflow_config\` at runtime
+- Reference MCP tools by name only — each agent calls them via its own client
+- No agent-specific syntax in the shared body — put agent-specific content in a separate skill with \`agents: [agent-id]\`
+
+## Install paths (managed automatically)
+
+| Agent | Path | Format |
+|---|---|---|
+| Claude Code | \`~/.claude/skills/<name>.md\` | markdown as-is |
+| Cursor | \`.cursor/rules/<name>.mdc\` (workspace) | wrapped in Cursor rule format |
+| Gemini | \`~/.gemini/skills/<name>.md\` | markdown as-is |
+| Codex | workspace \`AGENTS.md\` | named section appended |
 `,
 };

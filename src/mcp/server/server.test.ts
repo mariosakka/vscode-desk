@@ -14,6 +14,29 @@ const mockProvider = { refresh: jest.fn() };
 
 const mockFaviconService = { getIcon: jest.fn().mockResolvedValue('data:image/png;base64,TEST') };
 
+const mockWorkflowConfigService = {
+  get: jest.fn(),
+  setPending: jest.fn(),
+  getPending: jest.fn(),
+  confirmPending: jest.fn(),
+  clearPending: jest.fn(),
+};
+
+const mockSkillRegistry = {
+  list: jest.fn().mockReturnValue([]),
+  getAll: jest.fn().mockReturnValue([]),
+  validateFrontmatter: jest.fn().mockReturnValue({ valid: true }),
+  setPending: jest.fn(),
+  getPending: jest.fn(),
+  clearPending: jest.fn(),
+  confirmPending: jest.fn(),
+  remove: jest.fn().mockResolvedValue(undefined),
+  installAll: jest.fn(),
+};
+
+const onConfigSubmitted = jest.fn();
+const onSkillSubmitted = jest.fn();
+
 function postMcp(port: number, body: object): Promise<any> {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
@@ -56,9 +79,9 @@ describe('McpServer', () => {
     expect(res.result.protocolVersion).toBeDefined();
   });
 
-  it('lists 11 tools', async () => {
+  it('lists 16 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 2 });
-    expect(res.result.tools).toHaveLength(11);
+    expect(res.result.tools).toHaveLength(16);
     const names = res.result.tools.map((t: any) => t.name);
     expect(names).toContain('list_tabs');
     expect(names).toContain('list_bookmarks');
@@ -73,9 +96,9 @@ describe('McpServer', () => {
     expect(names).toContain('delete_page');
   });
 
-  it('lists 2 resources', async () => {
+  it('lists 3 resources', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 3 });
-    expect(res.result.resources).toHaveLength(2);
+    expect(res.result.resources).toHaveLength(3);
     const uris = res.result.resources.map((r: any) => r.uri);
     expect(uris).toContain('relay://guide/quick-start');
     expect(uris).toContain('relay://guide/relay-page-format');
@@ -155,5 +178,115 @@ describe('McpServer', () => {
       done();
     });
     req.end();
+  });
+});
+
+describe('McpServer — workflow tools', () => {
+  let server: McpServer;
+  const PORT = 13336;
+
+  beforeEach(done => {
+    jest.clearAllMocks();
+    // Reset mock return values to defaults
+    mockSkillRegistry.list.mockReturnValue([]);
+    mockSkillRegistry.validateFrontmatter.mockReturnValue({ valid: true });
+    server = new McpServer(
+      mockDataService as any,
+      mockProvider as any,
+      mockFaviconService as any,
+      null,
+      mockWorkflowConfigService as any,
+      mockSkillRegistry as any,
+      [],
+      onConfigSubmitted,
+      onSkillSubmitted,
+    );
+    server.start(PORT);
+    setTimeout(done, 30);
+  });
+
+  afterEach(done => {
+    server.stop();
+    setTimeout(done, 30);
+  });
+
+  it('lists 16 tools', async () => {
+    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 });
+    expect(res.result.tools).toHaveLength(16);
+  });
+
+  it('lists 3 resources', async () => {
+    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 2 });
+    expect(res.result.resources).toHaveLength(3);
+    const uris = res.result.resources.map((r: any) => r.uri);
+    expect(uris).toContain('relay://guide/skill-format');
+  });
+
+  it('get_workflow_config returns config when set', async () => {
+    mockWorkflowConfigService.get.mockReturnValue({ language: 'en', githubOrg: 'acme' });
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_workflow_config', arguments: {} }, id: 3,
+    });
+    const config = JSON.parse(res.result.content[0].text);
+    expect(config.language).toBe('en');
+  });
+
+  it('get_workflow_config returns error when not configured', async () => {
+    mockWorkflowConfigService.get.mockReturnValue(undefined);
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_workflow_config', arguments: {} }, id: 4,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toContain('not configured');
+  });
+
+  it('submit_workflow_config calls setPending and fires callback', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'submit_workflow_config', arguments: { config: { language: 'ro' } } }, id: 5,
+    });
+    expect(mockWorkflowConfigService.setPending).toHaveBeenCalledWith({ language: 'ro' });
+    expect(onConfigSubmitted).toHaveBeenCalled();
+    expect(JSON.parse(res.result.content[0].text).status).toBe('submitted');
+  });
+
+  it('list_skills returns empty array initially', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'list_skills', arguments: {} }, id: 6,
+    });
+    expect(JSON.parse(res.result.content[0].text)).toEqual([]);
+  });
+
+  it('add_skill validates frontmatter before queuing', async () => {
+    mockSkillRegistry.validateFrontmatter.mockReturnValue({ valid: false, error: 'Missing name' });
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'add_skill', arguments: { name: 'x', content: 'no frontmatter' } }, id: 7,
+    });
+    expect(res.error).toBeDefined();
+    expect(onSkillSubmitted).not.toHaveBeenCalled();
+  });
+
+  it('add_skill calls setPending and fires callback when valid', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'add_skill', arguments: { name: 'dev-flow', content: '---\nname: dev-flow\ndescription: d\n---\nbody' } },
+      id: 8,
+    });
+    expect(mockSkillRegistry.setPending).toHaveBeenCalled();
+    expect(onSkillSubmitted).toHaveBeenCalled();
+    expect(JSON.parse(res.result.content[0].text).status).toBe('submitted');
+  });
+
+  it('remove_skill delegates to skillRegistry.remove', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'remove_skill', arguments: { name: 'dev-flow' } }, id: 9,
+    });
+    expect(mockSkillRegistry.remove).toHaveBeenCalledWith('dev-flow', []);
+    expect(JSON.parse(res.result.content[0].text).removed).toBe('dev-flow');
   });
 });

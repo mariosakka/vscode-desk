@@ -3,6 +3,9 @@ import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
 import { PortalViewProvider } from '../../portalViewProvider';
 import { PageReader } from '../../pages/pageReader';
+import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
+import { SkillRegistry } from '../../services/skillRegistry/skillRegistry';
+import { AgentAdapter } from '../../agents/agentAdapter';
 import { TOOLS } from '../toolSchemas';
 import { RESOURCES, RESOURCE_CONTENT } from '../resources';
 
@@ -14,6 +17,11 @@ export class McpServer {
     private readonly provider: PortalViewProvider,
     private readonly faviconService: FaviconService,
     private readonly pageReader: PageReader | null,
+    private readonly workflowConfigService: WorkflowConfigService | null = null,
+    private readonly skillRegistry: SkillRegistry | null = null,
+    private readonly adapters: AgentAdapter[] = [],
+    private readonly onConfigSubmitted: (() => void) | null = null,
+    private readonly onSkillSubmitted: (() => void) | null = null,
   ) {}
 
   start(port: number): void {
@@ -178,6 +186,40 @@ export class McpServer {
         if (!this.pageReader) throw new Error('No workspace open — pages unavailable');
         this.pageReader.delete(args.filename);
         return { content: [{ type: 'text', text: `deleted ${args.filename}` }] };
+      }
+
+      // ── Workflow tools ────────────────────────────────────────────────────
+      case 'get_workflow_config': {
+        const config = this.workflowConfigService?.get();
+        if (!config) throw new Error('Workflow config not configured');
+        return { content: [{ type: 'text', text: JSON.stringify(config) }] };
+      }
+
+      case 'submit_workflow_config': {
+        if (!this.workflowConfigService) throw new Error('WorkflowConfigService not available');
+        this.workflowConfigService.setPending(args.config);
+        this.onConfigSubmitted?.();
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'submitted' }) }] };
+      }
+
+      case 'list_skills': {
+        if (!this.skillRegistry) throw new Error('SkillRegistry not available');
+        return { content: [{ type: 'text', text: JSON.stringify(this.skillRegistry.list()) }] };
+      }
+
+      case 'add_skill': {
+        if (!this.skillRegistry) throw new Error('SkillRegistry not available');
+        const validation = this.skillRegistry.validateFrontmatter(args.content);
+        if (!validation.valid) throw new Error(validation.error);
+        this.skillRegistry.setPending(args.name, args.content, args.description);
+        this.onSkillSubmitted?.();
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'submitted' }) }] };
+      }
+
+      case 'remove_skill': {
+        if (!this.skillRegistry) throw new Error('SkillRegistry not available');
+        await this.skillRegistry.remove(args.name, this.adapters);
+        return { content: [{ type: 'text', text: JSON.stringify({ removed: args.name }) }] };
       }
 
       default:
