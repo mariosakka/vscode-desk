@@ -1,6 +1,8 @@
 # Relay for VS Code
 
 [![CI](https://github.com/mariosakka/vscode-relay/actions/workflows/publish.yml/badge.svg)](https://github.com/mariosakka/vscode-relay/actions/workflows/publish.yml)
+[![VS Marketplace](https://vsmarketplacebadges.dev/version/mmswflow.vscode-relay.svg)](https://marketplace.visualstudio.com/items?itemName=mmswflow.vscode-relay)
+[![Installs](https://vsmarketplacebadges.dev/installs/mmswflow.vscode-relay.svg)](https://marketplace.visualstudio.com/items?itemName=mmswflow.vscode-relay)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A VS Code extension with three integrated features:
