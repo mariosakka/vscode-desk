@@ -8,6 +8,7 @@ const vscode = {
   window: {
     showInputBox: jest.fn(),
     showQuickPick: jest.fn(),
+    showInformationMessage: jest.fn(),
     showErrorMessage: jest.fn(),
     registerWebviewViewProvider: jest.fn(),
   },
