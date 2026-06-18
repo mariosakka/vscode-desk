@@ -166,8 +166,8 @@ The variables are defined at the top of both `index.css` files and map to `--vsc
 ### Adding a new MCP tool
 Three files always change together:
 1. `src/mcp/toolSchemas.ts` — add the JSON schema to the `TOOLS` array.
-2. `src/mcp/server.ts` — add a `case` for it in `McpServer.callTool()`.
-3. `src/mcp/server.test.ts` — add at minimum one round-trip test.
+2. `src/mcp/server/server.ts` — add a `case` for it in `McpServer.callTool()`.
+3. `src/mcp/server/server.test.ts` — add at minimum one round-trip test.
 
 ### Adding a new VS Code command
 Three steps:
@@ -203,6 +203,24 @@ Always go through `PageReader`. It enforces the `relay-pages/` directory, parses
 | `relay.workflowConfig` | `WorkflowConfig` | Team workflow config submitted by agent and confirmed by user |
 | `relay.skills` | `Skill[]` | Workflow skills submitted by agent and confirmed by user |
 | `relay.workflowSkillDismissed` | `boolean` | Dismissed flag for the skill install activation prompt |
+
+---
+
+## VS Code commands
+
+Registered in `package.json` under `contributes.commands` and wired in `src/extension.ts`.
+
+| Command ID | Title | Description |
+|---|---|---|
+| `relay.addBookmark` | Relay: Add Bookmark | Interactive prompt to add a bookmark |
+| `relay.addTab` | Relay: Add Tab | Interactive prompt to create a tab |
+| `relay.removeBookmark` | Relay: Remove Bookmark | QuickPick to remove a bookmark |
+| `relay.removeTab` | Relay: Remove Tab | QuickPick to remove a tab |
+| `relay.openPage` | Relay: Open Page | QuickPick to open a `.relay` page |
+| `relay.newPage` | Relay: New Page | Interactive prompt to create a new page |
+| `relay.setupAgents` | Relay: Setup Agents | Force-shows MCP setup prompt for all agents |
+| `relay.configureWorkflow` | Relay: Configure Workflow | Series of input boxes to set `WorkflowConfig` fields manually |
+| `relay.installWorkflowSkills` | Relay: Install Workflow Skills | Shows skill install picker for all stored skills × detected agents |
 
 ---
 
@@ -282,11 +300,25 @@ npm run package   # create .vsix
 
 Tests run in Node via Jest. The `vscode` module is mocked at `src/__mocks__/vscode.ts` — no real VS Code instance is needed.
 
-Current test count: **60 total** (13 dataService + 7 faviconService + 10 server + 10 jsonFileAdapter + 4 adapter tests + 10 registry).
+Current test count: **127 total**
+
+| File | Count |
+|------|-------|
+| `services/dataService/dataService.test.ts` | 13 |
+| `services/faviconService/faviconService.test.ts` | 7 |
+| `services/workflowConfigService/workflowConfigService.test.ts` | 6 |
+| `services/skillRegistry/skillRegistry.test.ts` | 15 |
+| `mcp/server/server.test.ts` | 19 |
+| `agents/jsonFileAdapter/jsonFileAdapter.test.ts` | 14 |
+| `agents/adapters/claudeCode/claudeCode.test.ts` | 10 |
+| `agents/adapters/cursor/cursor.test.ts` | 9 |
+| `agents/adapters/codex/codex.test.ts` | 11 |
+| `agents/adapters/gemini/gemini.test.ts` | 8 |
+| `agents/registry/registry.test.ts` | 15 |
 
 Rules:
 - All tests must pass before any PR can merge.
-- Every new MCP tool needs at minimum a round-trip test in `server.test.ts`.
+- Every new MCP tool needs at minimum a round-trip test in `server/server.test.ts`.
 - Every new service needs its own test file in its subfolder.
 - Pass `null` as the `pageReader` argument to `new McpServer(...)` in tests that don't exercise page tools.
 - Pass `null` as `workflowConfigService` and `skillRegistry` arguments in tests that don't exercise those tools.
