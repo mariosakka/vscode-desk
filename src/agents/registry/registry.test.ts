@@ -130,3 +130,60 @@ describe('AgentRegistry', () => {
     });
   });
 });
+
+const makeSkillRegistry = (skillCount: number) => ({
+  list: jest.fn().mockReturnValue(Array.from({ length: skillCount }, (_, i) => ({
+    name: `skill-${i}`, description: 'desc', agents: ['all'], version: 1, installedAt: 0,
+  }))),
+  getAll: jest.fn().mockReturnValue([]),
+  installAll: jest.fn().mockResolvedValue(undefined),
+});
+
+describe('AgentRegistry — showSkillInstallPrompt()', () => {
+  it('does nothing when dismissed flag is set', async () => {
+    mockContext.globalState.get.mockImplementation((key: string) =>
+      key === 'relay.workflowSkillDismissed' ? true : false,
+    );
+    const skillReg = makeSkillRegistry(1);
+    const registry = new AgentRegistry([makeAdapter(true, true)], mockContext, skillReg as any);
+    await registry.showSkillInstallPrompt();
+    expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when no skills are stored', async () => {
+    const skillReg = makeSkillRegistry(0);
+    const registry = new AgentRegistry([makeAdapter(true, true)], mockContext, skillReg as any);
+    await registry.showSkillInstallPrompt();
+    expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
+  });
+
+  it('shows prompt when skills exist and flag is not set', async () => {
+    (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
+    const skillReg = makeSkillRegistry(2);
+    const registry = new AgentRegistry([makeAdapter(true, true)], mockContext, skillReg as any);
+    await registry.showSkillInstallPrompt();
+    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+      'Relay has 2 workflow skill(s) ready. Install on detected agents?',
+      'Install',
+      'Not now',
+      "Don't ask again",
+    );
+  });
+
+  it('sets dismissed flag when user chooses "Don\'t ask again"', async () => {
+    (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue("Don't ask again");
+    const skillReg = makeSkillRegistry(1);
+    const registry = new AgentRegistry([makeAdapter(true, true)], mockContext, skillReg as any);
+    await registry.showSkillInstallPrompt();
+    expect(mockContext.globalState.update).toHaveBeenCalledWith('relay.workflowSkillDismissed', true);
+  });
+
+  it('calls installAll on skillRegistry when user clicks Install', async () => {
+    (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Install');
+    const skillReg = makeSkillRegistry(1);
+    const adapter = makeAdapter(true, true);
+    const registry = new AgentRegistry([adapter], mockContext, skillReg as any);
+    await registry.showSkillInstallPrompt();
+    expect(skillReg.installAll).toHaveBeenCalled();
+  });
+});
