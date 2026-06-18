@@ -3,4 +3,5 @@ out/
 package-lock.json
 *.vsix
 docs/superpowers/
-SPEC.md
+SPEC.mdplaywright-report
+test-results

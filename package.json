@@ -5,37 +5,65 @@
   "version": "0.0.1",
   "publisher": "mmswflow",
   "icon": "media/relay.png",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Other"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/mariosakka/vscode-relay.git"
   },
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
-      "activitybar": [{
-        "id": "relay",
-        "title": "Relay",
-        "icon": "media/icon.svg"
-      }]
+      "activitybar": [
+        {
+          "id": "relay",
+          "title": "Relay",
+          "icon": "media/icon.svg"
+        }
+      ]
     },
     "views": {
-      "relay": [{
-        "type": "webview",
-        "id": "relay.sidebar",
-        "name": "Relay"
-      }]
+      "relay": [
+        {
+          "type": "webview",
+          "id": "relay.sidebar",
+          "name": "Relay"
+        }
+      ]
     },
     "commands": [
-      { "command": "relay.addBookmark",    "title": "Relay: Add Bookmark" },
-      { "command": "relay.addTab",         "title": "Relay: Add Tab" },
-      { "command": "relay.removeBookmark", "title": "Relay: Remove Bookmark" },
-      { "command": "relay.removeTab",      "title": "Relay: Remove Tab" },
-      { "command": "relay.openPage",       "title": "Relay: Open Page" },
-      { "command": "relay.newPage",        "title": "Relay: New Page" }
+      {
+        "command": "relay.addBookmark",
+        "title": "Relay: Add Bookmark"
+      },
+      {
+        "command": "relay.addTab",
+        "title": "Relay: Add Tab"
+      },
+      {
+        "command": "relay.removeBookmark",
+        "title": "Relay: Remove Bookmark"
+      },
+      {
+        "command": "relay.removeTab",
+        "title": "Relay: Remove Tab"
+      },
+      {
+        "command": "relay.openPage",
+        "title": "Relay: Open Page"
+      },
+      {
+        "command": "relay.newPage",
+        "title": "Relay: New Page"
+      }
     ],
     "configuration": {
       "title": "Relay",
@@ -53,13 +81,16 @@
     "compile": "webpack --mode production",
     "watch": "webpack --mode development --watch",
     "test": "jest",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium",
     "package": "vsce package"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "@types/jest": "^29.5.0",
-    "@vscode/vsce": "^3.0.0",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
     "copy-webpack-plugin": "^12.0.0",
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0",

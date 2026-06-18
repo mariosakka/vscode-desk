@@ -24,8 +24,17 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tests
+      - name: Run unit tests (Jest)
         run: npm test
+
+      - name: Build webview assets (required for Playwright)
+        run: npm run compile
+
+      - name: Install Playwright browser
+        run: npm run test:e2e:install
+
+      - name: Run e2e tests (Playwright)
+        run: npm run test:e2e
 
   # ── Runs only when a version tag is pushed (e.g. v0.1.0) ──────────────────
   publish:
