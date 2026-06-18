@@ -35,7 +35,7 @@ export class CodexAdapter extends JsonFileAdapter {
       if (existing.includes(`## Skill: ${skillName}`)) {
         const escaped = skillName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const updated = existing.replace(
-          new RegExp(`(## Skill: ${escaped})([\\s\\S]*?)(?=\\n## |$)`),
+          new RegExp(`(## Skill: ${escaped})([\\s\\S]*?)(?=\\n## Skill: |\\n*$)`),
           `$1\n\n${content}\n`,
         );
         fs.writeFileSync(file, updated, 'utf-8');
@@ -55,7 +55,7 @@ export class CodexAdapter extends JsonFileAdapter {
     const content = fs.readFileSync(file, 'utf-8');
     const escaped = skillName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const updated = content.replace(
-      new RegExp(`\\n## Skill: ${escaped}[\\s\\S]*?(?=\\n## |$)`),
+      new RegExp(`\\n## Skill: ${escaped}[\\s\\S]*?(?=\\n## Skill: |\\n*$)`),
       '',
     );
     if (updated !== content) fs.writeFileSync(file, updated, 'utf-8');

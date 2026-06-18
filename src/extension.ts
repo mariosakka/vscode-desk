@@ -231,6 +231,8 @@ async function showConfigConfirmPrompt(
     PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.relay');
     const confirm = await vscode.window.showInformationMessage('Save workflow config?', 'Save');
     if (confirm !== 'Save') { svc.clearPending(); return; }
+  } else if (action === 'Review first') {
+    // No workspace open — skip the page review, proceed directly to save
   } else if (action !== 'Save') {
     svc.clearPending();
     return;
@@ -298,6 +300,25 @@ async function cmdConfigureWorkflow(svc: WorkflowConfigService): Promise<void> {
 }
 
 function extractFrontmatterDescription(content: string): string | undefined {
-  const match = content.match(/^description:\s*(.+)$/m);
-  return match?.[1]?.replace(/^>-\s*/, '').trim();
+  const lines = content.split('\n');
+  let inFrontmatter = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i] === '---') {
+      if (!inFrontmatter) { inFrontmatter = true; continue; }
+      break;
+    }
+    if (!inFrontmatter) continue;
+    const match = lines[i].match(/^description:\s*(.*)$/);
+    if (!match) continue;
+    const rawValue = match[1].trim();
+    if (rawValue === '>-') {
+      const parts: string[] = [];
+      while (i + 1 < lines.length && /^\s+/.test(lines[i + 1])) {
+        parts.push(lines[++i].trim());
+      }
+      return parts.join(' ') || undefined;
+    }
+    return rawValue || undefined;
+  }
+  return undefined;
 }
