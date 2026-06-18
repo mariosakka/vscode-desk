@@ -1,10 +1,10 @@
 import * as http from 'http';
-import { DataService } from '../services/dataService';
-import { FaviconService } from '../services/faviconService';
-import { PortalViewProvider } from '../portalViewProvider';
-import { PageReader } from '../pages/pageReader';
-import { TOOLS } from './toolSchemas';
-import { RESOURCES, RESOURCE_CONTENT } from './resources';
+import { DataService } from '../../services/dataService/dataService';
+import { FaviconService } from '../../services/faviconService/faviconService';
+import { PortalViewProvider } from '../../portalViewProvider';
+import { PageReader } from '../../pages/pageReader';
+import { TOOLS } from '../toolSchemas';
+import { RESOURCES, RESOURCE_CONTENT } from '../resources';
 
 export class McpServer {
   private server: http.Server | null = null;

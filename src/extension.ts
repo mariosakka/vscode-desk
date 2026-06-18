@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { DataService } from './services/dataService';
-import { FaviconService } from './services/faviconService';
-import { McpServer } from './mcp/server';
+import { DataService } from './services/dataService/dataService';
+import { FaviconService } from './services/faviconService/faviconService';
+import { McpServer } from './mcp/server/server';
 import { PortalViewProvider } from './portalViewProvider';
 import { PageReader } from './pages/pageReader';
 import { PageViewPanel } from './pages/pageViewPanel';
