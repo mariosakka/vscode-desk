@@ -8,6 +8,7 @@ jest.mock('fs', () => ({
   readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
   mkdirSync: jest.fn(),
+  unlinkSync: jest.fn(),
 }));
 jest.mock('child_process', () => ({ execSync: jest.fn() }));
 
@@ -53,5 +54,47 @@ describe('ClaudeCodeAdapter', () => {
     );
     const written = JSON.parse((fs.writeFileSync as jest.Mock).mock.calls[0][1] as string);
     expect(written.mcpServers['vscode-relay']).toEqual({ type: 'http', url: 'http://127.0.0.1:3333/mcp' });
+  });
+});
+
+describe('skill methods', () => {
+  it('skillInstallPath points to ~/.claude/skills/', () => {
+    const adapter = new ClaudeCodeAdapter();
+    expect(adapter.skillInstallPath).toContain('.claude');
+    expect(adapter.skillInstallPath).toContain('skills');
+  });
+
+  it('isSkillInstalled returns true when file exists', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    expect(await new ClaudeCodeAdapter().isSkillInstalled('dev-flow')).toBe(true);
+  });
+
+  it('isSkillInstalled returns false when file missing', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(false);
+    expect(await new ClaudeCodeAdapter().isSkillInstalled('dev-flow')).toBe(false);
+  });
+
+  it('installSkill writes <name>.md to skillInstallPath', async () => {
+    (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
+    (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
+    await new ClaudeCodeAdapter().installSkill('dev-flow', 'body content');
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      expect.stringContaining('dev-flow.md'),
+      'body content',
+      'utf-8',
+    );
+  });
+
+  it('uninstallSkill deletes the file when it exists', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.unlinkSync as jest.Mock).mockReturnValue(undefined);
+    await new ClaudeCodeAdapter().uninstallSkill('dev-flow');
+    expect(fs.unlinkSync).toHaveBeenCalledWith(expect.stringContaining('dev-flow.md'));
+  });
+
+  it('uninstallSkill does nothing when file missing', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(false);
+    await new ClaudeCodeAdapter().uninstallSkill('dev-flow');
+    expect(fs.unlinkSync).not.toHaveBeenCalled();
   });
 });

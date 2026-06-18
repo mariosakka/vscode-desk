@@ -7,6 +7,7 @@ jest.mock('fs', () => ({
   readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
   mkdirSync: jest.fn(),
+  unlinkSync: jest.fn(),
 }));
 
 import { CursorAdapter } from './cursor';
@@ -28,5 +29,46 @@ describe('CursorAdapter', () => {
     const written = JSON.parse((fs.writeFileSync as jest.Mock).mock.calls[0][1] as string);
     expect(written.mcpServers['vscode-relay']).toEqual({ url: 'http://127.0.0.1:3333/mcp' });
     expect(written.mcpServers['vscode-relay'].type).toBeUndefined();
+  });
+});
+
+describe('skill methods', () => {
+  it('skillInstallPath is null when no workspace', () => {
+    expect(new CursorAdapter(null).skillInstallPath).toBeNull();
+  });
+
+  it('skillInstallPath includes .cursor/rules when workspace provided', () => {
+    const p = new CursorAdapter('/home/user/project').skillInstallPath;
+    expect(p).toContain('.cursor');
+    expect(p).toContain('rules');
+  });
+
+  it('isSkillInstalled returns false when no workspace', async () => {
+    expect(await new CursorAdapter(null).isSkillInstalled('dev-flow')).toBe(false);
+  });
+
+  it('installSkill writes <name>.mdc wrapped in Cursor rule format', async () => {
+    (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
+    (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
+    await new CursorAdapter('/ws').installSkill('dev-flow', 'body content');
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      expect.stringContaining('dev-flow.mdc'),
+      expect.stringContaining('body content'),
+      'utf-8',
+    );
+    const written = (fs.writeFileSync as jest.Mock).mock.calls[0][1] as string;
+    expect(written).toMatch(/^---\n/);
+  });
+
+  it('installSkill does nothing when no workspace', async () => {
+    await new CursorAdapter(null).installSkill('dev-flow', 'body');
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it('uninstallSkill deletes the .mdc file', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (fs.unlinkSync as jest.Mock).mockReturnValue(undefined);
+    await new CursorAdapter('/ws').uninstallSkill('dev-flow');
+    expect(fs.unlinkSync).toHaveBeenCalledWith(expect.stringContaining('dev-flow.mdc'));
   });
 });
