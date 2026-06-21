@@ -12,10 +12,13 @@ import * as http from 'node:http';
 
 interface Tab { id: string; name: string; bookmarks: Bookmark[] }
 interface Bookmark { id: string; title: string; url: string; icon: string; description: string }
+interface Skill { name: string; description: string; agents: string[]; version: number; installedAt: number }
 
 function createTestMcpServer(): http.Server {
   let nextId = 1;
   const tabs: Tab[] = [];
+  let workflowConfig: Record<string, unknown> | null = null;
+  const skills: Skill[] = [];
 
   return http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -49,7 +52,8 @@ function createTestMcpServer(): http.Server {
       res.writeHead(200);
 
       try {
-        const result = dispatch(method, params, tabs, () => `id_${nextId++}`);
+        const result = dispatch(method, params, tabs, skills, () => `id_${nextId++}`,
+          () => workflowConfig, (c) => { workflowConfig = c; });
         res.end(JSON.stringify({ jsonrpc: '2.0', result, id }));
       } catch (err: any) {
         res.end(JSON.stringify({ jsonrpc: '2.0', error: { code: -32603, message: err.message }, id }));
@@ -58,7 +62,11 @@ function createTestMcpServer(): http.Server {
   });
 }
 
-function dispatch(method: string, params: any, tabs: Tab[], nextId: () => string): any {
+function dispatch(
+  method: string, params: any, tabs: Tab[], skills: Skill[], nextId: () => string,
+  getConfig: () => Record<string, unknown> | null,
+  setConfig: (c: Record<string, unknown>) => void,
+): any {
   const text = (v: unknown) => ({ content: [{ type: 'text', text: JSON.stringify(v) }] });
 
   if (method === 'initialize') {
@@ -73,19 +81,25 @@ function dispatch(method: string, params: any, tabs: Tab[], nextId: () => string
       'list_tabs','list_bookmarks','add_bookmark','remove_bookmark',
       'create_tab','remove_tab','update_bookmark',
       'list_pages','create_page','update_page','delete_page',
+      'get_workflow_config','submit_workflow_config',
+      'list_skills','add_skill','remove_skill',
     ].map(name => ({ name }))};
   }
   if (method === 'resources/list') {
     return { resources: [
-      { uri: 'relay://guide/quick-start',      name: 'Relay Agent Quick-Start',     mimeType: 'text/markdown' },
-      { uri: 'relay://guide/relay-page-format', name: 'Relay Page Format (.relay)', mimeType: 'text/markdown' },
+      { uri: 'relay://guide/quick-start',       name: 'Relay Agent Quick-Start',     mimeType: 'text/markdown' },
+      { uri: 'relay://guide/relay-page-format',  name: 'Relay Page Format (.relay)',  mimeType: 'text/markdown' },
+      { uri: 'relay://guide/skill-format',       name: 'Relay Skill Format',          mimeType: 'text/markdown' },
     ]};
   }
   if (method === 'resources/read') {
-    const content = params.uri === 'relay://guide/quick-start'
-      ? '# Relay Agent Quick-Start\nlist_tabs to get started.'
-      : '# Relay Page Format (.relay)\n<relay-page title="...">...';
-    return { contents: [{ uri: params.uri, mimeType: 'text/markdown', text: content }] };
+    const content: Record<string, string> = {
+      'relay://guide/quick-start': '# Relay Agent Quick-Start\nlist_tabs to get started.',
+      'relay://guide/relay-page-format': '# Relay Page Format (.relay)\n<relay-page title="...">...',
+      'relay://guide/skill-format': '# Relay Skill Format\nname and description required.',
+    };
+    if (!content[params.uri]) throw new Error(`Unknown resource: ${params.uri}`);
+    return { contents: [{ uri: params.uri, mimeType: 'text/markdown', text: content[params.uri] }] };
   }
   if (method === 'tools/call') {
     const { name, arguments: args = {} } = params;
@@ -129,6 +143,41 @@ function dispatch(method: string, params: any, tabs: Tab[], nextId: () => string
         Object.assign(bm, args.fields ?? {});
         return text(bm);
       }
+
+      // ── Workflow tools ──────────────────────────────────────────────────────
+      case 'get_workflow_config': {
+        const cfg = getConfig();
+        if (!cfg) throw new Error('Workflow config not configured');
+        return text(cfg);
+      }
+      case 'submit_workflow_config': {
+        const existing = getConfig() ?? {};
+        setConfig({ ...existing, ...args.config });
+        return text({ status: 'submitted' });
+      }
+      case 'list_skills':
+        return text(skills.map(({ name: n, description, agents, version, installedAt }) =>
+          ({ name: n, description, agents, version, installedAt })));
+      case 'add_skill': {
+        if (!args.content?.includes('name:') || !args.content?.includes('description:')) {
+          throw new Error('Missing required frontmatter: name and description');
+        }
+        const existing = skills.find(s => s.name === args.name);
+        if (existing) {
+          existing.version += 1;
+          existing.content = args.content;
+        } else {
+          skills.push({ name: args.name, description: args.description ?? '', agents: ['all'], version: 1, installedAt: Date.now() });
+        }
+        return text({ status: 'submitted' });
+      }
+      case 'remove_skill': {
+        const i = skills.findIndex(s => s.name === args.name);
+        if (i === -1) throw new Error(`Skill not found: ${args.name}`);
+        skills.splice(i, 1);
+        return text({ removed: args.name });
+      }
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -176,21 +225,24 @@ test('initialize returns capabilities with tools and resources', async ({ reques
   expect(res.result.serverInfo.name).toBe('vscode-relay');
 });
 
-test('tools/list returns 11 tools', async ({ request }) => {
+test('tools/list returns 16 tools', async ({ request }) => {
   const res = await rpc(request, 'tools/list');
-  expect(res.result.tools).toHaveLength(11);
+  expect(res.result.tools).toHaveLength(16);
   const names = res.result.tools.map((t: any) => t.name);
   expect(names).toContain('list_tabs');
   expect(names).toContain('add_bookmark');
   expect(names).toContain('create_page');
+  expect(names).toContain('get_workflow_config');
+  expect(names).toContain('add_skill');
 });
 
-test('resources/list returns 2 resources', async ({ request }) => {
+test('resources/list returns 3 resources including skill-format', async ({ request }) => {
   const res = await rpc(request, 'resources/list');
-  expect(res.result.resources).toHaveLength(2);
+  expect(res.result.resources).toHaveLength(3);
   const uris = res.result.resources.map((r: any) => r.uri);
   expect(uris).toContain('relay://guide/quick-start');
   expect(uris).toContain('relay://guide/relay-page-format');
+  expect(uris).toContain('relay://guide/skill-format');
 });
 
 test('resources/read returns markdown', async ({ request }) => {
@@ -216,6 +268,89 @@ test('create_tab → add_bookmark → list_bookmarks round-trip', async ({ reque
   const bookmarks = JSON.parse(listRes.result.content[0].text);
   expect(bookmarks).toHaveLength(1);
   expect(bookmarks[0].url).toBe('https://github.com');
+});
+
+test('resources/read returns skill-format markdown', async ({ request }) => {
+  const res = await rpc(request, 'resources/read', { uri: 'relay://guide/skill-format' });
+  expect(res.result.contents[0].mimeType).toBe('text/markdown');
+  expect(res.result.contents[0].text).toContain('name');
+});
+
+test('get_workflow_config returns error when not configured', async ({ request }) => {
+  const res = await rpc(request, 'tools/call', { name: 'get_workflow_config', arguments: {} });
+  expect(res.error).toBeDefined();
+  expect(res.error.message).toContain('not configured');
+});
+
+test('submit_workflow_config → get_workflow_config round-trip', async ({ request }) => {
+  const submitRes = await rpc(request, 'tools/call', {
+    name: 'submit_workflow_config',
+    arguments: { config: { language: 'en', githubOrg: 'acme' } },
+  });
+  expect(JSON.parse(submitRes.result.content[0].text).status).toBe('submitted');
+
+  const getRes = await rpc(request, 'tools/call', { name: 'get_workflow_config', arguments: {} });
+  const cfg = JSON.parse(getRes.result.content[0].text);
+  expect(cfg.language).toBe('en');
+  expect(cfg.githubOrg).toBe('acme');
+});
+
+test('submit_workflow_config merges into existing config', async ({ request }) => {
+  await rpc(request, 'tools/call', {
+    name: 'submit_workflow_config',
+    arguments: { config: { language: 'ro' } },
+  });
+  await rpc(request, 'tools/call', {
+    name: 'submit_workflow_config',
+    arguments: { config: { githubOrg: 'neworg' } },
+  });
+  const res = await rpc(request, 'tools/call', { name: 'get_workflow_config', arguments: {} });
+  const cfg = JSON.parse(res.result.content[0].text);
+  expect(cfg.githubOrg).toBe('neworg');
+});
+
+test('list_skills returns empty initially', async ({ request }) => {
+  const res = await rpc(request, 'tools/call', { name: 'list_skills', arguments: {} });
+  expect(JSON.parse(res.result.content[0].text)).toEqual([]);
+});
+
+test('add_skill → list_skills → remove_skill round-trip', async ({ request }) => {
+  const content = '---\nname: dev-flow\ndescription: Dev workflow skill\nagents: all\n---\nBody.';
+  const addRes = await rpc(request, 'tools/call', {
+    name: 'add_skill',
+    arguments: { name: 'dev-flow', content, description: 'Dev workflow skill' },
+  });
+  expect(JSON.parse(addRes.result.content[0].text).status).toBe('submitted');
+
+  const listRes = await rpc(request, 'tools/call', { name: 'list_skills', arguments: {} });
+  const skills = JSON.parse(listRes.result.content[0].text);
+  expect(skills).toHaveLength(1);
+  expect(skills[0].name).toBe('dev-flow');
+
+  const removeRes = await rpc(request, 'tools/call', {
+    name: 'remove_skill', arguments: { name: 'dev-flow' },
+  });
+  expect(JSON.parse(removeRes.result.content[0].text).removed).toBe('dev-flow');
+
+  const afterRemove = await rpc(request, 'tools/call', { name: 'list_skills', arguments: {} });
+  expect(JSON.parse(afterRemove.result.content[0].text)).toHaveLength(0);
+});
+
+test('add_skill rejects content missing frontmatter fields', async ({ request }) => {
+  const res = await rpc(request, 'tools/call', {
+    name: 'add_skill',
+    arguments: { name: 'bad', content: 'no frontmatter here' },
+  });
+  expect(res.error).toBeDefined();
+  expect(res.error.message).toContain('frontmatter');
+});
+
+test('remove_skill returns error for unknown skill', async ({ request }) => {
+  const res = await rpc(request, 'tools/call', {
+    name: 'remove_skill', arguments: { name: 'nonexistent' },
+  });
+  expect(res.error).toBeDefined();
+  expect(res.error.message).toContain('not found');
 });
 
 test('error for unknown tool arrives as JSON-RPC error (HTTP 200)', async ({ request }) => {
