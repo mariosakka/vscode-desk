@@ -56,6 +56,16 @@ update_page         → revise title, body, or per-page styles
 delete_page         → remove a page
 ```
 
+For workflow config and skills:
+
+```
+get_workflow_config    → read team config (Slack channels, GitHub org, language, PR account)
+submit_workflow_config → propose a config update (user confirms in VS Code before it saves)
+list_skills            → see installed workflow skills
+add_skill              → submit a new skill for user review (user confirms before install)
+remove_skill           → remove a skill and uninstall from all agent paths
+```
+
 ## Minimal example — add one bookmark
 
 ```json
@@ -104,9 +114,10 @@ or by adding a bookmark with `url: "relay-page:auth-flow.relay"`.
 - **Favicon is free** — omit `icon` in `add_bookmark` and Relay fetches and caches it automatically (30-day TTL).
 - **Custom styles are scoped** — CSS in `customStyles` only applies inside that page; use `var(--accent)`, `var(--accent2)`, `var(--text)`, `var(--muted)` to stay on-theme.
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
+- **Config and skill writes are non-blocking** — `submit_workflow_config` and `add_skill` return `{ "status": "submitted" }` immediately; the user confirms in VS Code before anything is persisted or installed.
 - **HTTP 200 always** — errors come back as a JSON-RPC `error` object, not as HTTP 4xx/5xx.
 
-## All 11 tools at a glance
+## All 16 tools at a glance
 
 | Tool | Reads | Writes | Required args |
 |------|-------|--------|---------------|
@@ -121,5 +132,10 @@ or by adding a bookmark with `url: "relay-page:auth-flow.relay"`.
 | `create_page` | | ✓ | `filename`, `title`, `content` |
 | `update_page` | | ✓ | `filename` (+ any fields to change) |
 | `delete_page` | | ✓ | `filename` |
+| `get_workflow_config` | ✓ | | — |
+| `submit_workflow_config` | | ✓ | `config` (partial WorkflowConfig) |
+| `list_skills` | ✓ | | — |
+| `add_skill` | | ✓ | `name`, `content` |
+| `remove_skill` | | ✓ | `name` |
 
 For full parameter details see `agent-mcp-reference.md`.

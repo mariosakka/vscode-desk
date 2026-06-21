@@ -317,6 +317,160 @@ Deletes the `.relay` file. Cannot be undone.
 
 ---
 
+## Workflow tools
+
+These tools read and write team workflow config and skills. Config and skill submissions are **non-blocking** — they queue for user confirmation in VS Code and return immediately. The user must confirm before anything is persisted or installed.
+
+---
+
+### `get_workflow_config`
+
+Returns the current team workflow configuration.
+
+**Arguments:** none
+
+**Returns:**
+```json
+{
+  "slack": {
+    "status":  "#zdev-status",
+    "general": "#general",
+    "weekly":  "#weekly",
+    "pulse":   "#pulse",
+    "deploy":  "#deploy"
+  },
+  "language":  "en",
+  "githubOrg": "acme",
+  "prAccount": "acme-bot",
+  "identity": {
+    "githubUsername": "alice",
+    "currentRepo":    "acme/backend"
+  }
+}
+```
+
+**Error:** Returns `-32603` with `"Workflow config not configured"` if no config has been saved yet. Check for this and call `submit_workflow_config` to populate it on first run.
+
+---
+
+### `submit_workflow_config`
+
+Submits a partial config for user review. Fields are deep-merged with any existing config — you can submit only the fields you want to change. The user sees a VS Code prompt to review and confirm before anything is written.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `config` | object | **yes** | Partial `WorkflowConfig` — any subset of top-level or nested fields |
+
+**Returns:** `{ "status": "submitted" }`
+
+**Example — set Slack channels from a standards doc:**
+```json
+{
+  "config": {
+    "slack": { "status": "#eng-status", "deploy": "#deploys" },
+    "language": "en",
+    "githubOrg": "acme"
+  }
+}
+```
+
+**Example — update identity on first run:**
+```json
+{
+  "config": {
+    "identity": { "githubUsername": "alice", "currentRepo": "acme/backend" }
+  }
+}
+```
+
+---
+
+### `list_skills`
+
+Returns all stored workflow skills (metadata only — no content bodies).
+
+**Arguments:** none
+
+**Returns:**
+```json
+[
+  {
+    "name":        "dev-flow",
+    "description": "Full development lifecycle — issue pickup through PR merge",
+    "agents":      ["all"],
+    "version":     2,
+    "installedAt": 1718745600000
+  }
+]
+```
+
+---
+
+### `add_skill`
+
+Submits a workflow skill for user review. If a skill with the same `name` already exists, `version` is auto-incremented. The user sees a VS Code prompt showing the skill name and description; on confirm, Relay installs it on all detected agents in the appropriate format.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **yes** | Kebab-case skill name, e.g. `"dev-flow"` |
+| `content` | string | **yes** | Full skill markdown with YAML frontmatter (see skill format below) |
+| `description` | string | no | Overrides the frontmatter description in the VS Code confirmation prompt |
+
+**Returns:** `{ "status": "submitted" }`
+
+**Error:** Returns `-32603` if the frontmatter is missing `name` or `description`.
+
+**Skill format:**
+
+```markdown
+---
+name: dev-flow
+description: >-
+  Full development lifecycle — issue pickup, doing the work, PR flow.
+triggers:
+  - starting a new task
+  - reviewing a PR
+agents: all
+version: 1
+---
+
+At startup, call `get_workflow_config` to read team-specific values
+(Slack channels, GitHub org, language, PR account, GitHub username).
+
+<!-- skill body — plain markdown, works across all agents -->
+```
+
+**Required frontmatter:** `name` (kebab-case), `description`  
+**Optional:** `triggers`, `agents` (`all` or `[claude-code, cursor, gemini, codex]`), `version` (auto-incremented on resubmit — you can omit it)
+
+**Content rules:**
+- No hardcoded values — always read from `get_workflow_config` at runtime
+- No agent-specific syntax in the shared body — use a separate skill with `agents: [agent-id]`
+
+Read `relay://guide/skill-format` for the full spec.
+
+---
+
+### `remove_skill`
+
+Removes a skill from storage and uninstalls it from all agent paths (deletes the installed file, or removes the section for Codex-style AGENTS.md installs).
+
+**Arguments:**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `name` | string | **yes** |
+
+**Returns:** `{ "removed": "dev-flow" }`
+
+**Error:** Returns `-32603` with `"Skill not found: <name>"` if no skill with that name exists.
+
+---
+
 ## CSS variables available in page styles
 
 Relay maps its own variables onto VS Code's theme tokens, so they automatically adapt to whatever theme the user has installed. Use these in `customStyles` to stay on-theme across any VS Code color scheme:
@@ -343,6 +497,9 @@ Relay maps its own variables onto VS Code's theme tokens, so they automatically 
 | Bookmark not found | `-32603` | `"Bookmark not found: <id>"` |
 | Page file not found | `-32603` | `"ENOENT: no such file..."` |
 | No workspace open | `-32603` | `"No workspace open — pages unavailable"` |
+| Workflow config not set | `-32603` | `"Workflow config not configured"` |
+| Skill not found | `-32603` | `"Skill not found: <name>"` |
+| Invalid skill frontmatter | `-32603` | `"Missing name"` / `"Missing description"` |
 | Unknown tool name | `-32603` | `"Unknown tool: <name>"` |
 | Unknown RPC method | `-32603` | `"Unknown method: <method>"` |
 | Malformed JSON body | `-32700` | `"Parse error"` |
