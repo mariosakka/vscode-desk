@@ -290,15 +290,19 @@ Page tools return an error when VS Code has no workspace folder open.
 ## Testing
 
 ```sh
-npm test          # run all tests (Jest + ts-jest)
-npm run compile   # production build
-npm run watch     # incremental dev build
-npm run package   # create .vsix
+npm test               # run all unit tests (Jest + ts-jest)
+npm run compile        # production build (also required before e2e)
+npm run watch          # incremental dev build
+npm run test:e2e       # run Playwright e2e suite (requires compile first)
+npm run test:e2e:install  # install Playwright browsers (once per machine)
+npm run package        # create .vsix
 ```
 
 **F5** in VS Code opens the Extension Development Host with Relay active.
 
 Tests run in Node via Jest. The `vscode` module is mocked at `src/__mocks__/vscode.ts` — no real VS Code instance is needed.
+
+### Unit tests
 
 Current test count: **127 total**
 
@@ -316,12 +320,29 @@ Current test count: **127 total**
 | `agents/adapters/gemini/gemini.test.ts` | 8 |
 | `agents/registry/registry.test.ts` | 15 |
 
-Rules:
+Unit test rules:
 - All tests must pass before any PR can merge.
 - Every new MCP tool needs at minimum a round-trip test in `server/server.test.ts`.
 - Every new service needs its own test file in its subfolder.
 - Pass `null` as the `pageReader` argument to `new McpServer(...)` in tests that don't exercise page tools.
 - Pass `null` as `workflowConfigService` and `skillRegistry` arguments in tests that don't exercise those tools.
+
+### E2e tests (Playwright)
+
+**32 tests** across 3 spec files in `e2e/`:
+
+| File | What it tests |
+|------|---------------|
+| `e2e/mcp.spec.ts` | JSON-RPC protocol, all 16 tools, 3 resources — uses a self-contained in-process HTTP stub (no VS Code dep) |
+| `e2e/sidebar.spec.ts` | Sidebar webview HTML — tabs, bookmarks, icon rendering, postMessage bridge |
+| `e2e/page-viewer.spec.ts` | Page viewer webview HTML — navigation, link handling, custom styles |
+
+`npm run compile` must run before `npm run test:e2e` — the sidebar and page-viewer specs load files from `out/webview/`.
+
+E2e rules:
+- `e2e/helpers/webview.ts` builds testable HTML from compiled output; `e2e/helpers/vscode-mock.ts` injects `acquireVsCodeApi()`.
+- The MCP spec's in-process stub must stay in sync with `src/mcp/toolSchemas.ts` tool count and `src/mcp/resources.ts` resource count.
+- CI runs both `npm test` and `npm run test:e2e` on every approved PR.
 
 ---
 
