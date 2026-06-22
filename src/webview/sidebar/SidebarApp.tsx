@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PortalData, Tab } from './types';
 import { Header } from './components/Header/Header';
 import { TabBar } from './components/TabBar/TabBar';
+import { BookmarkGrid } from './components/BookmarkGrid/BookmarkGrid';
 
 declare function acquireVsCodeApi(): { postMessage: (msg: unknown) => void };
 const vscode = acquireVsCodeApi();
@@ -75,37 +76,12 @@ export function SidebarApp() {
         onSelect={setActiveTabId}
         onRemove={(tabId) => send({ type: 'removeTab', tabId })}
       />
-      <div id="bookmarks-grid">
-        {(activeTab?.bookmarks ?? []).length === 0 ? (
-          <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '32px 0', fontSize: '12px' }}>
-            No bookmarks yet. Click <strong>+ Bookmark</strong> above to add one.
-          </p>
-        ) : (
-          activeTab!.bookmarks.map(bm => (
-            <div
-              key={bm.id}
-              data-testid="bookmark-card"
-              onClick={() => send({ type: 'openUrl', url: bm.url })}
-            >
-              <div data-testid="bookmark-icon">
-                {bm.icon.startsWith('data:')
-                  ? <img src={bm.icon} alt="" />
-                  : bm.icon || '🌐'}
-              </div>
-              <div data-testid="bookmark-title">{bm.title}</div>
-              <button
-                data-testid="bookmark-remove"
-                onClick={e => {
-                  e.stopPropagation();
-                  send({ type: 'removeBookmark', tabId: currentTabId, bookmarkId: bm.id });
-                }}
-              >
-                ×
-              </button>
-            </div>
-          ))
-        )}
-      </div>
+      <BookmarkGrid
+        bookmarks={activeTab?.bookmarks ?? []}
+        tabId={currentTabId}
+        onOpen={(url) => send({ type: 'openUrl', url })}
+        onRemove={(tabId, bookmarkId) => send({ type: 'removeBookmark', tabId, bookmarkId })}
+      />
     </div>
   );
 }
