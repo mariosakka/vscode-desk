@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PortalData, Tab } from './types';
+import { Header } from './components/Header/Header';
 
 declare function acquireVsCodeApi(): { postMessage: (msg: unknown) => void };
 const vscode = acquireVsCodeApi();
@@ -44,7 +45,10 @@ export function SidebarApp() {
   if (!data || data.tabs.length === 0) {
     return (
       <div id="app">
-        <div>{/* Header — added in Task 4 */}</div>
+        <Header
+          onAddTab={() => send({ type: 'addTab' })}
+          onAddBookmark={() => send({ type: 'addBookmark', tabId: null })}
+        />
         <div id="tabs-bar" />
         <div id="bookmarks-grid">
           <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '32px 0', fontSize: '12px' }}>
@@ -60,7 +64,10 @@ export function SidebarApp() {
 
   return (
     <div id="app">
-      <div>{/* Header — added in Task 4 */}</div>
+      <Header
+        onAddTab={() => send({ type: 'addTab' })}
+        onAddBookmark={() => send({ type: 'addBookmark', tabId: currentTabId })}
+      />
       <div id="tabs-bar">
         {data.tabs.map(tab => (
           <button
