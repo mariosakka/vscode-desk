@@ -25,7 +25,7 @@ test('empty state — shows "No tabs yet" prompt', async ({ page }) => {
 
 test('renders tab buttons from update message', async ({ page }) => {
   await dispatchToWebview(page, { type: 'update', data: { tabs: [TAB_1, TAB_2] } });
-  const tabs = page.locator('.portal-tab');
+  const tabs = page.locator('[data-testid="tab-button"]');
   await expect(tabs).toHaveCount(2);
   await expect(tabs.nth(0)).toHaveText('Work');
   await expect(tabs.nth(1)).toHaveText('Research');
@@ -33,17 +33,17 @@ test('renders tab buttons from update message', async ({ page }) => {
 
 test('first tab is active by default', async ({ page }) => {
   await dispatchToWebview(page, { type: 'update', data: { tabs: [TAB_1, TAB_2] } });
-  await expect(page.locator('.portal-tab.active')).toHaveText('Work');
+  await expect(page.locator('[data-testid="tab-button"][data-active="true"]')).toHaveText('Work');
 });
 
 test('clicking a tab switches the active tab and shows its bookmarks', async ({ page }) => {
   const tab2WithBm = { ...TAB_2, bookmarks: [BM_EMOJI] };
   await dispatchToWebview(page, { type: 'update', data: { tabs: [TAB_1, tab2WithBm] } });
 
-  await page.locator('.portal-tab', { hasText: 'Research' }).click();
+  await page.locator('[data-testid="tab-button"]', { hasText: 'Research' }).click();
 
-  await expect(page.locator('.portal-tab.active')).toHaveText('Research');
-  await expect(page.locator('.bm-title')).toHaveText('GitHub');
+  await expect(page.locator('[data-testid="tab-button"][data-active="true"]')).toHaveText('Research');
+  await expect(page.locator('[data-testid="bookmark-title"]')).toHaveText('GitHub');
 });
 
 test('clicking a bookmark card posts openUrl', async ({ page }) => {
@@ -52,7 +52,7 @@ test('clicking a bookmark card posts openUrl', async ({ page }) => {
     data: { tabs: [{ ...TAB_1, bookmarks: [BM_EMOJI] }] },
   });
 
-  await page.locator('.bookmark-card').click();
+  await page.locator('[data-testid="bookmark-card"]').click();
 
   const msg = await findSentMessage(page, 'openUrl');
   expect(msg).not.toBeNull();
@@ -65,8 +65,8 @@ test('clicking × button posts removeBookmark', async ({ page }) => {
     data: { tabs: [{ ...TAB_1, bookmarks: [BM_EMOJI] }] },
   });
 
-  await page.locator('.bookmark-card').hover();
-  await page.locator('.bm-remove').click();
+  await page.locator('[data-testid="bookmark-card"]').hover();
+  await page.locator('[data-testid="bookmark-remove"]').click();
 
   const msg = await findSentMessage(page, 'removeBookmark');
   expect(msg).not.toBeNull();
@@ -80,7 +80,7 @@ test('base64 icon renders as <img>', async ({ page }) => {
     data: { tabs: [{ ...TAB_1, bookmarks: [BM_IMG] }] },
   });
 
-  const img = page.locator('.bm-icon img');
+  const img = page.locator('[data-testid="bookmark-icon"] img');
   await expect(img).toBeVisible();
   await expect(img).toHaveAttribute('src', /^data:image\/png/);
 });
@@ -91,11 +91,12 @@ test('emoji icon renders as text (no <img>)', async ({ page }) => {
     data: { tabs: [{ ...TAB_1, bookmarks: [BM_EMOJI] }] },
   });
 
-  await expect(page.locator('.bm-icon img')).toHaveCount(0);
-  await expect(page.locator('.bm-icon')).toContainText('🐙');
+  await expect(page.locator('[data-testid="bookmark-icon"] img')).toHaveCount(0);
+  await expect(page.locator('[data-testid="bookmark-icon"]')).toContainText('🐙');
 });
 
 test('webview sends ready message on load', async ({ page }) => {
+  await page.waitForFunction(() => (window as any).__sentMessages?.some((m: any) => m.type === 'ready'));
   const msg = await findSentMessage(page, 'ready');
   expect(msg).not.toBeNull();
 });
