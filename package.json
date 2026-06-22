@@ -1,7 +1,7 @@
 {
-  "name": "vscode-relay",
-  "displayName": "Relay",
-  "description": "Your developer relay — tabbed bookmarks with an embedded MCP server",
+  "name": "vscode-fezzan",
+  "displayName": "Fezzan",
+  "description": "Your developer portal — tabbed bookmarks with an embedded MCP server",
   "version": "1.0.0",
   "publisher": "mmswflow",
   "icon": "media/relay.png",
@@ -14,7 +14,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mariosakka/vscode-relay.git"
+    "url": "https://github.com/mariosakka/vscode-fezzan.git"
   },
   "activationEvents": [
     "onStartupFinished"
@@ -24,63 +24,63 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "relay",
-          "title": "Relay",
+          "id": "fezzan",
+          "title": "Fezzan",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "relay": [
+      "fezzan": [
         {
           "type": "webview",
-          "id": "relay.sidebar",
-          "name": "Relay"
+          "id": "fezzan.sidebar",
+          "name": "Fezzan"
         }
       ]
     },
     "commands": [
       {
-        "command": "relay.addBookmark",
-        "title": "Relay: Add Bookmark"
+        "command": "fezzan.addBookmark",
+        "title": "Fezzan: Add Bookmark"
       },
       {
-        "command": "relay.addTab",
-        "title": "Relay: Add Tab"
+        "command": "fezzan.addTab",
+        "title": "Fezzan: Add Tab"
       },
       {
-        "command": "relay.removeBookmark",
-        "title": "Relay: Remove Bookmark"
+        "command": "fezzan.removeBookmark",
+        "title": "Fezzan: Remove Bookmark"
       },
       {
-        "command": "relay.removeTab",
-        "title": "Relay: Remove Tab"
+        "command": "fezzan.removeTab",
+        "title": "Fezzan: Remove Tab"
       },
       {
-        "command": "relay.openPage",
-        "title": "Relay: Open Page"
+        "command": "fezzan.openPage",
+        "title": "Fezzan: Open Page"
       },
       {
-        "command": "relay.newPage",
-        "title": "Relay: New Page"
+        "command": "fezzan.newPage",
+        "title": "Fezzan: New Page"
       },
       {
-        "command": "relay.setupAgents",
-        "title": "Relay: Set Up Agent MCP Integration"
+        "command": "fezzan.setupAgents",
+        "title": "Fezzan: Set Up Agent MCP Integration"
       },
       {
-        "command": "relay.configureWorkflow",
-        "title": "Relay: Configure Workflow"
+        "command": "fezzan.configureWorkflow",
+        "title": "Fezzan: Configure Workflow"
       },
       {
-        "command": "relay.installWorkflowSkills",
-        "title": "Relay: Install Workflow Skills"
+        "command": "fezzan.installWorkflowSkills",
+        "title": "Fezzan: Install Workflow Skills"
       }
     ],
     "configuration": {
-      "title": "Relay",
+      "title": "Fezzan",
       "properties": {
-        "relay.mcpPort": {
+        "fezzan.mcpPort": {
           "type": "number",
           "default": 3333,
           "description": "Port for the embedded MCP HTTP server"
@@ -90,8 +90,11 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "webpack --mode production",
-    "watch": "webpack --mode development --watch",
+    "compile": "npm run compile:ext && npm run compile:webview",
+    "compile:ext": "webpack --config webpack.config.js --mode production",
+    "compile:webview": "webpack --config webpack.webview.config.js --mode production",
+    "watch": "webpack --config webpack.config.js --mode development --watch",
+    "watch:webview": "webpack --config webpack.webview.config.js --mode development --watch",
     "test": "jest",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
@@ -101,10 +104,16 @@
     "@playwright/test": "^1.61.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.0.0",
     "copy-webpack-plugin": "^12.0.0",
+    "css-loader": "^7.1.0",
     "jest": "^29.5.0",
+    "mini-css-extract-plugin": "^2.9.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.5.0",
     "typescript": "^5.3.0",

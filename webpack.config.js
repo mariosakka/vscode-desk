@@ -18,8 +18,7 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: 'src/webview/sidebar', to: 'webview/sidebar' },
-        { from: 'src/webview/page',    to: 'webview/page' },
+        { from: 'src/webview/page', to: 'webview/page' },
       ],
     }),
   ],
