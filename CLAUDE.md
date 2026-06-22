@@ -290,12 +290,15 @@ Page tools return an error when VS Code has no workspace folder open.
 ## Testing
 
 ```sh
-npm test               # run all unit tests (Jest + ts-jest)
-npm run compile        # production build (also required before e2e)
-npm run watch          # incremental dev build
-npm run test:e2e       # run Playwright e2e suite (requires compile first)
-npm run test:e2e:install  # install Playwright browsers (once per machine)
-npm run package        # create .vsix
+npm test                   # run all unit tests (Jest + ts-jest)
+npm run compile            # production build — extension host + webview (required before e2e)
+npm run compile:ext        # extension host only
+npm run compile:webview    # sidebar React bundle only
+npm run watch              # incremental dev build — extension host
+npm run watch:webview      # incremental dev build — sidebar webview
+npm run test:e2e           # run Playwright e2e suite (requires compile first)
+npm run test:e2e:install   # install Playwright browsers (once per machine)
+npm run package            # create .vsix
 ```
 
 **F5** in VS Code opens the Extension Development Host with Relay active.
