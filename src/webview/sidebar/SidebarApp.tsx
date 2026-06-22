@@ -44,44 +44,34 @@ export function SidebarApp() {
 
   const send = (msg: unknown) => vscode.postMessage(msg);
 
-  if (!data || data.tabs.length === 0) {
-    return (
-      <div id="app">
-        <Header
-          onAddTab={() => send({ type: 'addTab' })}
-          onAddBookmark={() => send({ type: 'addBookmark', tabId: null })}
-        />
-        <div id="tabs-bar" />
-        <div id="bookmarks-grid">
+  return (
+    <>
+      <Header
+        onAddTab={() => send({ type: 'addTab' })}
+        onAddBookmark={() => send({ type: 'addBookmark', tabId: data?.tabs[0]?.id ?? null })}
+      />
+      <div id="tabs-bar">
+        {data && data.tabs.length > 0 && <TabBar
+          tabs={data.tabs}
+          activeTabId={activeTabId ?? data.tabs[0]?.id ?? ''}
+          onSelect={setActiveTabId}
+          onRemove={(tabId) => send({ type: 'removeTab', tabId })}
+        />}
+      </div>
+      <div id="bookmarks-grid">
+        {!data || data.tabs.length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '32px 0', fontSize: '12px' }}>
             No tabs yet. Click <strong>+ Tab</strong> above to create one.
           </p>
-        </div>
+        ) : (
+          <BookmarkGrid
+            bookmarks={data.tabs.find(t => t.id === (activeTabId ?? data.tabs[0]?.id))?.bookmarks ?? []}
+            tabId={activeTabId ?? data.tabs[0]?.id ?? ''}
+            onOpen={(url) => send({ type: 'openUrl', url })}
+            onRemove={(tabId, bookmarkId) => send({ type: 'removeBookmark', tabId, bookmarkId })}
+          />
+        )}
       </div>
-    );
-  }
-
-  const currentTabId = activeTabId ?? data.tabs[0].id;
-  const activeTab = data.tabs.find(t => t.id === currentTabId);
-
-  return (
-    <div id="app">
-      <Header
-        onAddTab={() => send({ type: 'addTab' })}
-        onAddBookmark={() => send({ type: 'addBookmark', tabId: currentTabId })}
-      />
-      <TabBar
-        tabs={data.tabs}
-        activeTabId={currentTabId}
-        onSelect={setActiveTabId}
-        onRemove={(tabId) => send({ type: 'removeTab', tabId })}
-      />
-      <BookmarkGrid
-        bookmarks={activeTab?.bookmarks ?? []}
-        tabId={currentTabId}
-        onOpen={(url) => send({ type: 'openUrl', url })}
-        onRemove={(tabId, bookmarkId) => send({ type: 'removeBookmark', tabId, bookmarkId })}
-      />
-    </div>
+    </>
   );
 }

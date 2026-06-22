@@ -11,7 +11,7 @@ interface Props {
 
 export function TabBar({ tabs, activeTabId, onSelect, onRemove }: Props) {
   return (
-    <div id="tabs-bar" className={styles.tabsBar}>
+    <div className={styles.tabsBar}>
       {tabs.map(tab => (
         <span
           key={tab.id}
