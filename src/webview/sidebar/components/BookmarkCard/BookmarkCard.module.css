@@ -79,4 +79,4 @@
 }
 
 .card:hover .removeBtn { display: block; }
-.removeBtn:hover { color: #ef4444; }
+.removeBtn:hover { color: var(--vscode-errorForeground, #ef4444); }
