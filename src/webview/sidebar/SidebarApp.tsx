@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PortalData, Tab } from './types';
 import { Header } from './components/Header/Header';
+import { TabBar } from './components/TabBar/TabBar';
 
 declare function acquireVsCodeApi(): { postMessage: (msg: unknown) => void };
 const vscode = acquireVsCodeApi();
@@ -68,18 +69,12 @@ export function SidebarApp() {
         onAddTab={() => send({ type: 'addTab' })}
         onAddBookmark={() => send({ type: 'addBookmark', tabId: currentTabId })}
       />
-      <div id="tabs-bar">
-        {data.tabs.map(tab => (
-          <button
-            key={tab.id}
-            data-testid="tab-button"
-            data-active={tab.id === currentTabId ? 'true' : 'false'}
-            onClick={() => setActiveTabId(tab.id)}
-          >
-            {tab.name}
-          </button>
-        ))}
-      </div>
+      <TabBar
+        tabs={data.tabs}
+        activeTabId={currentTabId}
+        onSelect={setActiveTabId}
+        onRemove={(tabId) => send({ type: 'removeTab', tabId })}
+      />
       <div id="bookmarks-grid">
         {(activeTab?.bookmarks ?? []).length === 0 ? (
           <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '32px 0', fontSize: '12px' }}>

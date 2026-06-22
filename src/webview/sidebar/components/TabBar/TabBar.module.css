@@ -1,0 +1,57 @@
+.tabsBar {
+  display: flex;
+  gap: 2px;
+  padding: 8px 10px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabsBar::-webkit-scrollbar { display: none; }
+
+.tabWrap {
+  display: inline-flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+}
+
+.tabWrap[data-active='true'] {
+  border-bottom-color: var(--accent);
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 5px 10px 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s;
+  font-family: inherit;
+}
+
+.tabBtn:hover { color: var(--text); }
+
+.tabWrap[data-active='true'] .tabBtn {
+  color: var(--accent);
+  border-bottom: none;
+}
+
+.tabRemove {
+  background: none;
+  border: none;
+  padding: 0 3px;
+  font-size: 13px;
+  color: transparent;
+  cursor: pointer;
+  line-height: 1;
+  font-family: inherit;
+  outline: none;
+  transition: color .15s;
+}
+
+.tabWrap:hover .tabRemove { color: var(--muted); }
+.tabRemove:hover { color: var(--vscode-errorForeground, #ef4444); }
