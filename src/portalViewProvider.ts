@@ -2,17 +2,19 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DataService } from './services/dataService/dataService';
+import { FaviconService } from './services/faviconService/faviconService';
 import { PageReader } from './pages/pageReader';
 import { PageViewPanel } from './pages/pageViewPanel';
 
 export class PortalViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'relay.sidebar';
+  public static readonly viewType = 'fezzan.sidebar';
   private _view?: vscode.WebviewView;
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
     private readonly _dataService: DataService,
     private readonly _pageReader: PageReader | null = null,
+    private readonly _faviconService: FaviconService | null = null,
   ) {}
 
   resolveWebviewView(
@@ -29,23 +31,43 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-    webviewView.webview.onDidReceiveMessage(message => {
+    webviewView.webview.onDidReceiveMessage(async message => {
       switch (message.type) {
         case 'ready':
           this.refresh();
           break;
         case 'openUrl': {
           const url: string = message.url;
-          if (url.startsWith('relay-page:') && this._pageReader) {
-            const filename = url.slice('relay-page:'.length);
+          if (url.startsWith('fezzan-page:') && this._pageReader) {
+            const filename = url.slice('fezzan-page:'.length);
             PageViewPanel.open(this._extensionUri, this._pageReader, filename);
           } else {
-            vscode.env.openExternal(vscode.Uri.parse(url));
+            vscode.commands.executeCommand('simpleBrowser.show', url);
           }
           break;
         }
         case 'removeBookmark':
           this._dataService.removeBookmark(message.tabId, message.bookmarkId);
+          this.refresh();
+          break;
+        case 'addTab': {
+          const name: string = message.name;
+          if (!name?.trim()) break;
+          this._dataService.createTab(name.trim());
+          this.refresh();
+          break;
+        }
+        case 'addBookmark': {
+          const title: string = message.title;
+          const url: string = message.url;
+          if (!title?.trim() || !url?.trim()) break;
+          const icon = this._faviconService ? await this._faviconService.getIcon(url.trim()) : '🌐';
+          this._dataService.addBookmark(message.tabId, { title: title.trim(), url: url.trim(), icon, description: '' });
+          this.refresh();
+          break;
+        }
+        case 'removeTab':
+          this._dataService.removeTab(message.tabId);
           this.refresh();
           break;
       }

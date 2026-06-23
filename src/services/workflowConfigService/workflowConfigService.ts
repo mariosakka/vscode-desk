@@ -17,7 +17,7 @@ export interface WorkflowConfig {
   };
 }
 
-const STORAGE_KEY = 'relay.workflowConfig';
+const STORAGE_KEY = 'fezzan.workflowConfig';
 
 export class WorkflowConfigService {
   private pending: WorkflowConfig | null = null;

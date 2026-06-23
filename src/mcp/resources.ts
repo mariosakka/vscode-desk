@@ -7,29 +7,29 @@ export interface McpResource {
 
 export const RESOURCES: McpResource[] = [
   {
-    uri: 'relay://guide/quick-start',
-    name: 'Relay Agent Quick-Start',
+    uri: 'fezzan://guide/quick-start',
+    name: 'Fezzan Agent Quick-Start',
     description: 'How to connect, the data model, the typical tool call loop, and key rules. Read this first.',
     mimeType: 'text/markdown',
   },
   {
-    uri: 'relay://guide/relay-page-format',
-    name: 'Relay Page Format (.relay)',
-    description: 'The .relay XML file format, available CSS variables, and built-in callout classes for customStyles.',
+    uri: 'fezzan://guide/fezzan-page-format',
+    name: 'Fezzan Page Format (.fezzan)',
+    description: 'The .fezzan XML file format, available CSS variables, and built-in callout classes for customStyles.',
     mimeType: 'text/markdown',
   },
   {
-    uri: 'relay://guide/skill-format',
-    name: 'Relay Skill Format',
+    uri: 'fezzan://guide/skill-format',
+    name: 'Fezzan Skill Format',
     description: 'YAML frontmatter spec, content rules, and install paths for workflow skills submitted via add_skill.',
     mimeType: 'text/markdown',
   },
 ];
 
 export const RESOURCE_CONTENT: Record<string, string> = {
-  'relay://guide/quick-start': `# Relay Agent Quick-Start
+  'fezzan://guide/quick-start': `# Fezzan Agent Quick-Start
 
-Relay is a VS Code extension with tabbed bookmarks and \`.relay\` doc pages.
+Fezzan is a VS Code extension with tabbed bookmarks and \`.fezzan\` doc pages.
 It runs a local JSON-RPC 2.0 MCP server at **http://localhost:3333/mcp**.
 
 ## Data model
@@ -42,12 +42,12 @@ PortalData
     └── bookmarks[]
         ├── id          string   ("bm_xyz789")
         ├── title       string
-        ├── url         string   (https://… or relay-page:<filename>)
+        ├── url         string   (https://… or fezzan-page:<filename>)
         ├── icon        string   (emoji or "data:image/…" base64)
         └── description string
 \`\`\`
 
-Pages are \`.relay\` files in \`<workspace>/relay-pages/\` — separate from bookmarks.
+Pages are \`.fezzan\` files in \`<workspace>/fezzan-pages/\` — separate from bookmarks.
 
 ## Typical loop — bookmarks
 
@@ -63,7 +63,7 @@ remove_bookmark     → clean up
 
 \`\`\`
 list_pages          → see what exists
-create_page         → write a new .relay file
+create_page         → write a new .fezzan file
 update_page         → revise title, body, or per-page CSS (only provided fields change)
 delete_page         → remove a page
 \`\`\`
@@ -71,8 +71,8 @@ delete_page         → remove a page
 ## Key rules
 
 - **IDs are opaque** — always call list_tabs / list_bookmarks to get current IDs; never cache across sessions.
-- **Favicon is free** — omit \`icon\` in add_bookmark and Relay fetches it automatically (30-day cache).
-- **relay-page: links** — set a bookmark's \`url\` to \`relay-page:filename.relay\` and clicking it opens the page viewer directly from the sidebar.
+- **Favicon is free** — omit \`icon\` in add_bookmark and Fezzan fetches it automatically (30-day cache).
+- **fezzan-page: links** — set a bookmark's \`url\` to \`fezzan-page:filename.fezzan\` and clicking it opens the page viewer directly from the sidebar.
 - **update_page is partial** — only fields you include are overwritten; omit \`content\` to change just the title, etc.
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
 - **HTTP 200 always** — errors arrive as a JSON-RPC \`error\` object, not as HTTP 4xx/5xx.
@@ -99,14 +99,14 @@ delete_page         → remove a page
 | remove_skill | | ✓ | name |
 `,
 
-  'relay://guide/relay-page-format': `# Relay Page Format (.relay)
+  'fezzan://guide/fezzan-page-format': `# Fezzan Page Format (.fezzan)
 
-Pages are XML files stored in \`<workspace>/relay-pages/\`.
+Pages are XML files stored in \`<workspace>/fezzan-pages/\`.
 
 ## File structure
 
 \`\`\`xml
-<relay-page title="Page Title">
+<fezzan-page title="Page Title">
   <style>
     /* optional CSS — only active for this page */
     /* use theme variables (see below) to stay on-theme */
@@ -115,13 +115,13 @@ Pages are XML files stored in \`<workspace>/relay-pages/\`.
 
   <!-- HTML body — any standard HTML except <script> tags -->
   <h2>Heading</h2>
-  <p>Link to another page: <a href="other.relay">other page</a></p>
+  <p>Link to another page: <a href="other.fezzan">other page</a></p>
   <p>External link: <a href="https://example.com">opens in browser</a></p>
-</relay-page>
+</fezzan-page>
 \`\`\`
 
 - \`<script>\` tags are stripped before rendering.
-- \`.relay\` links navigate inside the viewer (back button maintained).
+- \`.fezzan\` links navigate inside the viewer (back button maintained).
 - \`https://\` links open in the browser.
 
 ## Theme CSS variables
@@ -152,7 +152,7 @@ Use these in content without adding customStyles:
 \`\`\`
 `,
 
-  'relay://guide/skill-format': `# Relay Skill Format
+  'fezzan://guide/skill-format': `# Fezzan Skill Format
 
 Skills submitted via \`add_skill\` use YAML frontmatter + a markdown body.
 

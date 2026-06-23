@@ -5,11 +5,12 @@
 [![Installs](https://vsmarketplacebadges.dev/installs/mmswflow.vscode-relay.svg)](https://marketplace.visualstudio.com/items?itemName=mmswflow.vscode-relay)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A VS Code extension with three integrated features:
+A VS Code extension with four integrated features:
 
 - **Tabbed bookmark sidebar** — named tab groups with bookmark cards and auto-fetched favicons
 - **`.relay` page viewer** — a lightweight XML doc format that renders inside a VS Code editor tab, with VS Code theme variables and optional per-page CSS
 - **Embedded MCP server** — a local JSON-RPC 2.0 HTTP server so AI agents can read and write bookmarks and pages programmatically
+- **Workflow companion** — stores team workflow config and a skill registry; AI agents can submit config and skills via MCP, and the extension installs skills on all detected AI agents after user confirmation
 
 ---
 
@@ -22,7 +23,8 @@ A VS Code extension with three integrated features:
 | ✅ | Favicons auto-fetched and cached for 30 days |
 | ✅ | VS Code native theming — inherits your active color theme automatically |
 | ✅ | `.relay` page viewer — render lightweight docs in an editor tab |
-| ✅ | Embedded MCP HTTP server (11 tools, 2 resources) |
+| ✅ | Embedded MCP HTTP server (16 tools, 3 resources) |
+| ✅ | Workflow companion — team config + skill registry, auto-installed on detected AI agents |
 
 ---
 
@@ -38,6 +40,9 @@ A VS Code extension with three integrated features:
 | `Relay: Remove Tab` | Remove a tab and all its bookmarks |
 | `Relay: New Page` | Create a new `.relay` page file |
 | `Relay: Open Page` | Open an existing `.relay` page in the viewer |
+| `Relay: Setup Agents` | Force-show the MCP setup prompt for all detected AI agents |
+| `Relay: Configure Workflow` | Manually set team workflow config fields |
+| `Relay: Install Workflow Skills` | Install stored workflow skills on all detected agents |
 
 ### MCP Server (for AI agents)
 
@@ -54,7 +59,7 @@ Add to your Claude Code settings (`~/.claude/settings.json`):
 }
 ```
 
-**Available tools (11):**
+**Available tools (16):**
 
 | Tool | Operation | Required args |
 |------|-----------|---------------|
@@ -69,8 +74,13 @@ Add to your Claude Code settings (`~/.claude/settings.json`):
 | `create_page` | Write | `filename`, `title`, `content` |
 | `update_page` | Write | `filename` |
 | `delete_page` | Write | `filename` |
+| `get_workflow_config` | Read | — |
+| `submit_workflow_config` | Write | `config` |
+| `list_skills` | Read | — |
+| `add_skill` | Write | `name`, `content` |
+| `remove_skill` | Write | `name` |
 
-**Resources:** `relay://guide/quick-start`, `relay://guide/relay-page-format`
+**Resources:** `relay://guide/quick-start`, `relay://guide/relay-page-format`, `relay://guide/skill-format`
 
 ### `.relay` page format
 
@@ -97,10 +107,13 @@ Place `.relay` files in the `relay-pages/` folder at the root of your workspace.
 
 ```bash
 npm install
-npm run compile    # production build
-npm run watch      # incremental dev build
-npm test           # Jest unit tests (30 tests)
-npm run test:e2e   # Playwright e2e tests (24 tests)
+npm run compile         # production build (extension + webview)
+npm run compile:ext     # extension host only
+npm run compile:webview # React webview only
+npm run watch           # incremental dev build (extension host)
+npm run watch:webview   # incremental dev build (React webview)
+npm test                # Jest unit tests (127 tests)
+npm run test:e2e        # Playwright e2e tests (32 tests)
 # Press F5 in VS Code to launch the Extension Development Host
 ```
 

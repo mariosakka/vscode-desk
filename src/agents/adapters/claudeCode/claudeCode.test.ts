@@ -27,7 +27,7 @@ describe('ClaudeCodeAdapter', () => {
     (childProcess.execSync as jest.Mock).mockReturnValue('');
     await new ClaudeCodeAdapter().configure(3333);
     expect(childProcess.execSync).toHaveBeenCalledWith(
-      'claude mcp add vscode-relay -t http http://127.0.0.1:3333/mcp --scope user',
+      'claude mcp add vscode-fezzan -t http http://127.0.0.1:3333/mcp --scope user',
       { stdio: 'pipe' },
     );
     expect(fs.writeFileSync).not.toHaveBeenCalled();
@@ -53,7 +53,7 @@ describe('ClaudeCodeAdapter', () => {
       expect.any(String),
     );
     const written = JSON.parse((fs.writeFileSync as jest.Mock).mock.calls[0][1] as string);
-    expect(written.mcpServers['vscode-relay']).toEqual({ type: 'http', url: 'http://127.0.0.1:3333/mcp' });
+    expect(written.mcpServers['vscode-fezzan']).toEqual({ type: 'http', url: 'http://127.0.0.1:3333/mcp' });
   });
 });
 

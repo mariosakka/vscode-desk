@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const workflowConfigService = new WorkflowConfigService(context);
   const skillRegistry = new SkillRegistry(context);
 
-  const provider = new PortalViewProvider(context.extensionUri, dataService, pageReader);
+  const provider = new PortalViewProvider(context.extensionUri, dataService, pageReader, faviconService);
 
   const adapters = [
     new ClaudeCodeAdapter(),
@@ -51,22 +51,22 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
   );
 
-  const port = vscode.workspace.getConfiguration('relay').get<number>('mcpPort', 3333);
+  const port = vscode.workspace.getConfiguration('fezzan').get<number>('mcpPort', 3333);
   mcpServer.start(port);
   context.subscriptions.push({ dispose: () => mcpServer.stop() });
 
   agentRegistry.showSetupPrompt(port).then(() => agentRegistry.showSkillInstallPrompt()).catch(() => {});
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('relay.addBookmark',           () => cmdAddBookmark(dataService, faviconService, provider)),
-    vscode.commands.registerCommand('relay.addTab',                () => cmdAddTab(dataService, provider)),
-    vscode.commands.registerCommand('relay.removeBookmark',        () => cmdRemoveBookmark(dataService, provider)),
-    vscode.commands.registerCommand('relay.removeTab',             () => cmdRemoveTab(dataService, provider)),
-    vscode.commands.registerCommand('relay.openPage',              () => cmdOpenPage(context.extensionUri, pageReader)),
-    vscode.commands.registerCommand('relay.newPage',               () => cmdNewPage(pageReader)),
-    vscode.commands.registerCommand('relay.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
-    vscode.commands.registerCommand('relay.configureWorkflow',     () => cmdConfigureWorkflow(workflowConfigService)),
-    vscode.commands.registerCommand('relay.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
+    vscode.commands.registerCommand('fezzan.addBookmark',           () => cmdAddBookmark(dataService, faviconService, provider)),
+    vscode.commands.registerCommand('fezzan.addTab',                () => cmdAddTab(dataService, provider)),
+    vscode.commands.registerCommand('fezzan.removeBookmark',        () => cmdRemoveBookmark(dataService, provider)),
+    vscode.commands.registerCommand('fezzan.removeTab',             () => cmdRemoveTab(dataService, provider)),
+    vscode.commands.registerCommand('fezzan.openPage',              () => cmdOpenPage(context.extensionUri, pageReader)),
+    vscode.commands.registerCommand('fezzan.newPage',               () => cmdNewPage(pageReader)),
+    vscode.commands.registerCommand('fezzan.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
+    vscode.commands.registerCommand('fezzan.configureWorkflow',     () => cmdConfigureWorkflow(workflowConfigService)),
+    vscode.commands.registerCommand('fezzan.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
   );
 }
 
@@ -153,7 +153,7 @@ async function cmdRemoveTab(dataService: DataService, provider: PortalViewProvid
 async function pickTab(dataService: DataService): Promise<string | undefined> {
   const data = dataService.get();
   if (data.tabs.length === 0) {
-    vscode.window.showErrorMessage('No tabs yet. Run "Relay: Add Tab" first.');
+    vscode.window.showErrorMessage('No tabs yet. Run "Fezzan: Add Tab" first.');
     return undefined;
   }
   const pick = await vscode.window.showQuickPick(
@@ -165,12 +165,12 @@ async function pickTab(dataService: DataService): Promise<string | undefined> {
 
 async function cmdOpenPage(extensionUri: vscode.Uri, pageReader: PageReader | null): Promise<void> {
   if (!pageReader) {
-    vscode.window.showErrorMessage('Relay: Open a workspace folder first to use pages.');
+    vscode.window.showErrorMessage('Fezzan: Open a workspace folder first to use pages.');
     return;
   }
   const pages = pageReader.list();
   if (pages.length === 0) {
-    vscode.window.showErrorMessage('No pages yet. Run "Relay: New Page" to create one.');
+    vscode.window.showErrorMessage('No pages yet. Run "Fezzan: New Page" to create one.');
     return;
   }
   const pick = await vscode.window.showQuickPick(
@@ -183,7 +183,7 @@ async function cmdOpenPage(extensionUri: vscode.Uri, pageReader: PageReader | nu
 
 async function cmdNewPage(pageReader: PageReader | null): Promise<void> {
   if (!pageReader) {
-    vscode.window.showErrorMessage('Relay: Open a workspace folder first to use pages.');
+    vscode.window.showErrorMessage('Fezzan: Open a workspace folder first to use pages.');
     return;
   }
   const title = await vscode.window.showInputBox({ prompt: 'Page title', ignoreFocusOut: true });
@@ -193,10 +193,10 @@ async function cmdNewPage(pageReader: PageReader | null): Promise<void> {
     prompt: 'File name (leave blank to derive from title)',
     ignoreFocusOut: true,
   });
-  const filename = normalizeFilename(rawFilename?.trim() || title) + '.relay';
+  const filename = normalizeFilename(rawFilename?.trim() || title) + '.fezzan';
 
   pageReader.write(filename, title, `<p>Start writing your <strong>${escHtml(title)}</strong> page here.</p>`);
-  vscode.window.showInformationMessage(`Relay: created ${filename} in relay-pages/`);
+  vscode.window.showInformationMessage(`Fezzan: created ${filename} in fezzan-pages/`);
 }
 
 function normalizeFilename(s: string): string {
@@ -224,11 +224,11 @@ async function showConfigConfirmPrompt(
   if (action === 'Review first' && pageReader) {
     const json = JSON.stringify(pending, null, 2);
     pageReader.write(
-      '_pending-workflow-config.relay',
+      '_pending-workflow-config.fezzan',
       'Pending Workflow Config',
       `<pre><code>${escHtml(json)}</code></pre>`,
     );
-    PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.relay');
+    PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.fezzan');
     const confirm = await vscode.window.showInformationMessage('Save workflow config?', 'Save');
     if (confirm !== 'Save') { svc.clearPending(); return; }
   } else if (action === 'Review first') {
@@ -239,7 +239,7 @@ async function showConfigConfirmPrompt(
   }
 
   svc.confirmPending();
-  vscode.window.showInformationMessage('Relay: workflow config saved.');
+  vscode.window.showInformationMessage('Fezzan: workflow config saved.');
 }
 
 async function showSkillConfirmPrompt(
@@ -269,7 +269,7 @@ async function showSkillConfirmPrompt(
   }
 
   await skillRegistry.confirmPending(adapters);
-  vscode.window.showInformationMessage(`Relay: skill '${pending.name}' installed.`);
+  vscode.window.showInformationMessage(`Fezzan: skill '${pending.name}' installed.`);
 }
 
 async function cmdConfigureWorkflow(svc: WorkflowConfigService): Promise<void> {
@@ -296,7 +296,7 @@ async function cmdConfigureWorkflow(svc: WorkflowConfigService): Promise<void> {
 
   const [status, general, weekly, pulse, deploy, language, githubOrg, prAccount] = results;
   svc.save({ slack: { status, general, weekly, pulse, deploy }, language, githubOrg, prAccount });
-  vscode.window.showInformationMessage('Relay: workflow config saved.');
+  vscode.window.showInformationMessage('Fezzan: workflow config saved.');
 }
 
 function extractFrontmatterDescription(content: string): string | undefined {

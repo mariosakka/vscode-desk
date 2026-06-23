@@ -24,8 +24,8 @@ export class PageViewPanel {
     filename: string,
   ) {
     this._panel = vscode.window.createWebviewPanel(
-      'relay.pageView',
-      'Relay Page',
+      'fezzan.pageView',
+      'Fezzan Page',
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -50,7 +50,7 @@ export class PageViewPanel {
     try {
       page = pageReader.read(filename);
     } catch {
-      vscode.window.showErrorMessage(`Relay: page not found — ${filename}`);
+      vscode.window.showErrorMessage(`Fezzan: page not found — ${filename}`);
       return;
     }
 

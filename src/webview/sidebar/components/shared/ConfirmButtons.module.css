@@ -1,0 +1,29 @@
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.yes, .no {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.yes { color: var(--vscode-terminal-ansiGreen, #89d185); }
+.yes:hover { color: #a8e6a3; }
+
+.no { color: var(--muted); }
+.no:hover { color: var(--text); }

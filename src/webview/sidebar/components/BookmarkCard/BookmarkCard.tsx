@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Bookmark } from '../../types';
 import styles from './BookmarkCard.module.css';
+import { TrashIcon } from '../shared/Icons';
+import { ConfirmButtons } from '../shared/ConfirmButtons';
 
 interface Props {
   bookmark: Bookmark;
@@ -10,11 +12,13 @@ interface Props {
 }
 
 export function BookmarkCard({ bookmark, tabId, onOpen, onRemove }: Props) {
+  const [confirming, setConfirming] = useState(false);
+
   return (
     <div
       className={styles.card}
       data-testid="bookmark-card"
-      onClick={() => onOpen(bookmark.url)}
+      onClick={() => { if (!confirming) onOpen(bookmark.url); }}
     >
       <div className={styles.icon} data-testid="bookmark-icon">
         {bookmark.icon.startsWith('data:')
@@ -22,23 +26,24 @@ export function BookmarkCard({ bookmark, tabId, onOpen, onRemove }: Props) {
           : bookmark.icon || '🌐'}
       </div>
       <div className={styles.body}>
-        <div className={styles.title} data-testid="bookmark-title">
-          {bookmark.title}
-        </div>
+        <div className={styles.title} data-testid="bookmark-title">{bookmark.title}</div>
         <div className={styles.desc}>{bookmark.description}</div>
       </div>
-      <span className={styles.arrow}>↗</span>
-      <button
-        className={styles.removeBtn}
-        data-testid="bookmark-remove"
-        title="Remove"
-        onClick={e => {
-          e.stopPropagation();
-          onRemove(tabId, bookmark.id);
-        }}
-      >
-        ×
-      </button>
+      {confirming ? (
+        <ConfirmButtons
+          onConfirm={() => onRemove(tabId, bookmark.id)}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : (
+        <button
+          className={styles.removeBtn}
+          data-testid="bookmark-remove"
+          title="Remove"
+          onClick={e => { e.stopPropagation(); setConfirming(true); }}
+        >
+          <TrashIcon size={15} />
+        </button>
+      )}
     </div>
   );
 }

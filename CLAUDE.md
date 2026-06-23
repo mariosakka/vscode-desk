@@ -101,10 +101,38 @@ src/
   __mocks__/
     vscode.ts                   Jest mock for the VS Code API
   webview/
+    global.css                  CSS variables shared across all webview components
+    declarations.d.ts           TypeScript declaration for *.module.css imports
     sidebar/
-      index.html                Sidebar webview template
-      index.css                 VS Code theme token mapping + sidebar layout
-      index.js                  Render tabs/bookmarks, postMessage bridge
+      index.html                Sidebar webview template (mounts #app)
+      index.tsx                 React entry point — createRoot('#app')
+      SidebarApp.tsx            Root component — state, postMessage bridge
+      types.ts                  Bookmark, Tab, PortalData interfaces (webview-side)
+      hooks/
+        useClickOutside.ts      Click-outside detection hook
+      components/
+        shared/
+          Icons.tsx             All SVG icon components (TrashIcon, CheckIcon, CloseIcon, BookmarkIcon, TabIcon)
+          ConfirmButtons.tsx    Inline delete-confirmation pattern (Delete? ✓ ✗)
+          ConfirmButtons.module.css
+        Header/
+          Header.tsx            + Tab / + Bookmark buttons
+          Header.module.css
+        TabBar/
+          TabBar.tsx            Tab strip with active state, remove, and confirm
+          TabBar.module.css
+        BookmarkGrid/
+          BookmarkGrid.tsx      Grid wrapper — maps bookmarks to BookmarkCard
+          BookmarkGrid.module.css
+        BookmarkCard/
+          BookmarkCard.tsx      Individual bookmark card with hover delete and confirm
+          BookmarkCard.module.css
+        InlineTabForm/
+          InlineTabForm.tsx     Inline tab name input with duplicate check
+          InlineTabForm.module.css
+        InlineBookmarkForm/
+          InlineBookmarkForm.tsx  Inline title + URL form with duplicate check
+          InlineBookmarkForm.module.css
     page/
       index.html                Page viewer template
       index.css                 VS Code theme token mapping + doc layout
@@ -226,14 +254,14 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 
 ## Webview message protocol
 
-**Sidebar (PortalViewProvider ↔ `src/webview/sidebar/index.js`)**
+**Sidebar (PortalViewProvider ↔ `src/webview/sidebar/SidebarApp.tsx`)**
 
 | Direction | `type` | Extra fields |
 |-----------|--------|--------------|
 | Host → Webview | `update` | `data: PortalData` |
 | Webview → Host | `ready` | — |
-| Webview → Host | `openUrl` | `url: string` |
-| Webview → Host | `addBookmark` | `tabId, title, url, icon?, description?` |
+| Webview → Host | `openUrl` | `url: string` — opens in VS Code Simple Browser |
+| Webview → Host | `addBookmark` | `tabId, title, url` — favicon fetched by host |
 | Webview → Host | `removeBookmark` | `tabId, bookmarkId` |
 | Webview → Host | `addTab` | `name: string` |
 | Webview → Host | `removeTab` | `tabId: string` |
@@ -390,7 +418,7 @@ Install paths per agent (managed by `SkillRegistry` via `AgentAdapter.installSki
 
 ## CSS variables (webview)
 
-Both webview `index.css` files define these — use them in any custom styles or content:
+The sidebar defines these in `src/webview/global.css`; the page viewer defines them in `src/webview/page/index.css`. Use them in any component styles or page content:
 
 | Variable | VS Code token | Usage |
 |----------|---------------|-------|

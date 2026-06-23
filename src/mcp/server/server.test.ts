@@ -75,7 +75,7 @@ describe('McpServer', () => {
 
   it('responds to initialize', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'initialize', params: {}, id: 1 });
-    expect(res.result.serverInfo.name).toBe('vscode-relay');
+    expect(res.result.serverInfo.name).toBe('vscode-fezzan');
     expect(res.result.protocolVersion).toBeDefined();
   });
 
@@ -100,12 +100,12 @@ describe('McpServer', () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 3 });
     expect(res.result.resources).toHaveLength(3);
     const uris = res.result.resources.map((r: any) => r.uri);
-    expect(uris).toContain('relay://guide/quick-start');
-    expect(uris).toContain('relay://guide/relay-page-format');
+    expect(uris).toContain('fezzan://guide/quick-start');
+    expect(uris).toContain('fezzan://guide/fezzan-page-format');
   });
 
   it('reads the quick-start resource', async () => {
-    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'relay://guide/quick-start' }, id: 4 });
+    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'fezzan://guide/quick-start' }, id: 4 });
     expect(res.result.contents[0].text).toContain('list_tabs');
     expect(res.result.contents[0].mimeType).toBe('text/markdown');
   });
@@ -219,7 +219,7 @@ describe('McpServer — workflow tools', () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 2 });
     expect(res.result.resources).toHaveLength(3);
     const uris = res.result.resources.map((r: any) => r.uri);
-    expect(uris).toContain('relay://guide/skill-format');
+    expect(uris).toContain('fezzan://guide/skill-format');
   });
 
   it('get_workflow_config returns config when set', async () => {

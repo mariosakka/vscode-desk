@@ -15,7 +15,7 @@ export class PageReader {
   constructor(private readonly workspaceRoot: string) {}
 
   dir(): string {
-    return path.join(this.workspaceRoot, 'relay-pages');
+    return path.join(this.workspaceRoot, 'fezzan-pages');
   }
 
   private ensureDir(): void {
@@ -29,7 +29,7 @@ export class PageReader {
     const d = this.dir();
     if (!fs.existsSync(d)) return [];
     return fs.readdirSync(d)
-      .filter(f => f.endsWith('.relay'))
+      .filter(f => f.endsWith('.fezzan'))
       .map(filename => {
         try {
           const raw = fs.readFileSync(path.join(d, filename), 'utf-8');
@@ -59,7 +59,7 @@ export class PageReader {
 // ── Parsing ────────────────────────────────────────────────────────────────
 
 function extractTitle(raw: string): string | null {
-  const m = raw.match(/<relay-page[^>]*\stitle="([^"]*)"/i);
+  const m = raw.match(/<fezzan-page[^>]*\stitle="([^"]*)"/i);
   return m ? m[1] : null;
 }
 
@@ -69,7 +69,7 @@ function parse(filename: string, raw: string): PageContent {
   const styleMatch = raw.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
   const customStyles = styleMatch ? styleMatch[1] : '';
 
-  const bodyMatch = raw.match(/<relay-page[^>]*>([\s\S]*)<\/relay-page>/i);
+  const bodyMatch = raw.match(/<fezzan-page[^>]*>([\s\S]*)<\/fezzan-page>/i);
   let body = bodyMatch ? bodyMatch[1] : raw;
 
   // Remove <style> and any stray <script> blocks from body
@@ -87,7 +87,7 @@ function serialize(title: string, bodyHtml: string, customStyles: string): strin
   const styleBlock = customStyles.trim()
     ? `  <style>\n${customStyles.trim().split('\n').map(l => `    ${l}`).join('\n')}\n  </style>\n\n`
     : '';
-  return `<relay-page title="${escAttr(title)}">\n${styleBlock}${bodyHtml}\n</relay-page>\n`;
+  return `<fezzan-page title="${escAttr(title)}">\n${styleBlock}${bodyHtml}\n</fezzan-page>\n`;
 }
 
 function escAttr(s: string): string {
@@ -95,5 +95,5 @@ function escAttr(s: string): string {
 }
 
 function stem(filename: string): string {
-  return filename.replace(/\.relay$/, '');
+  return filename.replace(/\.fezzan$/, '');
 }

@@ -10,7 +10,7 @@ export interface Skill {
   installedAt: number;
 }
 
-const STORAGE_KEY = 'relay.skills';
+const STORAGE_KEY = 'fezzan.skills';
 
 export class SkillRegistry {
   private pending: { name: string; content: string; descriptionOverride?: string } | null = null;
