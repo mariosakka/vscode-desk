@@ -74,7 +74,7 @@ function dispatch(
     return {
       protocolVersion: '2024-11-05',
       capabilities: { tools: {}, resources: {} },
-      serverInfo: { name: 'vscode-astrolabe', version: '0.0.1' },
+      serverInfo: { name: 'vscode-desk', version: '0.0.1' },
     };
   }
   if (method === 'tools/list') {
@@ -88,16 +88,16 @@ function dispatch(
   }
   if (method === 'resources/list') {
     return { resources: [
-      { uri: 'astrolabe://guide/quick-start',       name: 'Astrolabe Agent Quick-Start',     mimeType: 'text/markdown' },
-      { uri: 'astrolabe://guide/astrolabe-page-format',  name: 'Astrolabe Page Format (.astrolabe)',  mimeType: 'text/markdown' },
-      { uri: 'astrolabe://guide/skill-format',       name: 'Astrolabe Skill Format',          mimeType: 'text/markdown' },
+      { uri: 'desk://guide/quick-start',          name: 'Desk Agent Quick-Start',        mimeType: 'text/markdown' },
+      { uri: 'desk://guide/desk-page-format',     name: 'Desk Page Format (.desk)',       mimeType: 'text/markdown' },
+      { uri: 'desk://guide/skill-format',         name: 'Desk Skill Format',             mimeType: 'text/markdown' },
     ]};
   }
   if (method === 'resources/read') {
     const content: Record<string, string> = {
-      'astrolabe://guide/quick-start': '# Astrolabe Agent Quick-Start\nlist_projects to get started.',
-      'astrolabe://guide/astrolabe-page-format': '# Astrolabe Page Format (.astrolabe)\n<astrolabe-page title="...">...',
-      'astrolabe://guide/skill-format': '# Astrolabe Skill Format\nname and description required.',
+      'desk://guide/quick-start': '# Desk Agent Quick-Start\nlist_projects to get started.',
+      'desk://guide/desk-page-format': '# Desk Page Format (.desk)\n<desk-page title="...">...',
+      'desk://guide/skill-format': '# Desk Skill Format\nname and description required.',
     };
     if (!content[params.uri]) throw new Error(`Unknown resource: ${params.uri}`);
     return { contents: [{ uri: params.uri, mimeType: 'text/markdown', text: content[params.uri] }] };
@@ -241,7 +241,7 @@ test('initialize returns capabilities with tools and resources', async ({ reques
   const res = await rpc(request, 'initialize');
   expect(res.result.protocolVersion).toBe('2024-11-05');
   expect(res.result.capabilities).toEqual({ tools: {}, resources: {} });
-  expect(res.result.serverInfo.name).toBe('vscode-astrolabe');
+  expect(res.result.serverInfo.name).toBe('vscode-desk');
 });
 
 test('tools/list returns 17 tools', async ({ request }) => {
@@ -259,13 +259,13 @@ test('resources/list returns 3 resources including skill-format', async ({ reque
   const res = await rpc(request, 'resources/list');
   expect(res.result.resources).toHaveLength(3);
   const uris = res.result.resources.map((r: any) => r.uri);
-  expect(uris).toContain('astrolabe://guide/quick-start');
-  expect(uris).toContain('astrolabe://guide/astrolabe-page-format');
-  expect(uris).toContain('astrolabe://guide/skill-format');
+  expect(uris).toContain('desk://guide/quick-start');
+  expect(uris).toContain('desk://guide/desk-page-format');
+  expect(uris).toContain('desk://guide/skill-format');
 });
 
 test('resources/read returns markdown', async ({ request }) => {
-  const res = await rpc(request, 'resources/read', { uri: 'astrolabe://guide/quick-start' });
+  const res = await rpc(request, 'resources/read', { uri: 'desk://guide/quick-start' });
   expect(res.result.contents[0].mimeType).toBe('text/markdown');
   expect(res.result.contents[0].text).toContain('list_projects');
 });
@@ -290,7 +290,7 @@ test('create_project → add_bookmark → list_bookmarks round-trip', async ({ r
 });
 
 test('resources/read returns skill-format markdown', async ({ request }) => {
-  const res = await rpc(request, 'resources/read', { uri: 'astrolabe://guide/skill-format' });
+  const res = await rpc(request, 'resources/read', { uri: 'desk://guide/skill-format' });
   expect(res.result.contents[0].mimeType).toBe('text/markdown');
   expect(res.result.contents[0].text).toContain('name');
 });

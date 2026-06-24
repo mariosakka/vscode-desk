@@ -39,8 +39,8 @@ test.beforeEach(async ({ page }) => {
 
 test('empty state — shows "No projects yet" prompt', async ({ page }) => {
   await dispatchToWebview(page, { type: 'update', data: makeData([]) });
-  await expect(page.locator('#bookmarks-grid')).toContainText('No projects yet');
-  await expect(page.locator('#tabs-bar')).toBeEmpty();
+  await expect(page.locator('#bookmarks-grid-workspace')).toContainText('No projects yet');
+  await expect(page.locator('#tabs-bar-workspace')).toBeEmpty();
 });
 
 test('renders tab buttons from update message', async ({ page }) => {
@@ -136,9 +136,6 @@ test('workspace section is hidden when workspace is null', async ({ page }) => {
     },
   });
 
-  const workspaceHeading = page.locator('text=Workspace');
-  await expect(workspaceHeading).toHaveCount(0);
-
-  const openFolderMsg = page.locator('text=Open a folder');
-  await expect(openFolderMsg).toBeVisible();
+  await expect(page.locator('button', { hasText: 'workspace' })).toHaveCount(0);
+  await expect(page.locator('#bookmarks-grid-global')).toContainText('No projects yet');
 });
