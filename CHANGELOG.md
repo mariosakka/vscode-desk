@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Features
+
+* rename extension to Desk; all commands, settings, and MCP URIs now use the `desk` prefix
+* store all user data in `~/.desk/` (plain JSON files) instead of VS Code globalState
+* replace tab-based bookmark groups with project-based groups supporting Workspace and Global scopes
+* add scope toggle in sidebar to switch between workspace and global bookmark sets
+* add `get_skill` MCP tool; all 17 tools now accept optional `scope` argument
+* update MCP resources to `desk://guide/*`
+* update `.desk` page format (replaces `.relay`)
+
 ## 1.0.0 (2026-06-18)
 
 
