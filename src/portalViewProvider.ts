@@ -2,18 +2,66 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DataService } from './services/dataService/dataService';
+import { FaviconService } from './services/faviconService/faviconService';
 import { PageReader } from './pages/pageReader';
 import { PageViewPanel } from './pages/pageViewPanel';
+import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
+import { SkillRegistry } from './services/skillRegistry/skillRegistry';
+import { AgentAdapter } from './agents/agentAdapter';
+
+interface ScopedData {
+  portal: import('./models').PortalData;
+  pages: import('./pages/pageFormat').PageMeta[];
+  workflow: import('./services/workflowConfigService/workflowConfigService').WorkflowConfig | null;
+  skills: Omit<import('./services/skillRegistry/skillRegistry').Skill, 'content'>[];
+}
+
+interface SidebarData {
+  workspaceName: string | null;
+  workspace: ScopedData | null;
+  global: ScopedData;
+}
 
 export class PortalViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'relay.sidebar';
+  public static readonly viewType = 'desk.sidebar';
   private _view?: vscode.WebviewView;
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
-    private readonly _dataService: DataService,
-    private readonly _pageReader: PageReader | null = null,
+    private readonly _globalDataService: DataService,
+    private readonly _globalPageStore: PageReader,
+    private readonly _globalWorkflowService: WorkflowConfigService,
+    private readonly _globalSkillRegistry: SkillRegistry,
+    private readonly _workspaceDataService: DataService | null,
+    private readonly _workspacePageReader: PageReader | null,
+    private readonly _workspaceWorkflowService: WorkflowConfigService | null,
+    private readonly _workspaceSkillRegistry: SkillRegistry | null,
+    private _workspaceName: string | null,
+    private readonly _faviconService: FaviconService | null = null,
+    private readonly _adapters: AgentAdapter[] = [],
   ) {}
+
+  private _resolveScope(scope: 'workspace' | 'global' = 'workspace'): {
+    dataService: DataService;
+    pageStore: PageReader | null;
+    workflowService: WorkflowConfigService | null;
+    skillRegistry: SkillRegistry | null;
+  } {
+    if (scope === 'global' || !this._workspaceDataService) {
+      return {
+        dataService: this._globalDataService,
+        pageStore: this._globalPageStore,
+        workflowService: this._globalWorkflowService,
+        skillRegistry: this._globalSkillRegistry,
+      };
+    }
+    return {
+      dataService: this._workspaceDataService,
+      pageStore: this._workspacePageReader,
+      workflowService: this._workspaceWorkflowService,
+      skillRegistry: this._workspaceSkillRegistry,
+    };
+  }
 
   resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -29,33 +77,174 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-    webviewView.webview.onDidReceiveMessage(message => {
+    webviewView.webview.onDidReceiveMessage(async message => {
       switch (message.type) {
         case 'ready':
           this.refresh();
           break;
         case 'openUrl': {
           const url: string = message.url;
-          if (url.startsWith('relay-page:') && this._pageReader) {
-            const filename = url.slice('relay-page:'.length);
-            PageViewPanel.open(this._extensionUri, this._pageReader, filename);
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          if (url.startsWith('desk-page:') && resolved.pageStore) {
+            const filename = url.slice('desk-page:'.length);
+            if (resolved.pageStore instanceof PageReader) {
+              PageViewPanel.open(this._extensionUri, resolved.pageStore, filename);
+            }
           } else {
-            vscode.env.openExternal(vscode.Uri.parse(url));
+            const openUrl = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+            vscode.commands.executeCommand('simpleBrowser.show', openUrl);
           }
           break;
         }
-        case 'removeBookmark':
-          this._dataService.removeBookmark(message.tabId, message.bookmarkId);
+        case 'removeBookmark': {
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          resolved.dataService.removeBookmark(message.projectId, message.bookmarkId);
           this.refresh();
           break;
+        }
+        case 'addProject': {
+          const name: string = message.name;
+          if (!name?.trim()) break;
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          resolved.dataService.createProject(name.trim());
+          this.refresh();
+          break;
+        }
+        case 'addBookmark': {
+          const title: string = message.title;
+          const url: string = message.url;
+          if (!title?.trim() || !url?.trim()) break;
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          const icon = this._faviconService ? await this._faviconService.getIcon(url.trim()) : '🌐';
+          resolved.dataService.addBookmark(message.projectId, { title: title.trim(), url: url.trim(), icon, description: '' });
+          this.refresh();
+          break;
+        }
+        case 'removeProject': {
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          resolved.dataService.removeProject(message.projectId);
+          this.refresh();
+          break;
+        }
+        case 'openPage': {
+          const filename: string = message.filename;
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          if (resolved.pageStore instanceof PageReader) {
+            PageViewPanel.open(this._extensionUri, resolved.pageStore, filename);
+          }
+          break;
+        }
+        case 'newPage': {
+          const title: string = message.title;
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          if (!title?.trim() || !resolved.pageStore) break;
+          const filename = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.desk';
+          if (resolved.pageStore.list().some(p => p.filename === filename)) {
+            vscode.window.showWarningMessage(`A page named "${filename}" already exists.`);
+            break;
+          }
+          resolved.pageStore.write(filename, title.trim(), `<p>${title.trim()}</p>`);
+          this.refresh();
+          break;
+        }
+        case 'deletePage': {
+          const filename: string = message.filename;
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          if (resolved.pageStore) {
+            resolved.pageStore.delete(filename);
+            this.refresh();
+          }
+          break;
+        }
+        case 'removeSkill': {
+          const name: string = message.name;
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          if (resolved.skillRegistry) {
+            await resolved.skillRegistry.remove(name, this._adapters);
+            this.refresh();
+          }
+          break;
+        }
+        case 'saveWorkflow': {
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          if (resolved.workflowService) {
+            resolved.workflowService.save(message.config);
+            this.refresh();
+          }
+          break;
+        }
+        case 'newSkill':
+          vscode.commands.executeCommand('desk.newSkill');
+          break;
+        case 'editSkill': {
+          const skillName: string = message.name;
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          const skill = resolved.skillRegistry?.getAll().find(s => s.name === skillName);
+          if (skill) {
+            const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: skill.content });
+            await vscode.window.showTextDocument(doc);
+            vscode.window.showInformationMessage('Desk: edit the skill, then run "Desk: Submit Skill" to update it.');
+          }
+          break;
+        }
+        case 'submitSkill':
+          vscode.commands.executeCommand('desk.submitSkill');
+          break;
+        case 'editPage': {
+          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          if (!resolved.pageStore) break;
+          const filePath = resolved.pageStore.filePath(message.filename);
+          if (filePath === null) break;
+          const uri = vscode.Uri.file(filePath);
+          vscode.window.showTextDocument(uri);
+          break;
+        }
       }
     });
   }
 
+  switchTab(projectId: string): void {
+    this._view?.webview.postMessage({ type: 'switchTab', projectId });
+  }
+
   refresh(): void {
     if (!this._view) return;
-    const data = this._dataService.get();
-    this._view.webview.postMessage({ type: 'update', data });
+
+    const buildScoped = (
+      ds: DataService,
+      ps: PageReader | null,
+      wf: WorkflowConfigService | null,
+      sr: SkillRegistry | null,
+    ): ScopedData => ({
+      portal: ds.get(),
+      pages: ps ? ps.list() : [],
+      workflow: wf?.get() ?? null,
+      skills: sr ? sr.list() : [],
+    });
+
+    const sidebarData: SidebarData = {
+      workspaceName: this._workspaceName,
+      workspace: this._workspaceDataService
+        ? buildScoped(
+            this._workspaceDataService,
+            this._workspacePageReader,
+            this._workspaceWorkflowService,
+            this._workspaceSkillRegistry,
+          )
+        : null,
+      global: buildScoped(
+        this._globalDataService,
+        this._globalPageStore,
+        this._globalWorkflowService,
+        this._globalSkillRegistry,
+      ),
+    };
+
+    this._view.webview.postMessage({ type: 'update', data: sidebarData });
+  }
+
+  public updateWorkspaceName(name: string | null): void {
+    this._workspaceName = name;
   }
 
   private _getHtmlForWebview(webview: vscode.Webview): string {

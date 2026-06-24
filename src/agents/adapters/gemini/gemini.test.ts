@@ -27,7 +27,7 @@ describe('GeminiAdapter', () => {
     (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
     await new GeminiAdapter().configure(3333);
     const written = JSON.parse((fs.writeFileSync as jest.Mock).mock.calls[0][1] as string);
-    expect(written.mcpServers['vscode-relay']).toEqual({ httpUrl: 'http://127.0.0.1:3333/mcp' });
+    expect(written.mcpServers['vscode-desk']).toEqual({ httpUrl: 'http://127.0.0.1:3333/mcp' });
   });
 });
 

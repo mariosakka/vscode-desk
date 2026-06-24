@@ -13,13 +13,21 @@ module.exports = {
   externals: { vscode: 'commonjs vscode' },
   resolve: { extensions: ['.ts', '.js'] },
   module: {
-    rules: [{ test: /\.ts$/, exclude: /node_modules/, use: 'ts-loader' }],
+    rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'ts-loader',
+          options: { transpileOnly: true },
+        },
+      },
+    ],
   },
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: 'src/webview/sidebar', to: 'webview/sidebar' },
-        { from: 'src/webview/page',    to: 'webview/page' },
+        { from: 'src/webview/page', to: 'webview/page' },
       ],
     }),
   ],

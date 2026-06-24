@@ -1,63 +1,66 @@
-import * as vscode from 'vscode';
-import { Bookmark, Tab, PortalData } from '../../models';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Bookmark, Project, PortalData } from '../../models';
 
-const STORAGE_KEY = 'relay.data';
-
-const DEFAULT_DATA: PortalData = { tabs: [] };
+const DEFAULT_DATA: PortalData = { projects: [] };
 
 function generateId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 export class DataService {
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly dir: string) {}
 
   get(): PortalData {
-    return this.context.globalState.get<PortalData>(STORAGE_KEY)
-      ?? JSON.parse(JSON.stringify(DEFAULT_DATA));
+    try {
+      return JSON.parse(fs.readFileSync(path.join(this.dir, 'data.json'), 'utf-8'));
+    } catch {
+      return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
   }
 
   save(data: PortalData): void {
-    this.context.globalState.update(STORAGE_KEY, data);
+    fs.mkdirSync(this.dir, { recursive: true });
+    fs.writeFileSync(path.join(this.dir, 'data.json'), JSON.stringify(data, null, 2), 'utf-8');
   }
 
-  addBookmark(tabId: string, fields: Omit<Bookmark, 'id'>): Bookmark {
+  addBookmark(projectId: string, fields: Omit<Bookmark, 'id'>): Bookmark {
     const data = this.get();
-    const tab = data.tabs.find(t => t.id === tabId);
-    if (!tab) throw new Error(`Tab not found: ${tabId}`);
+    const project = data.projects.find(p => p.id === projectId);
+    if (!project) throw new Error(`Project not found: ${projectId}`);
     const bookmark: Bookmark = { id: generateId('bm'), ...fields };
-    tab.bookmarks.push(bookmark);
+    project.bookmarks.push(bookmark);
     this.save(data);
     return bookmark;
   }
 
-  removeBookmark(tabId: string, bookmarkId: string): void {
+  removeBookmark(projectId: string, bookmarkId: string): void {
     const data = this.get();
-    const tab = data.tabs.find(t => t.id === tabId);
-    if (!tab) throw new Error(`Tab not found: ${tabId}`);
-    tab.bookmarks = tab.bookmarks.filter(b => b.id !== bookmarkId);
+    const project = data.projects.find(p => p.id === projectId);
+    if (!project) throw new Error(`Project not found: ${projectId}`);
+    project.bookmarks = project.bookmarks.filter(b => b.id !== bookmarkId);
     this.save(data);
   }
 
-  createTab(name: string): Tab {
+  createProject(name: string): Project {
     const data = this.get();
-    const tab: Tab = { id: generateId('tab'), name, bookmarks: [] };
-    data.tabs.push(tab);
+    const project: Project = { id: generateId('project'), name, bookmarks: [] };
+    data.projects.push(project);
     this.save(data);
-    return tab;
+    return project;
   }
 
-  removeTab(tabId: string): void {
+  removeProject(projectId: string): void {
     const data = this.get();
-    data.tabs = data.tabs.filter(t => t.id !== tabId);
+    data.projects = data.projects.filter(p => p.id !== projectId);
     this.save(data);
   }
 
-  updateBookmark(tabId: string, bookmarkId: string, fields: Partial<Omit<Bookmark, 'id'>>): Bookmark {
+  updateBookmark(projectId: string, bookmarkId: string, fields: Partial<Omit<Bookmark, 'id'>>): Bookmark {
     const data = this.get();
-    const tab = data.tabs.find(t => t.id === tabId);
-    if (!tab) throw new Error(`Tab not found: ${tabId}`);
-    const bm = tab.bookmarks.find(b => b.id === bookmarkId);
+    const project = data.projects.find(p => p.id === projectId);
+    if (!project) throw new Error(`Project not found: ${projectId}`);
+    const bm = project.bookmarks.find(b => b.id === bookmarkId);
     if (!bm) throw new Error(`Bookmark not found: ${bookmarkId}`);
     Object.assign(bm, fields);
     this.save(data);

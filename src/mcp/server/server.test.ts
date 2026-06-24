@@ -5,8 +5,8 @@ const mockDataService = {
   get: jest.fn(),
   addBookmark: jest.fn(),
   removeBookmark: jest.fn(),
-  createTab: jest.fn(),
-  removeTab: jest.fn(),
+  createProject: jest.fn(),
+  removeProject: jest.fn(),
   updateBookmark: jest.fn(),
 };
 
@@ -25,6 +25,7 @@ const mockWorkflowConfigService = {
 const mockSkillRegistry = {
   list: jest.fn().mockReturnValue([]),
   getAll: jest.fn().mockReturnValue([]),
+  get: jest.fn().mockReturnValue(null),
   validateFrontmatter: jest.fn().mockReturnValue({ valid: true }),
   setPending: jest.fn(),
   getPending: jest.fn(),
@@ -63,7 +64,8 @@ describe('McpServer', () => {
 
   beforeEach(done => {
     jest.clearAllMocks();
-    server = new McpServer(mockDataService as any, mockProvider as any, mockFaviconService as any, null);
+    // globalDataService=mockDataService, all others null; workspaceDataService=null so resolver falls back to global
+    server = new McpServer(mockDataService as any, null, null, null, null, null, null, null, mockProvider as any, mockFaviconService as any);
     server.start(PORT);
     setTimeout(done, 30);
   });
@@ -75,20 +77,20 @@ describe('McpServer', () => {
 
   it('responds to initialize', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'initialize', params: {}, id: 1 });
-    expect(res.result.serverInfo.name).toBe('vscode-relay');
+    expect(res.result.serverInfo.name).toBe('vscode-desk');
     expect(res.result.protocolVersion).toBeDefined();
   });
 
-  it('lists 16 tools', async () => {
+  it('lists 17 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 2 });
-    expect(res.result.tools).toHaveLength(16);
+    expect(res.result.tools).toHaveLength(17);
     const names = res.result.tools.map((t: any) => t.name);
-    expect(names).toContain('list_tabs');
+    expect(names).toContain('list_projects');
     expect(names).toContain('list_bookmarks');
     expect(names).toContain('add_bookmark');
     expect(names).toContain('remove_bookmark');
-    expect(names).toContain('create_tab');
-    expect(names).toContain('remove_tab');
+    expect(names).toContain('create_project');
+    expect(names).toContain('remove_project');
     expect(names).toContain('update_bookmark');
     expect(names).toContain('list_pages');
     expect(names).toContain('create_page');
@@ -100,34 +102,34 @@ describe('McpServer', () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 3 });
     expect(res.result.resources).toHaveLength(3);
     const uris = res.result.resources.map((r: any) => r.uri);
-    expect(uris).toContain('relay://guide/quick-start');
-    expect(uris).toContain('relay://guide/relay-page-format');
+    expect(uris).toContain('desk://guide/quick-start');
+    expect(uris).toContain('desk://guide/desk-page-format');
   });
 
   it('reads the quick-start resource', async () => {
-    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'relay://guide/quick-start' }, id: 4 });
-    expect(res.result.contents[0].text).toContain('list_tabs');
+    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'desk://guide/quick-start' }, id: 4 });
+    expect(res.result.contents[0].text).toContain('list_projects');
     expect(res.result.contents[0].mimeType).toBe('text/markdown');
   });
 
-  it('calls list_tabs and returns tab summaries', async () => {
+  it('calls list_projects and returns project summaries', async () => {
     mockDataService.get.mockReturnValue({
-      tabs: [{ id: 'tab_1', name: 'Work', bookmarks: [{ id: 'bm_1' }, { id: 'bm_2' }] }],
+      projects: [{ id: 'project_1', name: 'Work', bookmarks: [{ id: 'bm_1' }, { id: 'bm_2' }] }],
     });
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
-      params: { name: 'list_tabs', arguments: {} }, id: 3,
+      params: { name: 'list_projects', arguments: {} }, id: 3,
     });
-    const tabs = JSON.parse(res.result.content[0].text);
-    expect(tabs[0].name).toBe('Work');
-    expect(tabs[0].bookmarkCount).toBe(2);
+    const projects = JSON.parse(res.result.content[0].text);
+    expect(projects[0].name).toBe('Work');
+    expect(projects[0].bookmarkCount).toBe(2);
   });
 
-  it('calls list_bookmarks (all tabs) and returns flat list with tab_id', async () => {
+  it('calls list_bookmarks (all projects) and returns flat list with project_id', async () => {
     mockDataService.get.mockReturnValue({
-      tabs: [
-        { id: 'tab_1', name: 'Work', bookmarks: [{ id: 'bm_1', title: 'A' }] },
-        { id: 'tab_2', name: 'Misc', bookmarks: [{ id: 'bm_2', title: 'B' }] },
+      projects: [
+        { id: 'project_1', name: 'Work', bookmarks: [{ id: 'bm_1', title: 'A' }] },
+        { id: 'project_2', name: 'Misc', bookmarks: [{ id: 'bm_2', title: 'B' }] },
       ],
     });
     const res = await postMcp(PORT, {
@@ -136,18 +138,18 @@ describe('McpServer', () => {
     });
     const bms = JSON.parse(res.result.content[0].text);
     expect(bms).toHaveLength(2);
-    expect(bms[0].tab_id).toBe('tab_1');
+    expect(bms[0].project_id).toBe('project_1');
   });
 
   it('add_bookmark auto-fetches favicon when icon not provided', async () => {
     mockDataService.addBookmark.mockReturnValue({ id: 'bm_new', title: 'New', url: 'https://x.com', icon: 'data:image/png;base64,TEST', description: '' });
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
-      params: { name: 'add_bookmark', arguments: { tab_id: 'tab_1', title: 'New', url: 'https://x.com' } },
+      params: { name: 'add_bookmark', arguments: { project_id: 'project_1', title: 'New', url: 'https://x.com' } },
       id: 5,
     });
     expect(mockFaviconService.getIcon).toHaveBeenCalledWith('https://x.com');
-    expect(mockDataService.addBookmark).toHaveBeenCalledWith('tab_1', expect.objectContaining({ icon: 'data:image/png;base64,TEST' }));
+    expect(mockDataService.addBookmark).toHaveBeenCalledWith('project_1', expect.objectContaining({ icon: 'data:image/png;base64,TEST' }));
     expect(mockProvider.refresh).toHaveBeenCalledTimes(1);
     expect(JSON.parse(res.result.content[0].text).id).toBe('bm_new');
   });
@@ -156,11 +158,11 @@ describe('McpServer', () => {
     mockDataService.addBookmark.mockReturnValue({ id: 'bm_2', title: 'T', url: 'https://x.com', icon: '🚀', description: '' });
     await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
-      params: { name: 'add_bookmark', arguments: { tab_id: 'tab_1', title: 'T', url: 'https://x.com', icon: '🚀' } },
+      params: { name: 'add_bookmark', arguments: { project_id: 'project_1', title: 'T', url: 'https://x.com', icon: '🚀' } },
       id: 6,
     });
     expect(mockFaviconService.getIcon).not.toHaveBeenCalled();
-    expect(mockDataService.addBookmark).toHaveBeenCalledWith('tab_1', expect.objectContaining({ icon: '🚀' }));
+    expect(mockDataService.addBookmark).toHaveBeenCalledWith('project_1', expect.objectContaining({ icon: '🚀' }));
   });
 
   it('returns error for unknown tool', async () => {
@@ -192,11 +194,15 @@ describe('McpServer — workflow tools', () => {
     mockSkillRegistry.validateFrontmatter.mockReturnValue({ valid: true });
     server = new McpServer(
       mockDataService as any,
-      mockProvider as any,
-      mockFaviconService as any,
       null,
       mockWorkflowConfigService as any,
       mockSkillRegistry as any,
+      null,
+      null,
+      null,
+      null,
+      mockProvider as any,
+      mockFaviconService as any,
       [],
       onConfigSubmitted,
       onSkillSubmitted,
@@ -210,26 +216,30 @@ describe('McpServer — workflow tools', () => {
     setTimeout(done, 30);
   });
 
-  it('lists 16 tools', async () => {
+  it('lists 17 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 });
-    expect(res.result.tools).toHaveLength(16);
+    expect(res.result.tools).toHaveLength(17);
   });
+
 
   it('lists 3 resources', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 2 });
     expect(res.result.resources).toHaveLength(3);
     const uris = res.result.resources.map((r: any) => r.uri);
-    expect(uris).toContain('relay://guide/skill-format');
+    expect(uris).toContain('desk://guide/skill-format');
   });
 
   it('get_workflow_config returns config when set', async () => {
-    mockWorkflowConfigService.get.mockReturnValue({ language: 'en', githubOrg: 'acme' });
+    mockWorkflowConfigService.get.mockReturnValue({
+      communication: [{ label: 'General', channel: '#general' }],
+      general: [{ label: 'Language', value: 'en' }],
+    });
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
       params: { name: 'get_workflow_config', arguments: {} }, id: 3,
     });
     const config = JSON.parse(res.result.content[0].text);
-    expect(config.language).toBe('en');
+    expect(config.communication[0].channel).toBe('#general');
   });
 
   it('get_workflow_config returns error when not configured', async () => {
@@ -243,11 +253,15 @@ describe('McpServer — workflow tools', () => {
   });
 
   it('submit_workflow_config calls setPending and fires callback', async () => {
+    const config = {
+      communication: [{ label: 'General', channel: '#general' }],
+      general: [{ label: 'Language', value: 'en' }],
+    };
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
-      params: { name: 'submit_workflow_config', arguments: { config: { language: 'ro' } } }, id: 5,
+      params: { name: 'submit_workflow_config', arguments: { config } }, id: 5,
     });
-    expect(mockWorkflowConfigService.setPending).toHaveBeenCalledWith({ language: 'ro' });
+    expect(mockWorkflowConfigService.setPending).toHaveBeenCalledWith(config);
     expect(onConfigSubmitted).toHaveBeenCalled();
     expect(JSON.parse(res.result.content[0].text).status).toBe('submitted');
   });
@@ -258,6 +272,29 @@ describe('McpServer — workflow tools', () => {
       params: { name: 'list_skills', arguments: {} }, id: 6,
     });
     expect(JSON.parse(res.result.content[0].text)).toEqual([]);
+  });
+
+  it('get_skill returns full skill when found', async () => {
+    const skill = { name: 'dev-flow', description: 'Dev workflow', content: '---\nname: dev-flow\n---\nbody', agents: ['all'], version: 1, installedAt: 0 };
+    mockSkillRegistry.get.mockReturnValueOnce(skill);
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_skill', arguments: { name: 'dev-flow' } }, id: 10,
+    });
+    const result = JSON.parse(res.result.content[0].text);
+    expect(result.name).toBe('dev-flow');
+    expect(result.content).toContain('body');
+    expect(mockSkillRegistry.get).toHaveBeenCalledWith('dev-flow');
+  });
+
+  it('get_skill returns isError when skill not found', async () => {
+    mockSkillRegistry.get.mockReturnValueOnce(null);
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_skill', arguments: { name: 'missing' } }, id: 11,
+    });
+    expect(res.result.isError).toBe(true);
+    expect(res.result.content[0].text).toContain("'missing' not found");
   });
 
   it('add_skill validates frontmatter before queuing', async () => {

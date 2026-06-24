@@ -1,15 +1,16 @@
-# Relay for VS Code
+# Desk for VS Code
 
-[![CI](https://github.com/mariosakka/vscode-relay/actions/workflows/publish.yml/badge.svg)](https://github.com/mariosakka/vscode-relay/actions/workflows/publish.yml)
-[![VS Marketplace](https://vsmarketplacebadges.dev/version/mmswflow.vscode-relay.svg)](https://marketplace.visualstudio.com/items?itemName=mmswflow.vscode-relay)
-[![Installs](https://vsmarketplacebadges.dev/installs/mmswflow.vscode-relay.svg)](https://marketplace.visualstudio.com/items?itemName=mmswflow.vscode-relay)
+[![CI](https://github.com/mariosakka/vscode-desk/actions/workflows/publish.yml/badge.svg)](https://github.com/mariosakka/vscode-desk/actions/workflows/publish.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A VS Code extension with three integrated features:
+A VS Code extension that keeps your bookmarks, docs, and team workflow config in one place — and exposes them to AI agents via a local MCP server.
 
-- **Tabbed bookmark sidebar** — named tab groups with bookmark cards and auto-fetched favicons
-- **`.relay` page viewer** — a lightweight XML doc format that renders inside a VS Code editor tab, with VS Code theme variables and optional per-page CSS
-- **Embedded MCP server** — a local JSON-RPC 2.0 HTTP server so AI agents can read and write bookmarks and pages programmatically
+- **Project-based bookmark sidebar** — named project groups with bookmark cards and auto-fetched favicons. Toggle between Workspace scope (current project) and Global scope (all workspaces).
+- **`.desk` page viewer** — a lightweight XML doc format that renders inside a VS Code editor tab, with VS Code theme variables and optional per-page CSS.
+- **Embedded MCP server** — a local JSON-RPC 2.0 HTTP server so AI agents can read and write bookmarks, pages, workflow config, and skills programmatically.
+- **Workflow companion** — stores team workflow config and a skill registry; AI agents can submit config and skills via MCP, and the extension installs them on all detected AI agents after user confirmation.
+
+All data lives in `~/.desk/` — plain JSON files, human-readable, and easy to back up.
 
 ---
 
@@ -17,12 +18,14 @@ A VS Code extension with three integrated features:
 
 | Status | Feature |
 |--------|---------|
-| ✅ | Sidebar panel (Activity Bar) with tabbed bookmark groups |
+| ✅ | Sidebar panel (Activity Bar) with project-based bookmark groups |
+| ✅ | Workspace and Global scope toggle |
 | ✅ | Click any bookmark card to open the URL in your browser |
 | ✅ | Favicons auto-fetched and cached for 30 days |
 | ✅ | VS Code native theming — inherits your active color theme automatically |
-| ✅ | `.relay` page viewer — render lightweight docs in an editor tab |
-| ✅ | Embedded MCP HTTP server (11 tools, 2 resources) |
+| ✅ | `.desk` page viewer — render lightweight docs in an editor tab |
+| ✅ | Embedded MCP HTTP server (17 tools, 3 resources) |
+| ✅ | Workflow companion — team config + skill registry, auto-installed on detected AI agents |
 
 ---
 
@@ -32,12 +35,15 @@ A VS Code extension with three integrated features:
 
 | Command | Description |
 |---------|-------------|
-| `Relay: Add Tab` | Create a new bookmark tab |
-| `Relay: Add Bookmark` | Add a bookmark to a tab (favicon auto-fetched) |
-| `Relay: Remove Bookmark` | Remove a bookmark |
-| `Relay: Remove Tab` | Remove a tab and all its bookmarks |
-| `Relay: New Page` | Create a new `.relay` page file |
-| `Relay: Open Page` | Open an existing `.relay` page in the viewer |
+| `Desk: Add Project` | Create a new project group |
+| `Desk: Add Bookmark` | Add a bookmark to a project (favicon auto-fetched) |
+| `Desk: Remove Bookmark` | Remove a bookmark |
+| `Desk: Remove Project` | Remove a project and all its bookmarks |
+| `Desk: New Page` | Create a new `.desk` page file |
+| `Desk: Open Page` | Open an existing `.desk` page in the viewer |
+| `Desk: Setup Agents` | Force-show the MCP setup prompt for all detected AI agents |
+| `Desk: Configure Workflow` | Manually set team workflow config fields |
+| `Desk: Install Workflow Skills` | Install stored workflow skills on all detected agents |
 
 ### MCP Server (for AI agents)
 
@@ -46,7 +52,7 @@ Add to your Claude Code settings (`~/.claude/settings.json`):
 ```json
 {
   "mcpServers": {
-    "vscode-relay": {
+    "vscode-desk": {
       "type": "http",
       "url": "http://localhost:3333/mcp"
     }
@@ -54,34 +60,40 @@ Add to your Claude Code settings (`~/.claude/settings.json`):
 }
 ```
 
-**Available tools (11):**
+**Available tools (17):** All tools accept an optional `scope: "workspace" | "global"` argument.
 
 | Tool | Operation | Required args |
 |------|-----------|---------------|
-| `list_tabs` | Read | — |
-| `list_bookmarks` | Read | — (`tab_id` optional) |
-| `add_bookmark` | Write | `tab_id`, `title`, `url` |
-| `remove_bookmark` | Write | `tab_id`, `bookmark_id` |
-| `create_tab` | Write | `name` |
-| `remove_tab` | Write | `tab_id` |
-| `update_bookmark` | Write | `tab_id`, `bookmark_id`, `fields` |
+| `list_projects` | Read | — |
+| `create_project` | Write | `name` |
+| `remove_project` | Write | `project_id` |
+| `list_bookmarks` | Read | — (`project_id` optional) |
+| `add_bookmark` | Write | `project_id`, `title`, `url` |
+| `remove_bookmark` | Write | `project_id`, `bookmark_id` |
+| `update_bookmark` | Write | `project_id`, `bookmark_id`, `fields` |
 | `list_pages` | Read | — |
 | `create_page` | Write | `filename`, `title`, `content` |
 | `update_page` | Write | `filename` |
 | `delete_page` | Write | `filename` |
+| `get_workflow_config` | Read | — |
+| `submit_workflow_config` | Write | `config` |
+| `list_skills` | Read | — |
+| `add_skill` | Write | `name`, `content` |
+| `remove_skill` | Write | `name` |
+| `get_skill` | Read | `name` |
 
-**Resources:** `relay://guide/quick-start`, `relay://guide/relay-page-format`
+**Resources:** `desk://guide/quick-start`, `desk://guide/desk-page-format`, `desk://guide/skill-format`
 
-### `.relay` page format
+### `.desk` page format
 
 ```xml
-<relay-page title="Page Title">
+<desk-page title="Page Title">
   <style>/* optional per-page CSS */</style>
   <!-- HTML body content — no <script> tags -->
-</relay-page>
+</desk-page>
 ```
 
-Place `.relay` files in the `relay-pages/` folder at the root of your workspace.
+Place `.desk` files in the `pages/` folder under the relevant scope directory (`~/.desk/global/pages/` or `~/.desk/workspaces/<slug>/pages/`).
 
 ---
 
@@ -89,7 +101,7 @@ Place `.relay` files in the `relay-pages/` folder at the root of your workspace.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `relay.mcpPort` | `3333` | Port for the embedded MCP HTTP server |
+| `desk.mcpPort` | `3333` | Port for the embedded MCP HTTP server |
 
 ---
 
@@ -97,10 +109,13 @@ Place `.relay` files in the `relay-pages/` folder at the root of your workspace.
 
 ```bash
 npm install
-npm run compile    # production build
-npm run watch      # incremental dev build
-npm test           # Jest unit tests (30 tests)
-npm run test:e2e   # Playwright e2e tests (24 tests)
+npm run compile         # production build (extension + webview)
+npm run compile:ext     # extension host only
+npm run compile:webview # React webview only
+npm run watch           # incremental dev build (extension host)
+npm run watch:webview   # incremental dev build (React webview)
+npm test                # Jest unit tests (129 tests)
+npm run test:e2e        # Playwright e2e tests (32 tests) — requires compile first
 # Press F5 in VS Code to launch the Extension Development Host
 ```
 

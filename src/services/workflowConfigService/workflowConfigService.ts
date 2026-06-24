@@ -1,40 +1,42 @@
-import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 
-export interface WorkflowConfig {
-  slack: {
-    status: string;
-    general: string;
-    weekly: string;
-    pulse: string;
-    deploy: string;
-  };
-  language: string;
-  githubOrg: string;
-  prAccount: string;
-  identity?: {
-    githubUsername: string;
-    currentRepo: string;
-  };
+export interface WorkflowChannel {
+  label: string;
+  channel: string;
 }
 
-const STORAGE_KEY = 'relay.workflowConfig';
+export interface WorkflowSetting {
+  label: string;
+  value: string;
+}
+
+export interface WorkflowConfig {
+  communication: WorkflowChannel[];
+  general: WorkflowSetting[];
+}
 
 export class WorkflowConfigService {
   private pending: WorkflowConfig | null = null;
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly dir: string) {}
 
   get(): WorkflowConfig | undefined {
-    return this.context.globalState.get<WorkflowConfig>(STORAGE_KEY);
+    try {
+      return JSON.parse(fs.readFileSync(path.join(this.dir, 'workflow.json'), 'utf-8'));
+    } catch {
+      return undefined;
+    }
   }
 
   save(config: WorkflowConfig): void {
-    this.context.globalState.update(STORAGE_KEY, config);
+    fs.mkdirSync(this.dir, { recursive: true });
+    fs.writeFileSync(path.join(this.dir, 'workflow.json'), JSON.stringify(config, null, 2), 'utf-8');
   }
 
-  setPending(incoming: Record<string, unknown>): void {
-    const existing = (this.get() ?? {}) as Record<string, unknown>;
-    this.pending = deepMerge(existing, incoming) as unknown as WorkflowConfig;
+  setPending(incoming: Partial<WorkflowConfig>): void {
+    const existing = this.get() ?? { communication: [], general: [] };
+    this.pending = { ...existing, ...incoming };
   }
 
   getPending(): WorkflowConfig | null {
@@ -51,24 +53,4 @@ export class WorkflowConfigService {
   clearPending(): void {
     this.pending = null;
   }
-}
-
-function deepMerge(
-  target: Record<string, unknown>,
-  source: Record<string, unknown>,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = { ...target };
-  for (const key of Object.keys(source)) {
-    const sv = source[key];
-    const tv = target[key];
-    if (
-      sv !== null && sv !== undefined && typeof sv === 'object' && !Array.isArray(sv) &&
-      tv !== null && tv !== undefined && typeof tv === 'object' && !Array.isArray(tv)
-    ) {
-      result[key] = deepMerge(tv as Record<string, unknown>, sv as Record<string, unknown>);
-    } else if (sv !== undefined) {
-      result[key] = sv;
-    }
-  }
-  return result;
 }

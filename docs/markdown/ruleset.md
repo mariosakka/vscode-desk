@@ -1,6 +1,6 @@
 # Branch Ruleset — Protect master
 
-Relay's `master` branch is protected by a GitHub **ruleset** (id `17823807`).  
+Desk's `master` branch is protected by a GitHub **ruleset** (id `17823807`).  
 View or edit it at: **Settings → Rules → Rulesets → Protect master**.
 
 ---
@@ -78,10 +78,10 @@ Release-please PRs are opened by the GitHub Actions bot. The owner approves and 
 
 ```bash
 # View current state
-gh api repos/mariosakka/vscode-relay/rulesets/17823807
+gh api repos/mariosakka/vscode-desk/rulesets/17823807
 
 # Update (e.g. require 2 reviewers)
-gh api --method PUT repos/mariosakka/vscode-relay/rulesets/17823807 \
+gh api --method PUT repos/mariosakka/vscode-desk/rulesets/17823807 \
   --input ruleset.json
 ```
 

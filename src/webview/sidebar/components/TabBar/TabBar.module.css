@@ -1,0 +1,63 @@
+.container {
+  border-bottom: 1px solid var(--border);
+}
+
+.tabsBar {
+  display: flex;
+  gap: 2px;
+  padding: 8px 10px 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.tabsBar::-webkit-scrollbar { height: 3px; }
+.tabsBar::-webkit-scrollbar-track { background: transparent; }
+.tabsBar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.tabsBar::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+.tabWrap {
+  display: inline-flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+}
+
+.tabWrap[data-active='true'] {
+  border-bottom-color: var(--accent);
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 5px 10px 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s;
+  font-family: inherit;
+}
+
+.tabBtn:hover { color: var(--text); }
+
+.tabWrap[data-active='true'] .tabBtn {
+  color: var(--accent);
+  border-bottom: none;
+}
+
+.tabWrap:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
+.tabWrap:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
+
+.confirmBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 6px;
+}
+
+.confirmLabel {
+  font-size: 11px;
+  color: var(--muted);
+}

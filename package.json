@@ -1,10 +1,10 @@
 {
-  "name": "vscode-relay",
-  "displayName": "Relay",
-  "description": "Your developer relay — tabbed bookmarks with an embedded MCP server",
-  "version": "1.0.0",
-  "publisher": "mmswflow",
-  "icon": "media/relay.png",
+  "name": "vscode-desk",
+  "displayName": "Desk",
+  "description": "Your developer portal — tabbed bookmarks with an embedded MCP server",
+  "version": "0.1.0",
+  "publisher": "mariosakka",
+  "icon": "media/astrolabe.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -14,7 +14,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mariosakka/vscode-relay.git"
+    "url": "https://github.com/mariosakka/vscode-desk.git"
   },
   "activationEvents": [
     "onStartupFinished"
@@ -24,63 +24,107 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "relay",
-          "title": "Relay",
+          "id": "desk",
+          "title": "Desk",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "relay": [
+      "desk": [
         {
           "type": "webview",
-          "id": "relay.sidebar",
-          "name": "Relay"
+          "id": "desk.sidebar",
+          "name": "Desk"
         }
       ]
     },
     "commands": [
       {
-        "command": "relay.addBookmark",
-        "title": "Relay: Add Bookmark"
+        "command": "desk.addBookmark",
+        "title": "Desk: Add Bookmark"
       },
       {
-        "command": "relay.addTab",
-        "title": "Relay: Add Tab"
+        "command": "desk.addProject",
+        "title": "Desk: Add Project"
       },
       {
-        "command": "relay.removeBookmark",
-        "title": "Relay: Remove Bookmark"
+        "command": "desk.removeBookmark",
+        "title": "Desk: Remove Bookmark"
       },
       {
-        "command": "relay.removeTab",
-        "title": "Relay: Remove Tab"
+        "command": "desk.removeProject",
+        "title": "Desk: Remove Project"
       },
       {
-        "command": "relay.openPage",
-        "title": "Relay: Open Page"
+        "command": "desk.openPage",
+        "title": "Desk: Open Page"
       },
       {
-        "command": "relay.newPage",
-        "title": "Relay: New Page"
+        "command": "desk.newPage",
+        "title": "Desk: New Page"
       },
       {
-        "command": "relay.setupAgents",
-        "title": "Relay: Set Up Agent MCP Integration"
+        "command": "desk.setupAgents",
+        "title": "Desk: Set Up Agent MCP Integration"
       },
       {
-        "command": "relay.configureWorkflow",
-        "title": "Relay: Configure Workflow"
+        "command": "desk.configureWorkflow",
+        "title": "Desk: Configure Workflow"
       },
       {
-        "command": "relay.installWorkflowSkills",
-        "title": "Relay: Install Workflow Skills"
+        "command": "desk.installWorkflowSkills",
+        "title": "Desk: Install Workflow Skills"
+      },
+      {
+        "command": "desk.openUrl",
+        "title": "Desk: Open URL"
+      },
+      {
+        "command": "desk.updateBookmark",
+        "title": "Desk: Edit Bookmark"
+      },
+      {
+        "command": "desk.deletePage",
+        "title": "Desk: Delete Page"
+      },
+      {
+        "command": "desk.removeSkill",
+        "title": "Desk: Remove Skill"
+      },
+      {
+        "command": "desk.newSkill",
+        "title": "Desk: New Skill"
+      },
+      {
+        "command": "desk.editSkill",
+        "title": "Desk: Edit Skill"
+      },
+      {
+        "command": "desk.submitSkill",
+        "title": "Desk: Submit Skill"
+      },
+      {
+        "command": "desk.listProjects",
+        "title": "Desk: List Projects"
+      },
+      {
+        "command": "desk.listBookmarks",
+        "title": "Desk: List Bookmarks"
+      },
+      {
+        "command": "desk.listSkills",
+        "title": "Desk: List Skills"
+      },
+      {
+        "command": "desk.viewWorkflow",
+        "title": "Desk: View Workflow Config"
       }
     ],
     "configuration": {
-      "title": "Relay",
+      "title": "Desk",
       "properties": {
-        "relay.mcpPort": {
+        "desk.mcpPort": {
           "type": "number",
           "default": 3333,
           "description": "Port for the embedded MCP HTTP server"
@@ -90,8 +134,11 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "webpack --mode production",
-    "watch": "webpack --mode development --watch",
+    "compile": "npm run compile:ext && npm run compile:webview",
+    "compile:ext": "webpack --config webpack.config.js --mode production",
+    "compile:webview": "webpack --config webpack.webview.config.js --mode production",
+    "watch": "webpack --config webpack.config.js --mode development --watch",
+    "watch:webview": "webpack --config webpack.webview.config.js --mode development --watch",
     "test": "jest",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
@@ -101,14 +148,23 @@
     "@playwright/test": "^1.61.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.0.0",
     "copy-webpack-plugin": "^12.0.0",
+    "css-loader": "^7.1.0",
     "jest": "^29.5.0",
+    "mini-css-extract-plugin": "^2.9.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.5.0",
     "typescript": "^5.3.0",
     "webpack": "^5.90.0",
     "webpack-cli": "^5.1.0"
+  },
+  "dependencies": {
+    "lucide-react": "^1.21.0"
   }
 }

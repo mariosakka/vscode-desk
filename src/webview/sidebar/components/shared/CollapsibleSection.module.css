@@ -1,0 +1,55 @@
+.section {
+  border-top: 1px solid var(--border);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 12px 7px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+}
+
+.header svg {
+  color: var(--accent2);
+  flex-shrink: 0;
+}
+
+.header:hover {
+  color: var(--accent2);
+}
+
+.headerAction {
+  padding-right: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.wrapper {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 220ms ease;
+}
+
+.wrapper[data-open='false'] {
+  grid-template-rows: 0fr;
+}
+
+.inner {
+  overflow: hidden;
+}

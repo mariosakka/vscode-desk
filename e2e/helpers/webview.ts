@@ -32,10 +32,10 @@ export function buildSidebarHtml(): string {
   const js = read('sidebar/index.js');
 
   return html
-    .replace('<link rel="stylesheet" href="${cssUri}">', `<style>${css}</style>`)
+    .replace('<link rel="stylesheet" href="${cssUri}">', () => `<style>${css}</style>`)
     .replace(
       '<script nonce="${nonce}" src="${scriptUri}"></script>',
-      `${VSCODE_MOCK_SCRIPT}\n<script>${js}</script>`,
+      () => `${VSCODE_MOCK_SCRIPT}\n<script>${js}</script>`,
     );
 }
 
@@ -52,14 +52,14 @@ export function buildPageViewerHtml(opts: PageViewerOpts): string {
   const js = read('page/index.js');
 
   return html
-    .replace('<link rel="stylesheet" href="${cssUri}">', `<style>${css}</style>`)
-    .replace('<style>${customStyles}</style>', `<style>${opts.customStyles ?? ''}</style>`)
-    .replace(/<title>\$\{title\}<\/title>/, `<title>${opts.title}</title>`)
-    .replace('<h1 class="page-title">${title}</h1>', `<h1 class="page-title">${opts.title}</h1>`)
-    .replace('data-has-back="${hasBack}"', `data-has-back="${opts.hasBack ?? false}"`)
-    .replace('${content}', opts.content)
+    .replace('<link rel="stylesheet" href="${cssUri}">', () => `<style>${css}</style>`)
+    .replace('<style>${customStyles}</style>', () => `<style>${opts.customStyles ?? ''}</style>`)
+    .replace(/<title>\$\{title\}<\/title>/, () => `<title>${opts.title}</title>`)
+    .replace('<h1 class="page-title">${title}</h1>', () => `<h1 class="page-title">${opts.title}</h1>`)
+    .replace('data-has-back="${hasBack}"', () => `data-has-back="${opts.hasBack ?? false}"`)
+    .replace('${content}', () => opts.content)
     .replace(
       '<script nonce="${nonce}" src="${scriptUri}"></script>',
-      `${VSCODE_MOCK_SCRIPT}\n<script>${js}</script>`,
+      () => `${VSCODE_MOCK_SCRIPT}\n<script>${js}</script>`,
     );
 }

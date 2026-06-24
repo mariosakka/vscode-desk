@@ -1,21 +1,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { PageMeta, PageContent, extractTitle, parse, serialize, stem } from './pageFormat';
 
-export interface PageMeta {
-  filename: string;
-  title: string;
-}
-
-export interface PageContent extends PageMeta {
-  customStyles: string;
-  bodyHtml: string;
-}
+export type { PageMeta, PageContent };
 
 export class PageReader {
-  constructor(private readonly workspaceRoot: string) {}
+  constructor(private readonly pagesDir: string) {}
 
   dir(): string {
-    return path.join(this.workspaceRoot, 'relay-pages');
+    return this.pagesDir;
+  }
+
+  filePath(filename: string): string {
+    return path.join(this.pagesDir, filename);
   }
 
   private ensureDir(): void {
@@ -29,7 +26,7 @@ export class PageReader {
     const d = this.dir();
     if (!fs.existsSync(d)) return [];
     return fs.readdirSync(d)
-      .filter(f => f.endsWith('.relay'))
+      .filter(f => f.endsWith('.desk'))
       .map(filename => {
         try {
           const raw = fs.readFileSync(path.join(d, filename), 'utf-8');
@@ -54,46 +51,4 @@ export class PageReader {
     const p = path.join(this.dir(), filename);
     if (fs.existsSync(p)) fs.unlinkSync(p);
   }
-}
-
-// ── Parsing ────────────────────────────────────────────────────────────────
-
-function extractTitle(raw: string): string | null {
-  const m = raw.match(/<relay-page[^>]*\stitle="([^"]*)"/i);
-  return m ? m[1] : null;
-}
-
-function parse(filename: string, raw: string): PageContent {
-  const title = extractTitle(raw) ?? stem(filename);
-
-  const styleMatch = raw.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-  const customStyles = styleMatch ? styleMatch[1] : '';
-
-  const bodyMatch = raw.match(/<relay-page[^>]*>([\s\S]*)<\/relay-page>/i);
-  let body = bodyMatch ? bodyMatch[1] : raw;
-
-  // Remove <style> and any stray <script> blocks from body
-  body = body
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .trim();
-
-  return { filename, title, customStyles, bodyHtml: body };
-}
-
-// ── Serialisation ──────────────────────────────────────────────────────────
-
-function serialize(title: string, bodyHtml: string, customStyles: string): string {
-  const styleBlock = customStyles.trim()
-    ? `  <style>\n${customStyles.trim().split('\n').map(l => `    ${l}`).join('\n')}\n  </style>\n\n`
-    : '';
-  return `<relay-page title="${escAttr(title)}">\n${styleBlock}${bodyHtml}\n</relay-page>\n`;
-}
-
-function escAttr(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-}
-
-function stem(filename: string): string {
-  return filename.replace(/\.relay$/, '');
 }

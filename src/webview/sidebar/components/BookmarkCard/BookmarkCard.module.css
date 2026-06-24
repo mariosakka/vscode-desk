@@ -1,0 +1,70 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: border-color .15s, background .15s;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  background: var(--surface2);
+}
+
+.icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  line-height: 1;
+  padding-top: 1px;
+}
+
+.icon img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 3px;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 3px;
+}
+
+.desc {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
+.card:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
+.card:hover [data-hover-btn='accent']:hover { color: var(--accent2); }
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -1,0 +1,14 @@
+.form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.error {
+  width: 100%;
+  font-size: 11px;
+  color: var(--vscode-errorForeground, #f48771);
+  padding: 0 2px;
+}

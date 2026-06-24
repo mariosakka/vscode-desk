@@ -1,0 +1,146 @@
+.body {
+  padding: 4px 12px 10px;
+}
+
+.empty {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.fields {
+  margin-bottom: 6px;
+}
+
+.subLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 8px 0 4px;
+}
+
+.entryRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.entryInput {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 3px 6px;
+  outline: none;
+  min-width: 0;
+}
+
+.entryInput:focus { border-color: var(--accent); }
+.entryInput::placeholder { color: var(--muted); opacity: 0.6; }
+
+.sep {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.removeEntry {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.removeEntry:hover { color: var(--vscode-errorForeground, #f44747); }
+
+.addRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.addBtn {
+  background: var(--vscode-button-secondaryBackground, var(--surface2));
+  color: var(--vscode-button-secondaryForeground, var(--muted));
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 2px 7px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.addBtn:hover {
+  background: var(--vscode-button-secondaryHoverBackground, var(--border));
+  color: var(--text);
+}
+
+.formActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.saveBtn {
+  flex: 1;
+  background: var(--accent);
+  color: var(--vscode-button-foreground, #fff);
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  padding: 5px 0;
+  cursor: pointer;
+}
+
+.saveBtn:hover { opacity: 0.9; }
+
+.cancelBtn {
+  flex: 1;
+  background: var(--vscode-button-secondaryBackground, var(--surface2));
+  color: var(--vscode-button-secondaryForeground, var(--muted));
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  padding: 5px 0;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: var(--vscode-button-secondaryHoverBackground, var(--border));
+  color: var(--text);
+}
+
+.viewRow {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.viewLabel {
+  color: var(--muted);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.viewVal {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

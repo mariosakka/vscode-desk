@@ -47,7 +47,7 @@ describe('JsonFileAdapter', () => {
   describe('isConfigured()', () => {
     it('returns true when serverKey exists in mcpServers', async () => {
       (fs.readFileSync as jest.Mock).mockReturnValue(
-        JSON.stringify({ mcpServers: { 'vscode-relay': { url: 'http://127.0.0.1:3333/mcp' } } }),
+        JSON.stringify({ mcpServers: { 'vscode-desk': { url: 'http://127.0.0.1:3333/mcp' } } }),
       );
       expect(await new TestAdapter().isConfigured(3333)).toBe(true);
     });
@@ -90,7 +90,7 @@ describe('JsonFileAdapter', () => {
       await new TestAdapter().configure(3333);
       expect(fs.writeFileSync).toHaveBeenCalledWith(
         '/home/user/.testagent/config.json',
-        JSON.stringify({ mcpServers: { 'vscode-relay': { type: 'http', url: 'http://127.0.0.1:3333/mcp' } } }, null, 2),
+        JSON.stringify({ mcpServers: { 'vscode-desk': { type: 'http', url: 'http://127.0.0.1:3333/mcp' } } }, null, 2),
       );
     });
 
@@ -102,7 +102,7 @@ describe('JsonFileAdapter', () => {
       await new TestAdapter().configure(3333);
       const written = JSON.parse((fs.writeFileSync as jest.Mock).mock.calls[0][1] as string);
       expect(written.mcpServers['other-server']).toBeDefined();
-      expect(written.mcpServers['vscode-relay']).toEqual({ type: 'http', url: 'http://127.0.0.1:3333/mcp' });
+      expect(written.mcpServers['vscode-desk']).toEqual({ type: 'http', url: 'http://127.0.0.1:3333/mcp' });
     });
 
     it('creates parent directory before writing', async () => {

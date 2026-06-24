@@ -7,52 +7,52 @@ export interface McpResource {
 
 export const RESOURCES: McpResource[] = [
   {
-    uri: 'relay://guide/quick-start',
-    name: 'Relay Agent Quick-Start',
+    uri: 'desk://guide/quick-start',
+    name: 'Desk Agent Quick-Start',
     description: 'How to connect, the data model, the typical tool call loop, and key rules. Read this first.',
     mimeType: 'text/markdown',
   },
   {
-    uri: 'relay://guide/relay-page-format',
-    name: 'Relay Page Format (.relay)',
-    description: 'The .relay XML file format, available CSS variables, and built-in callout classes for customStyles.',
+    uri: 'desk://guide/desk-page-format',
+    name: 'Desk Page Format (.desk)',
+    description: 'The .desk XML file format, available CSS variables, and built-in callout classes for customStyles.',
     mimeType: 'text/markdown',
   },
   {
-    uri: 'relay://guide/skill-format',
-    name: 'Relay Skill Format',
+    uri: 'desk://guide/skill-format',
+    name: 'Desk Skill Format',
     description: 'YAML frontmatter spec, content rules, and install paths for workflow skills submitted via add_skill.',
     mimeType: 'text/markdown',
   },
 ];
 
 export const RESOURCE_CONTENT: Record<string, string> = {
-  'relay://guide/quick-start': `# Relay Agent Quick-Start
+  'desk://guide/quick-start': `# Desk Agent Quick-Start
 
-Relay is a VS Code extension with tabbed bookmarks and \`.relay\` doc pages.
+Desk is a VS Code extension with tabbed bookmarks and \`.desk\` doc pages.
 It runs a local JSON-RPC 2.0 MCP server at **http://localhost:3333/mcp**.
 
 ## Data model
 
 \`\`\`
 PortalData
-└── tabs[]
-    ├── id          string   ("tab_abc123")
+└── projects[]
+    ├── id          string   ("project_abc123")
     ├── name        string
     └── bookmarks[]
         ├── id          string   ("bm_xyz789")
         ├── title       string
-        ├── url         string   (https://… or relay-page:<filename>)
+        ├── url         string   (https://… or desk-page:<filename>)
         ├── icon        string   (emoji or "data:image/…" base64)
         └── description string
 \`\`\`
 
-Pages are \`.relay\` files in \`<workspace>/relay-pages/\` — separate from bookmarks.
+Pages are \`.desk\` files in \`<workspace>/desk-pages/\` — separate from bookmarks.
 
 ## Typical loop — bookmarks
 
 \`\`\`
-list_tabs           → find the right tab (IDs are opaque — always fetch fresh)
+list_projects       → find the right project (IDs are opaque — always fetch fresh)
 list_bookmarks      → check what already exists to avoid duplicates
 add_bookmark        → add (omit icon to auto-fetch favicon)
 update_bookmark     → patch any fields
@@ -63,16 +63,23 @@ remove_bookmark     → clean up
 
 \`\`\`
 list_pages          → see what exists
-create_page         → write a new .relay file
+create_page         → write a new .desk file
 update_page         → revise title, body, or per-page CSS (only provided fields change)
 delete_page         → remove a page
 \`\`\`
 
+## WorkflowConfig shape
+
+\`\`\`
+communication: [{ label: "General", channel: "#general" }, { label: "Deploys", channel: "#deploys" }]
+general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-repo" }]
+\`\`\`
+
 ## Key rules
 
-- **IDs are opaque** — always call list_tabs / list_bookmarks to get current IDs; never cache across sessions.
-- **Favicon is free** — omit \`icon\` in add_bookmark and Relay fetches it automatically (30-day cache).
-- **relay-page: links** — set a bookmark's \`url\` to \`relay-page:filename.relay\` and clicking it opens the page viewer directly from the sidebar.
+- **IDs are opaque** — always call list_projects / list_bookmarks to get current IDs; never cache across sessions.
+- **Favicon is free** — omit \`icon\` in add_bookmark and Desk fetches it automatically (30-day cache).
+- **desk-page: links** — set a bookmark's \`url\` to \`desk-page:filename.desk\` and clicking it opens the page viewer directly from the sidebar.
 - **update_page is partial** — only fields you include are overwritten; omit \`content\` to change just the title, etc.
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
 - **HTTP 200 always** — errors arrive as a JSON-RPC \`error\` object, not as HTTP 4xx/5xx.
@@ -81,13 +88,13 @@ delete_page         → remove a page
 
 | Tool | R | W | Required args |
 |------|---|---|---------------|
-| list_tabs | ✓ | | — |
-| list_bookmarks | ✓ | | — (tab_id optional) |
-| add_bookmark | | ✓ | tab_id, title, url |
-| remove_bookmark | | ✓ | tab_id, bookmark_id |
-| create_tab | | ✓ | name |
-| remove_tab | | ✓ | tab_id |
-| update_bookmark | | ✓ | tab_id, bookmark_id, fields |
+| list_projects | ✓ | | — |
+| list_bookmarks | ✓ | | — (project_id optional) |
+| add_bookmark | | ✓ | project_id, title, url |
+| remove_bookmark | | ✓ | project_id, bookmark_id |
+| create_project | | ✓ | name |
+| remove_project | | ✓ | project_id |
+| update_bookmark | | ✓ | project_id, bookmark_id, fields |
 | list_pages | ✓ | | — |
 | create_page | | ✓ | filename, title, content |
 | update_page | | ✓ | filename (+ any fields) |
@@ -99,14 +106,14 @@ delete_page         → remove a page
 | remove_skill | | ✓ | name |
 `,
 
-  'relay://guide/relay-page-format': `# Relay Page Format (.relay)
+  'desk://guide/desk-page-format': `# Desk Page Format (.desk)
 
-Pages are XML files stored in \`<workspace>/relay-pages/\`.
+Pages are XML files stored in \`<workspace>/desk-pages/\`.
 
 ## File structure
 
 \`\`\`xml
-<relay-page title="Page Title">
+<desk-page title="Page Title">
   <style>
     /* optional CSS — only active for this page */
     /* use theme variables (see below) to stay on-theme */
@@ -115,13 +122,13 @@ Pages are XML files stored in \`<workspace>/relay-pages/\`.
 
   <!-- HTML body — any standard HTML except <script> tags -->
   <h2>Heading</h2>
-  <p>Link to another page: <a href="other.relay">other page</a></p>
+  <p>Link to another page: <a href="other.desk">other page</a></p>
   <p>External link: <a href="https://example.com">opens in browser</a></p>
-</relay-page>
+</desk-page>
 \`\`\`
 
 - \`<script>\` tags are stripped before rendering.
-- \`.relay\` links navigate inside the viewer (back button maintained).
+- \`.desk\` links navigate inside the viewer (back button maintained).
 - \`https://\` links open in the browser.
 
 ## Theme CSS variables
@@ -152,7 +159,7 @@ Use these in content without adding customStyles:
 \`\`\`
 `,
 
-  'relay://guide/skill-format': `# Relay Skill Format
+  'desk://guide/skill-format': `# Desk Skill Format
 
 Skills submitted via \`add_skill\` use YAML frontmatter + a markdown body.
 

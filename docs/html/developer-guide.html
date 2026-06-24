@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Developer Guide — Relay</title>
+  <title>Developer Guide — Desk</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -117,15 +117,15 @@
 <body>
   <div class="container">
 
-    <div class="breadcrumb"><a href="index.html">Relay Docs</a> / Developer Guide</div>
+    <div class="breadcrumb"><a href="index.html">Desk Docs</a> / Developer Guide</div>
 
     <h1>Developer Guide</h1>
-    <p class="subtitle">Architecture, folder layout, build pipeline, testing, and how to extend Relay.</p>
+    <p class="subtitle">Architecture, folder layout, build pipeline, testing, and how to extend Desk.</p>
 
     <!-- FOLDER LAYOUT -->
     <h2>Folder Layout</h2>
     <div class="tree">
-      <div><span class="dir">relay/</span></div>
+      <div><span class="dir">desk/</span></div>
       <div>&nbsp;&nbsp;<span class="file">package.json</span> &nbsp;&nbsp;<span class="note">extension manifest, scripts, devDependencies</span></div>
       <div>&nbsp;&nbsp;<span class="file">tsconfig.json</span> &nbsp;&nbsp;<span class="note">strict TS, CommonJS output, ES2020 target</span></div>
       <div>&nbsp;&nbsp;<span class="file">webpack.config.js</span> &nbsp;&nbsp;<span class="note">bundles extension, copies webview assets</span></div>
@@ -133,20 +133,20 @@
       <div>&nbsp;&nbsp;<span class="file">release-please-config.json</span> &nbsp;&nbsp;<span class="note">automated versioning config</span></div>
       <div>&nbsp;&nbsp;<span class="dir">src/</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">extension.ts</span> &nbsp;&nbsp;<span class="note">activate(), command registration</span></div>
-      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">models.ts</span> &nbsp;&nbsp;<span class="note">Bookmark, Tab, PortalData interfaces</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">models.ts</span> &nbsp;&nbsp;<span class="note">Bookmark, Project, PortalData interfaces</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">portalViewProvider.ts</span> &nbsp;&nbsp;<span class="note">WebviewViewProvider — sidebar host</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">pages/</span></div>
-      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">pageReader.ts</span> &nbsp;&nbsp;<span class="note">read/write .relay files from relay-pages/</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">pageReader.ts</span> &nbsp;&nbsp;<span class="note">read/write .desk files from desk-pages/</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">pageViewPanel.ts</span> &nbsp;&nbsp;<span class="note">full-width WebviewPanel for the page viewer</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">services/</span></div>
-      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">dataService.ts</span> &nbsp;&nbsp;<span class="note">globalState CRUD for tabs + bookmarks</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">dataService.ts</span> &nbsp;&nbsp;<span class="note">plain JSON CRUD for projects + bookmarks (~/.desk/)</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">faviconService.ts</span> &nbsp;&nbsp;<span class="note">HTTP favicon fetch, base64 cache (30-day TTL)</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">dataService.test.ts</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">faviconService.test.ts</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">mcp/</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">server.ts</span> &nbsp;&nbsp;<span class="note">HTTP JSON-RPC 2.0 server</span></div>
-      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">toolSchemas.ts</span> &nbsp;&nbsp;<span class="note">JSON schemas for all 11 tools</span></div>
-      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">resources.ts</span> &nbsp;&nbsp;<span class="note">2 MCP resources (agent self-documentation)</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">toolSchemas.ts</span> &nbsp;&nbsp;<span class="note">JSON schemas for all 17 tools</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">resources.ts</span> &nbsp;&nbsp;<span class="note">3 MCP resources (agent self-documentation)</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">server.test.ts</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">__mocks__/</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">vscode.ts</span> &nbsp;&nbsp;<span class="note">Jest mock for the VS Code API</span></div>
@@ -158,9 +158,9 @@
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">page/</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">index.html</span> &nbsp;&nbsp;<span class="note">page viewer template</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">index.css</span> &nbsp;&nbsp;<span class="note">VS Code theme token mapping + doc layout</span></div>
-      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">index.js</span> &nbsp;&nbsp;<span class="note">.relay link navigation, external link handling</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">index.js</span> &nbsp;&nbsp;<span class="note">.desk link navigation, external link handling</span></div>
       <div>&nbsp;&nbsp;<span class="dir">media/</span></div>
-      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">relay.png</span> &nbsp;&nbsp;<span class="note">extension logo (marketplace / extensions panel)</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">desk.png</span> &nbsp;&nbsp;<span class="note">extension logo (marketplace / extensions panel)</span></div>
       <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">icon.svg</span> &nbsp;&nbsp;<span class="note">Activity Bar icon (must be monochrome SVG)</span></div>
       <div>&nbsp;&nbsp;<span class="dir">out/</span> &nbsp;&nbsp;<span class="note">(gitignored) webpack output</span></div>
       <div>&nbsp;&nbsp;<span class="dir">docs/</span> &nbsp;&nbsp;<span class="note">this documentation</span></div>
@@ -183,52 +183,53 @@
       <div class="layer-card">
         <div class="layer-label">Data layer</div>
         <div class="layer-name">DataService</div>
-        <p>All reads and writes to VS Code <code>globalState</code>. Exposes typed CRUD methods. No side effects.</p>
+        <p>All reads and writes to plain JSON files under <code>~/.desk/global/</code> and <code>~/.desk/workspaces/&lt;slug&gt;/</code>. Exposes typed CRUD methods. No side effects.</p>
       </div>
       <div class="layer-card">
         <div class="layer-label">Pages layer</div>
         <div class="layer-name">PageReader / PageViewPanel</div>
-        <p><code>PageReader</code> reads and writes <code>.relay</code> XML files from the workspace. <code>PageViewPanel</code> renders them in a full VS Code editor tab with back-stack navigation.</p>
+        <p><code>PageReader</code> reads and writes <code>.desk</code> XML files from the workspace. <code>PageViewPanel</code> renders them in a full VS Code editor tab with back-stack navigation.</p>
       </div>
       <div class="layer-card">
         <div class="layer-label">Network layer</div>
         <div class="layer-name">McpServer</div>
-        <p>Lightweight <code>http.createServer</code> on <code>127.0.0.1</code>. Parses JSON-RPC 2.0, dispatches to services, then calls <code>provider.refresh()</code>. Exposes 11 tools and 2 documentation resources.</p>
+        <p>Lightweight <code>http.createServer</code> on <code>127.0.0.1</code>. Parses JSON-RPC 2.0, dispatches to services, then calls <code>provider.refresh()</code>. Exposes 17 tools and 3 documentation resources.</p>
       </div>
       <div class="layer-card">
         <div class="layer-label">Utility</div>
         <div class="layer-name">FaviconService</div>
-        <p>Fetches favicons over HTTPS with redirect following (max 2 hops). Caches base64 data URLs by hostname in <code>globalState</code> with a 30-day TTL.</p>
+        <p>Fetches favicons over HTTPS with redirect following (max 2 hops). Caches base64 data URLs by hostname in <code>~/.desk/global/</code> with a 30-day TTL.</p>
       </div>
     </div>
 
     <h3>Data flow — user adds a bookmark via sidebar click</h3>
     <pre><code><span class="cm">// webview → extension host</span>
-webview.postMessage({ type: <span class="str">'addBookmark'</span>, tabId, title, url })
+webview.postMessage({ type: <span class="str">'addBookmark'</span>, projectId, title, url })
 
 <span class="cm">// PortalViewProvider receives it</span>
-this._dataService.addBookmark(tabId, { title, url, icon, description })
+this._dataService.addBookmark(projectId, { title, url, icon, description })
 
-<span class="cm">// DataService writes to globalState, then provider refreshes webview</span>
+<span class="cm">// DataService writes to ~/.desk/, then provider refreshes webview</span>
 this._view.webview.postMessage({ type: <span class="str">'update'</span>, data: this._dataService.get() })</code></pre>
 
     <h3>Data flow — AI agent adds a bookmark via MCP</h3>
-    <pre><code><span class="cm">// McpServer receives tools/call { name: 'add_bookmark', arguments: { tab_id, title, url } }</span>
+    <pre><code><span class="cm">// McpServer receives tools/call { name: 'add_bookmark', arguments: { project_id, title, url } }</span>
 <span class="kw">const</span> icon = args.icon ?? <span class="kw">await</span> this.faviconService.getIcon(args.url)
-this.dataService.addBookmark(args.tab_id, { title, url, icon, description })
+this.dataService.addBookmark(args.project_id, { title, url, icon, description })
 this.provider.refresh()  <span class="cm">// pushes update to open webview</span></code></pre>
 
     <!-- PERSISTENCE -->
     <h2>Persistence</h2>
-    <p>All data lives in VS Code's <code>ExtensionContext.globalState</code> under two keys:</p>
+    <p>All data lives in plain JSON files under <code>~/.desk/</code>, managed by helpers in <code>src/storage/deskDir.ts</code>:</p>
     <table>
-      <tr><th>Key</th><th>Type</th><th>Contents</th></tr>
-      <tr><td><code>relay.data</code></td><td><code>PortalData</code></td><td>All tabs and bookmarks. Survives VS Code restarts.</td></tr>
-      <tr><td><code>relay.favicon-cache</code></td><td><code>Record&lt;hostname, CacheEntry&gt;</code></td><td>Base64 favicon data URLs, each with a <code>fetchedAt</code> timestamp. Entries older than 30 days are re-fetched on next access.</td></tr>
+      <tr><th>Path</th><th>Type</th><th>Contents</th></tr>
+      <tr><td><code>~/.desk/global/data.json</code></td><td><code>PortalData</code></td><td>Global projects and bookmarks. Survives VS Code restarts and workspace changes.</td></tr>
+      <tr><td><code>~/.desk/workspaces/&lt;slug&gt;/data.json</code></td><td><code>PortalData</code></td><td>Workspace-scoped projects and bookmarks.</td></tr>
+      <tr><td><code>~/.desk/global/favicon-cache.json</code></td><td><code>Record&lt;hostname, CacheEntry&gt;</code></td><td>Base64 favicon data URLs, each with a <code>fetchedAt</code> timestamp. Entries older than 30 days are re-fetched on next access.</td></tr>
     </table>
 
     <div class="callout tip">
-      <code>globalState</code> is scoped to the extension — it won't interfere with other extensions and is automatically cleared when Relay is uninstalled.
+      Data stored in <code>~/.desk/</code> is independent of VS Code — it persists across reinstalls and is portable across machines.
     </div>
 
     <!-- BUILD -->
@@ -257,21 +258,17 @@ npm test          <span class="cm"># jest — all test files under src/</span></
     <h3>Test files</h3>
     <table>
       <tr><th>File</th><th>What it tests</th><th>Tests</th></tr>
-      <tr><td><code>dataService.test.ts</code></td><td>CRUD operations on tabs and bookmarks; empty default state; error on missing tab.</td><td>13</td></tr>
+      <tr><td><code>dataService.test.ts</code></td><td>CRUD operations on projects and bookmarks; empty default state; error on missing project; global vs workspace scope.</td><td>13</td></tr>
       <tr><td><code>faviconService.test.ts</code></td><td>Invalid URL rejection; fetch failure fallback; cache miss/hit; stale re-fetch; hostname deduplication.</td><td>7</td></tr>
-      <tr><td><code>server.test.ts</code></td><td>Full JSON-RPC round trips: initialize, all 11 tools, 2 resources, favicon auto-fetch, icon skip when provided, error for unknown tool, 404 for wrong path.</td><td>10</td></tr>
+      <tr><td><code>server.test.ts</code></td><td>Full JSON-RPC round trips: initialize, all 17 tools, 3 resources, favicon auto-fetch, icon skip when provided, error for unknown tool, 404 for wrong path.</td><td>19</td></tr>
     </table>
 
     <h3>Writing a new test</h3>
-    <p>Each test file sets up its own <code>mockState</code> object and constructs a <code>mockContext</code> with <code>globalState.get/update</code> backed by it. No global setup needed.</p>
+    <p>Each test file sets up its own in-memory file store and constructs a <code>DataService</code> pointed at a temporary <code>~/.desk/</code> directory. No global setup needed.</p>
 
-    <pre><code><span class="kw">const</span> mockState: Record&lt;<span class="type">string</span>, <span class="type">any</span>&gt; = {}
-<span class="kw">const</span> mockContext = {
-  globalState: {
-    get: (key: <span class="type">string</span>) =&gt; mockState[key],
-    update: (key: <span class="type">string</span>, val: <span class="type">any</span>) =&gt; { mockState[key] = val },
-  },
-} <span class="kw">as any</span></code></pre>
+    <pre><code><span class="kw">const</span> tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), <span class="str">'desk-test-'</span>))
+<span class="kw">const</span> dataService = <span class="kw">new</span> DataService({ globalDir: tmpDir, workspaceDir: tmpDir })
+<span class="cm">// use dataService in assertions — files are cleaned up after each test</span></code></pre>
 
     <!-- WEBVIEW -->
     <h2>Webview Details</h2>
@@ -280,7 +277,7 @@ npm test          <span class="cm"># jest — all test files under src/</span></
     <p>The webview CSP allows scripts and styles only from VS Code's trusted <code>${cspSource}</code>, plus <code>img-src data:</code> so base64 favicon data URLs render without external network requests. No <code>http:</code> or <code>https:</code> image sources are permitted.</p>
 
     <h3>Theming</h3>
-    <p>Both CSS files map Relay's internal variables (<code>--bg</code>, <code>--text</code>, <code>--accent</code>, etc.) directly onto VS Code's injected theme tokens (<code>--vscode-editor-background</code>, <code>--vscode-textLink-foreground</code>, etc.) with hardcoded fallbacks. No JavaScript theme logic is needed — VS Code re-injects its tokens whenever the user changes theme, and the CSS cascade handles the rest.</p>
+    <p>Both CSS files map Desk's internal variables (<code>--bg</code>, <code>--text</code>, <code>--accent</code>, etc.) directly onto VS Code's injected theme tokens (<code>--vscode-editor-background</code>, <code>--vscode-textLink-foreground</code>, etc.) with hardcoded fallbacks. No JavaScript theme logic is needed — VS Code re-injects its tokens whenever the user changes theme, and the CSS cascade handles the rest.</p>
 
     <h3>Sidebar message protocol</h3>
     <table>
@@ -288,30 +285,30 @@ npm test          <span class="cm"># jest — all test files under src/</span></
       <tr><td>Host → Webview</td><td><code>update</code></td><td><code>{ data: PortalData }</code> — full state snapshot</td></tr>
       <tr><td>Webview → Host</td><td><code>ready</code></td><td>none — triggers initial <code>update</code></td></tr>
       <tr><td>Webview → Host</td><td><code>openUrl</code></td><td><code>{ url: string }</code> — opens in browser or page viewer</td></tr>
-      <tr><td>Webview → Host</td><td><code>addBookmark</code></td><td><code>{ tabId, title, url, icon?, description? }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>removeBookmark</code></td><td><code>{ tabId, bookmarkId }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>addTab</code></td><td><code>{ name: string }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>removeTab</code></td><td><code>{ tabId: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>addBookmark</code></td><td><code>{ projectId, title, url, icon?, description? }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>removeBookmark</code></td><td><code>{ projectId, bookmarkId }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>addProject</code></td><td><code>{ name: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>removeProject</code></td><td><code>{ projectId: string }</code></td></tr>
     </table>
 
     <h3>Page viewer message protocol</h3>
     <table>
       <tr><th>Direction</th><th>Message type</th><th>Payload</th></tr>
       <tr><td>Host → Webview</td><td><code>load</code></td><td><code>{ title, html, hasBack: boolean }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>navigate</code></td><td><code>{ filename: string }</code> — follow a .relay link</td></tr>
+      <tr><td>Webview → Host</td><td><code>navigate</code></td><td><code>{ filename: string }</code> — follow a .desk link</td></tr>
       <tr><td>Webview → Host</td><td><code>back</code></td><td>none — pop back-stack</td></tr>
       <tr><td>Webview → Host</td><td><code>openUrl</code></td><td><code>{ url: string }</code> — open https:// in browser</td></tr>
     </table>
 
     <!-- EXTENSION POINTS -->
-    <h2>Extending Relay</h2>
+    <h2>Extending Desk</h2>
 
     <h3>Adding a new MCP tool</h3>
     <p>Three files always change together:</p>
     <ol style="padding-left: 20px; margin-bottom: 14px; line-height: 2;">
       <li>Add the tool's JSON schema to the <code>TOOLS</code> array in <code>src/mcp/toolSchemas.ts</code>.</li>
-      <li>Add a <code>case</code> for it in <code>McpServer.callTool()</code> in <code>src/mcp/server.ts</code>.</li>
-      <li>Add at minimum one round-trip test in <code>src/mcp/server.test.ts</code>. Update the <code>toHaveLength</code> assertion on <code>tools/list</code> to match the new total.</li>
+      <li>Add a <code>case</code> for it in <code>McpServer.callTool()</code> in <code>src/mcp/server/server.ts</code>.</li>
+      <li>Add at minimum one round-trip test in <code>src/mcp/server/server.test.ts</code>. Update the <code>toHaveLength</code> assertion on <code>tools/list</code> to match the new total.</li>
     </ol>
 
     <h3>Adding a new VS Code command</h3>

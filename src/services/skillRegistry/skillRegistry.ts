@@ -1,4 +1,5 @@
-import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AgentAdapter } from '../../agents/agentAdapter';
 
 export interface Skill {
@@ -10,21 +11,36 @@ export interface Skill {
   installedAt: number;
 }
 
-const STORAGE_KEY = 'relay.skills';
-
 export class SkillRegistry {
   private pending: { name: string; content: string; descriptionOverride?: string } | null = null;
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly dir: string) {}
+
+  private readAll(): Skill[] {
+    try {
+      return JSON.parse(fs.readFileSync(path.join(this.dir, 'skills.json'), 'utf-8'));
+    } catch {
+      return [];
+    }
+  }
+
+  private writeAll(skills: Skill[]): void {
+    fs.mkdirSync(this.dir, { recursive: true });
+    fs.writeFileSync(path.join(this.dir, 'skills.json'), JSON.stringify(skills, null, 2), 'utf-8');
+  }
 
   getAll(): Skill[] {
-    return this.context.globalState.get<Skill[]>(STORAGE_KEY) ?? [];
+    return this.readAll();
   }
 
   list(): Omit<Skill, 'content'>[] {
     return this.getAll().map(({ name, description, agents, version, installedAt }) => ({
       name, description, agents, version, installedAt,
     }));
+  }
+
+  get(name: string): Skill | null {
+    return this.getAll().find(s => s.name === name) ?? null;
   }
 
   validateFrontmatter(content: string): { valid: boolean; error?: string } {
@@ -68,7 +84,7 @@ export class SkillRegistry {
     } else {
       skills.push(skill);
     }
-    await this.context.globalState.update(STORAGE_KEY, skills);
+    this.writeAll(skills);
 
     const body = stripFrontmatter(content);
     await this.installOnAdapters(skillName, body, agents, adapters);
@@ -80,7 +96,7 @@ export class SkillRegistry {
     const idx = skills.findIndex(s => s.name === name);
     if (idx === -1) throw new Error(`Skill not found: ${name}`);
     skills.splice(idx, 1);
-    await this.context.globalState.update(STORAGE_KEY, skills);
+    this.writeAll(skills);
     await Promise.all(adapters.map(a => a.uninstallSkill(name).catch(() => {})));
   }
 

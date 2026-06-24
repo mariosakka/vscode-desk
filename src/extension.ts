@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { DataService } from './services/dataService/dataService';
 import { FaviconService } from './services/faviconService/faviconService';
 import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
@@ -13,60 +14,197 @@ import { ClaudeCodeAdapter } from './agents/adapters/claudeCode/claudeCode';
 import { CursorAdapter } from './agents/adapters/cursor/cursor';
 import { CodexAdapter } from './agents/adapters/codex/codex';
 import { GeminiAdapter } from './agents/adapters/gemini/gemini';
+import { globalDir, workspaceDir } from './storage/deskDir';
 
 export function activate(context: vscode.ExtensionContext): void {
-  const dataService = new DataService(context);
   const faviconService = new FaviconService(context);
 
+  // Resolve ~/.desk/ directories
+  const gDir = globalDir();
+  const workspaceName = vscode.workspace.name ?? null;
+  const wDir = workspaceName ? workspaceDir(workspaceName) : null;
+
+  // Global services — always available
+  const globalDataService = new DataService(gDir);
+  const globalPageReader = new PageReader(path.join(gDir, 'pages'));
+  const globalWorkflowService = new WorkflowConfigService(gDir);
+  const globalSkillRegistry = new SkillRegistry(gDir);
+
+  // Workspace services — only when a folder/workspace is open
+  const workspaceDataService = wDir ? new DataService(wDir) : null;
+  const workspacePageReader = wDir ? new PageReader(path.join(wDir, 'pages')) : null;
+  const workspaceWorkflowService = wDir ? new WorkflowConfigService(wDir) : null;
+  const workspaceSkillRegistry = wDir ? new SkillRegistry(wDir) : null;
+
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null;
-  const pageReader = workspaceRoot ? new PageReader(workspaceRoot) : null;
 
-  const workflowConfigService = new WorkflowConfigService(context);
-  const skillRegistry = new SkillRegistry(context);
-
-  const provider = new PortalViewProvider(context.extensionUri, dataService, pageReader);
-
-  const adapters = [
+  const adapters: AgentAdapter[] = [
     new ClaudeCodeAdapter(),
     new CursorAdapter(workspaceRoot),
     new CodexAdapter(workspaceRoot),
     new GeminiAdapter(),
   ];
 
-  const agentRegistry = new AgentRegistry(adapters, context, skillRegistry);
+  const provider = new PortalViewProvider(
+    context.extensionUri,
+    globalDataService,
+    globalPageReader,
+    globalWorkflowService,
+    globalSkillRegistry,
+    workspaceDataService,
+    workspacePageReader,
+    workspaceWorkflowService,
+    workspaceSkillRegistry,
+    workspaceName,
+    faviconService,
+    adapters,
+  );
+
+  const agentRegistry = new AgentRegistry(adapters, context, workspaceSkillRegistry ?? globalSkillRegistry);
 
   const mcpServer = new McpServer(
-    dataService,
+    globalDataService,
+    globalPageReader,
+    globalWorkflowService,
+    globalSkillRegistry,
+    workspaceDataService,
+    workspacePageReader,
+    workspaceWorkflowService,
+    workspaceSkillRegistry,
     provider,
     faviconService,
-    pageReader,
-    workflowConfigService,
-    skillRegistry,
     adapters,
-    () => showConfigConfirmPrompt(context.extensionUri, workflowConfigService, pageReader),
-    () => showSkillConfirmPrompt(skillRegistry, adapters),
+    (scope: string) => {
+      const svc = scope === 'workspace' ? (workspaceWorkflowService ?? globalWorkflowService) : globalWorkflowService;
+      const reader = scope === 'workspace' ? workspacePageReader : null;
+      return showConfigConfirmPrompt(context.extensionUri, svc, reader);
+    },
+    (scope: string) => {
+      const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
+      return showSkillConfirmPrompt(registry, adapters);
+    },
   );
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
   );
 
-  const port = vscode.workspace.getConfiguration('relay').get<number>('mcpPort', 3333);
+  const port = vscode.workspace.getConfiguration('desk').get<number>('mcpPort', 3333);
   mcpServer.start(port);
   context.subscriptions.push({ dispose: () => mcpServer.stop() });
 
   agentRegistry.showSetupPrompt(port).then(() => agentRegistry.showSkillInstallPrompt()).catch(() => {});
 
+  async function pickScope(): Promise<'workspace' | 'global' | undefined> {
+    if (!workspaceDataService) return 'global';
+    const pick = await vscode.window.showQuickPick(
+      [
+        { label: 'Workspace', description: workspaceName ?? '', value: 'workspace' as const },
+        { label: 'Global', description: 'Available in all workspaces', value: 'global' as const },
+      ],
+      { placeHolder: 'Choose scope' },
+    );
+    return pick?.value;
+  }
+
   context.subscriptions.push(
-    vscode.commands.registerCommand('relay.addBookmark',           () => cmdAddBookmark(dataService, faviconService, provider)),
-    vscode.commands.registerCommand('relay.addTab',                () => cmdAddTab(dataService, provider)),
-    vscode.commands.registerCommand('relay.removeBookmark',        () => cmdRemoveBookmark(dataService, provider)),
-    vscode.commands.registerCommand('relay.removeTab',             () => cmdRemoveTab(dataService, provider)),
-    vscode.commands.registerCommand('relay.openPage',              () => cmdOpenPage(context.extensionUri, pageReader)),
-    vscode.commands.registerCommand('relay.newPage',               () => cmdNewPage(pageReader)),
-    vscode.commands.registerCommand('relay.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
-    vscode.commands.registerCommand('relay.configureWorkflow',     () => cmdConfigureWorkflow(workflowConfigService)),
-    vscode.commands.registerCommand('relay.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
+    vscode.commands.registerCommand('desk.addBookmark', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
+      await cmdAddBookmark(ds, faviconService, provider);
+    }),
+    vscode.commands.registerCommand('desk.addProject', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
+      await cmdAddProject(ds, provider);
+    }),
+    vscode.commands.registerCommand('desk.removeBookmark', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
+      await cmdRemoveBookmark(ds, provider);
+    }),
+    vscode.commands.registerCommand('desk.removeProject', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
+      await cmdRemoveProject(ds, provider);
+    }),
+    vscode.commands.registerCommand('desk.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageReader)),
+    vscode.commands.registerCommand('desk.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageReader)),
+    vscode.commands.registerCommand('desk.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
+    vscode.commands.registerCommand('desk.configureWorkflow', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const svc = scope === 'workspace' ? (workspaceWorkflowService ?? globalWorkflowService) : globalWorkflowService;
+      await cmdConfigureWorkflow(svc);
+    }),
+    vscode.commands.registerCommand('desk.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
+    vscode.commands.registerCommand('desk.openUrl',        () => cmdOpenUrl()),
+    vscode.commands.registerCommand('desk.updateBookmark', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
+      await cmdUpdateBookmark(ds, faviconService, provider);
+    }),
+    vscode.commands.registerCommand('desk.deletePage', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const store = scope === 'workspace' ? (workspacePageReader ?? globalPageReader) : globalPageReader;
+      await cmdDeletePage(store, provider);
+    }),
+    vscode.commands.registerCommand('desk.removeSkill', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
+      await cmdRemoveSkill(registry, adapters, provider);
+    }),
+    vscode.commands.registerCommand('desk.newSkill',    () => cmdNewSkill()),
+    vscode.commands.registerCommand('desk.editSkill', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
+      await cmdEditSkill(registry);
+    }),
+    vscode.commands.registerCommand('desk.submitSkill', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
+      await cmdSubmitSkill(registry, adapters, provider);
+    }),
+    vscode.commands.registerCommand('desk.listProjects', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
+      await cmdListProjects(ds, provider);
+    }),
+    vscode.commands.registerCommand('desk.listBookmarks', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
+      await cmdListBookmarks(ds);
+    }),
+    vscode.commands.registerCommand('desk.listSkills', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
+      await cmdListSkills(registry);
+    }),
+    vscode.commands.registerCommand('desk.viewWorkflow', async () => {
+      const scope = await pickScope();
+      if (scope === undefined) return;
+      const svc = scope === 'workspace' ? (workspaceWorkflowService ?? globalWorkflowService) : globalWorkflowService;
+      await cmdViewWorkflow(svc);
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      provider.updateWorkspaceName(vscode.workspace.name ?? null);
+      provider.refresh();
+    }),
   );
 }
 
@@ -79,11 +217,17 @@ async function cmdAddBookmark(
   faviconService: FaviconService,
   provider: PortalViewProvider,
 ): Promise<void> {
-  const tabId = await pickTab(dataService);
-  if (!tabId) return;
+  const projectId = await pickProject(dataService);
+  if (!projectId) return;
 
   const title = await vscode.window.showInputBox({ prompt: 'Bookmark title', ignoreFocusOut: true });
   if (!title) return;
+
+  const project = dataService.get().projects.find(p => p.id === projectId);
+  if (project?.bookmarks.some(b => b.title.toLowerCase() === title.toLowerCase())) {
+    vscode.window.showWarningMessage(`A bookmark named "${title}" already exists in this project.`);
+    return;
+  }
 
   const url = await vscode.window.showInputBox({ prompt: 'URL (e.g. https://example.com)', ignoreFocusOut: true });
   if (!url) return;
@@ -99,78 +243,82 @@ async function cmdAddBookmark(
     ? iconInput.trim()
     : await faviconService.getIcon(url);
 
-  dataService.addBookmark(tabId, { title, url, icon, description });
+  dataService.addBookmark(projectId, { title, url, icon, description });
   provider.refresh();
 }
 
-async function cmdAddTab(dataService: DataService, provider: PortalViewProvider): Promise<void> {
-  const name = await vscode.window.showInputBox({ prompt: 'Tab name', ignoreFocusOut: true });
+async function cmdAddProject(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+  const name = await vscode.window.showInputBox({ prompt: 'Project name', ignoreFocusOut: true });
   if (!name) return;
-  dataService.createTab(name);
+  if (dataService.get().projects.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    vscode.window.showWarningMessage(`A project named "${name}" already exists.`);
+    return;
+  }
+  dataService.createProject(name);
   provider.refresh();
 }
 
 async function cmdRemoveBookmark(dataService: DataService, provider: PortalViewProvider): Promise<void> {
   const data = dataService.get();
-  if (data.tabs.length === 0) {
-    vscode.window.showErrorMessage('No tabs yet.');
+  if (data.projects.length === 0) {
+    vscode.window.showErrorMessage('No projects yet.');
     return;
   }
-  const tabPick = await vscode.window.showQuickPick(
-    data.tabs.map(t => ({ label: t.name, id: t.id })),
-    { placeHolder: 'Select tab' },
+  const projectPick = await vscode.window.showQuickPick(
+    data.projects.map(p => ({ label: p.name, id: p.id })),
+    { placeHolder: 'Select project' },
   );
-  if (!tabPick) return;
-  const tab = data.tabs.find(t => t.id === tabPick.id);
-  if (!tab || tab.bookmarks.length === 0) {
-    vscode.window.showErrorMessage('No bookmarks in this tab.');
+  if (!projectPick) return;
+  const project = data.projects.find(p => p.id === projectPick.id);
+  if (!project || project.bookmarks.length === 0) {
+    vscode.window.showErrorMessage('No bookmarks in this project.');
     return;
   }
   const bmPick = await vscode.window.showQuickPick(
-    tab.bookmarks.map(b => ({ label: b.title, description: b.url, id: b.id })),
+    project.bookmarks.map(b => ({ label: b.title, description: b.url, id: b.id })),
     { placeHolder: 'Select bookmark to remove' },
   );
   if (!bmPick) return;
-  dataService.removeBookmark(tabPick.id, bmPick.id);
+  dataService.removeBookmark(projectPick.id, bmPick.id);
   provider.refresh();
 }
 
-async function cmdRemoveTab(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+async function cmdRemoveProject(dataService: DataService, provider: PortalViewProvider): Promise<void> {
   const data = dataService.get();
-  if (data.tabs.length === 0) {
-    vscode.window.showErrorMessage('No tabs yet.');
+  if (data.projects.length === 0) {
+    vscode.window.showErrorMessage('No projects yet.');
     return;
   }
   const pick = await vscode.window.showQuickPick(
-    data.tabs.map(t => ({ label: t.name, description: `${t.bookmarks.length} bookmark(s)`, id: t.id })),
-    { placeHolder: 'Select tab to remove' },
+    data.projects.map(p => ({ label: p.name, description: `${p.bookmarks.length} bookmark(s)`, id: p.id })),
+    { placeHolder: 'Select project to remove' },
   );
   if (!pick) return;
-  dataService.removeTab(pick.id);
+  dataService.removeProject(pick.id);
   provider.refresh();
 }
 
-async function pickTab(dataService: DataService): Promise<string | undefined> {
+async function pickProject(dataService: DataService): Promise<string | undefined> {
   const data = dataService.get();
-  if (data.tabs.length === 0) {
-    vscode.window.showErrorMessage('No tabs yet. Run "Relay: Add Tab" first.');
+  if (data.projects.length === 0) {
+    vscode.window.showErrorMessage('No projects yet. Run "Desk: Add Project" first.');
     return undefined;
   }
   const pick = await vscode.window.showQuickPick(
-    data.tabs.map(t => ({ label: t.name, id: t.id })),
-    { placeHolder: 'Select tab' },
+    data.projects.map(p => ({ label: p.name, id: p.id })),
+    { placeHolder: 'Select project' },
   );
   return pick?.id;
 }
 
-async function cmdOpenPage(extensionUri: vscode.Uri, pageReader: PageReader | null): Promise<void> {
-  if (!pageReader) {
-    vscode.window.showErrorMessage('Relay: Open a workspace folder first to use pages.');
+async function cmdOpenPage(extensionUri: vscode.Uri, pageStore: PageReader | null): Promise<void> {
+  if (!pageStore) {
+    vscode.window.showErrorMessage('Desk: No page store available.');
     return;
   }
-  const pages = pageReader.list();
+  const pages = pageStore.list();
   if (pages.length === 0) {
-    vscode.window.showErrorMessage('No pages yet. Run "Relay: New Page" to create one.');
+    vscode.window.showErrorMessage('No pages yet. Run "Desk: New Page" to create one.');
     return;
   }
   const pick = await vscode.window.showQuickPick(
@@ -178,12 +326,12 @@ async function cmdOpenPage(extensionUri: vscode.Uri, pageReader: PageReader | nu
     { placeHolder: 'Select a page to open' },
   );
   if (!pick) return;
-  PageViewPanel.open(extensionUri, pageReader, pick.filename);
+  PageViewPanel.open(extensionUri, pageStore, pick.filename);
 }
 
-async function cmdNewPage(pageReader: PageReader | null): Promise<void> {
-  if (!pageReader) {
-    vscode.window.showErrorMessage('Relay: Open a workspace folder first to use pages.');
+async function cmdNewPage(pageStore: PageReader | null): Promise<void> {
+  if (!pageStore) {
+    vscode.window.showErrorMessage('Desk: No page store available.');
     return;
   }
   const title = await vscode.window.showInputBox({ prompt: 'Page title', ignoreFocusOut: true });
@@ -193,10 +341,15 @@ async function cmdNewPage(pageReader: PageReader | null): Promise<void> {
     prompt: 'File name (leave blank to derive from title)',
     ignoreFocusOut: true,
   });
-  const filename = normalizeFilename(rawFilename?.trim() || title) + '.relay';
+  const filename = normalizeFilename(rawFilename?.trim() || title) + '.desk';
 
-  pageReader.write(filename, title, `<p>Start writing your <strong>${escHtml(title)}</strong> page here.</p>`);
-  vscode.window.showInformationMessage(`Relay: created ${filename} in relay-pages/`);
+  if (pageStore.list().some(p => p.filename === filename)) {
+    vscode.window.showWarningMessage(`A page named "${filename}" already exists.`);
+    return;
+  }
+
+  pageStore.write(filename, title, `<p>Start writing your <strong>${escHtml(title)}</strong> page here.</p>`);
+  vscode.window.showInformationMessage(`Desk: created ${filename} in pages/`);
 }
 
 function normalizeFilename(s: string): string {
@@ -222,13 +375,19 @@ async function showConfigConfirmPrompt(
   );
 
   if (action === 'Review first' && pageReader) {
-    const json = JSON.stringify(pending, null, 2);
+    const lines = [
+      '## Communication',
+      ...(pending.communication ?? []).map(c => `- **${c.label}**: ${c.channel}`),
+      '',
+      '## General',
+      ...(pending.general ?? []).map(s => `- **${s.label}**: ${s.value}`),
+    ].join('\n');
     pageReader.write(
-      '_pending-workflow-config.relay',
+      '_pending-workflow-config.desk',
       'Pending Workflow Config',
-      `<pre><code>${escHtml(json)}</code></pre>`,
+      `<pre>${escHtml(lines)}</pre>`,
     );
-    PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.relay');
+    PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.desk');
     const confirm = await vscode.window.showInformationMessage('Save workflow config?', 'Save');
     if (confirm !== 'Save') { svc.clearPending(); return; }
   } else if (action === 'Review first') {
@@ -239,7 +398,7 @@ async function showConfigConfirmPrompt(
   }
 
   svc.confirmPending();
-  vscode.window.showInformationMessage('Relay: workflow config saved.');
+  vscode.window.showInformationMessage('Desk: workflow config saved.');
 }
 
 async function showSkillConfirmPrompt(
@@ -269,34 +428,208 @@ async function showSkillConfirmPrompt(
   }
 
   await skillRegistry.confirmPending(adapters);
-  vscode.window.showInformationMessage(`Relay: skill '${pending.name}' installed.`);
+  vscode.window.showInformationMessage(`Desk: skill '${pending.name}' installed.`);
 }
 
 async function cmdConfigureWorkflow(svc: WorkflowConfigService): Promise<void> {
-  const existing = svc.get();
-  const s = existing?.slack;
+  const existing = svc.get() ?? { communication: [], general: [] };
 
-  const prompts: Array<{ prompt: string; value: string }> = [
-    { prompt: 'Slack status channel (e.g. #status)', value: s?.status ?? '' },
-    { prompt: 'Slack general channel (e.g. #general)', value: s?.general ?? '' },
-    { prompt: 'Slack weekly channel (e.g. #weekly)', value: s?.weekly ?? '' },
-    { prompt: 'Slack pulse channel (e.g. #pulse)', value: s?.pulse ?? '' },
-    { prompt: 'Slack deploy channel (e.g. #deploy)', value: s?.deploy ?? '' },
-    { prompt: 'Language code (e.g. en, ro)', value: existing?.language ?? '' },
-    { prompt: 'GitHub org', value: existing?.githubOrg ?? '' },
-    { prompt: 'PR account', value: existing?.prAccount ?? '' },
-  ];
+  const section = await vscode.window.showQuickPick(
+    ['Communication channels', 'General settings'],
+    { placeHolder: 'Which section to edit?' },
+  );
+  if (!section) return;
 
-  const results: string[] = [];
-  for (const { prompt, value } of prompts) {
-    const input = await vscode.window.showInputBox({ prompt, value, ignoreFocusOut: true });
-    if (input === undefined) return;
-    results.push(input);
+  if (section === 'Communication channels') {
+    const label = await vscode.window.showInputBox({ prompt: 'Channel label (e.g. General, Deploys)', ignoreFocusOut: true });
+    if (!label) return;
+    const channel = await vscode.window.showInputBox({ prompt: 'Channel (e.g. #general)', ignoreFocusOut: true });
+    if (!channel) return;
+    const updated = existing.communication.filter(c => c.label.toLowerCase() !== label.toLowerCase());
+    svc.save({ ...existing, communication: [...updated, { label, channel }] });
+  } else {
+    const label = await vscode.window.showInputBox({ prompt: 'Setting label (e.g. Language, GitHub org)', ignoreFocusOut: true });
+    if (!label) return;
+    const value = await vscode.window.showInputBox({ prompt: 'Value', ignoreFocusOut: true });
+    if (!value) return;
+    const updated = existing.general.filter(s => s.label.toLowerCase() !== label.toLowerCase());
+    svc.save({ ...existing, general: [...updated, { label, value }] });
   }
 
-  const [status, general, weekly, pulse, deploy, language, githubOrg, prAccount] = results;
-  svc.save({ slack: { status, general, weekly, pulse, deploy }, language, githubOrg, prAccount });
-  vscode.window.showInformationMessage('Relay: workflow config saved.');
+  vscode.window.showInformationMessage('Desk: workflow config saved.');
+}
+
+async function cmdOpenUrl(): Promise<void> {
+  const url = await vscode.window.showInputBox({ prompt: 'URL to open', ignoreFocusOut: true });
+  if (!url?.trim()) return;
+  const openUrl = /^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`;
+  vscode.commands.executeCommand('simpleBrowser.show', openUrl);
+}
+
+async function cmdUpdateBookmark(
+  dataService: DataService,
+  faviconService: FaviconService,
+  provider: PortalViewProvider,
+): Promise<void> {
+  const data = dataService.get();
+  const allBookmarks = data.projects.flatMap(p => p.bookmarks.map(b => ({ ...b, projectId: p.id, projectName: p.name })));
+  if (allBookmarks.length === 0) { vscode.window.showErrorMessage('No bookmarks yet.'); return; }
+  const pick = await vscode.window.showQuickPick(
+    allBookmarks.map(b => ({ label: b.title, description: `${b.projectName} — ${b.url}`, id: b.id, projectId: b.projectId, b })),
+    { placeHolder: 'Select bookmark to edit' },
+  );
+  if (!pick) return;
+  const title = await vscode.window.showInputBox({ prompt: 'New title', value: pick.b.title, ignoreFocusOut: true });
+  if (title === undefined) return;
+  const url = await vscode.window.showInputBox({ prompt: 'New URL', value: pick.b.url, ignoreFocusOut: true });
+  if (url === undefined) return;
+  const icon = await faviconService.getIcon(url || pick.b.url);
+  dataService.updateBookmark(pick.projectId, pick.id, { title: title || pick.b.title, url: url || pick.b.url, icon });
+  provider.refresh();
+}
+
+async function cmdDeletePage(pageStore: PageReader | null, provider: PortalViewProvider): Promise<void> {
+  if (!pageStore) { vscode.window.showErrorMessage('Desk: No page store available.'); return; }
+  const pages = pageStore.list();
+  if (pages.length === 0) { vscode.window.showErrorMessage('No pages yet.'); return; }
+  const pick = await vscode.window.showQuickPick(
+    pages.map(p => ({ label: p.title, description: p.filename, filename: p.filename })),
+    { placeHolder: 'Select page to delete' },
+  );
+  if (!pick) return;
+  const confirm = await vscode.window.showWarningMessage(`Delete "${pick.label}"?`, { modal: true }, 'Delete');
+  if (confirm !== 'Delete') return;
+  pageStore.delete(pick.filename);
+  provider.refresh();
+}
+
+async function cmdRemoveSkill(
+  skillRegistry: SkillRegistry,
+  adapters: AgentAdapter[],
+  provider: PortalViewProvider,
+): Promise<void> {
+  const skills = skillRegistry.list();
+  if (skills.length === 0) { vscode.window.showErrorMessage('No skills installed.'); return; }
+  const pick = await vscode.window.showQuickPick(
+    skills.map(s => ({ label: s.name, description: s.description })),
+    { placeHolder: 'Select skill to remove' },
+  );
+  if (!pick) return;
+  const confirm = await vscode.window.showWarningMessage(`Remove skill "${pick.label}"?`, { modal: true }, 'Remove');
+  if (confirm !== 'Remove') return;
+  await skillRegistry.remove(pick.label, adapters);
+  provider.refresh();
+}
+
+async function cmdNewSkill(): Promise<void> {
+  const template = [
+    '---',
+    'name: my-skill',
+    'description: >-',
+    '  One-line description used by agents to decide when to invoke.',
+    'triggers:',
+    '  - starting a new task',
+    'agents: all',
+    'version: 1',
+    '---',
+    '',
+    'Write your skill instructions here. Plain markdown.',
+    'Call `get_workflow_config` to read team-specific values.',
+    '',
+  ].join('\n');
+  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: template });
+  await vscode.window.showTextDocument(doc);
+  vscode.window.showInformationMessage('Desk: edit the skill, then run "Desk: Submit Skill" to install it.');
+}
+
+async function cmdEditSkill(skillRegistry: SkillRegistry): Promise<void> {
+  const skills = skillRegistry.getAll();
+  if (skills.length === 0) { vscode.window.showErrorMessage('No skills installed.'); return; }
+  const pick = await vscode.window.showQuickPick(
+    skills.map(s => ({ label: s.name, description: s.description, content: s.content })),
+    { placeHolder: 'Select skill to edit' },
+  );
+  if (!pick) return;
+  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: (pick as { content: string }).content });
+  await vscode.window.showTextDocument(doc);
+  vscode.window.showInformationMessage('Desk: edit the skill, then run "Desk: Submit Skill" to update it.');
+}
+
+async function cmdSubmitSkill(
+  skillRegistry: SkillRegistry,
+  adapters: AgentAdapter[],
+  provider: PortalViewProvider,
+): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) { vscode.window.showErrorMessage('Desk: no active editor — open a skill file first.'); return; }
+  const content = editor.document.getText();
+  const validation = skillRegistry.validateFrontmatter(content);
+  if (!validation.valid) { vscode.window.showErrorMessage(`Desk: invalid skill — ${validation.error}`); return; }
+  const nameMatch = content.match(/^name:\s*(.+)/m);
+  const name = nameMatch?.[1]?.trim() ?? 'unnamed';
+  const exists = skillRegistry.getAll().some(s => s.name === name);
+  if (exists) {
+    const choice = await vscode.window.showWarningMessage(
+      `Skill "${name}" already exists. This will overwrite it.`, 'Update', 'Cancel',
+    );
+    if (choice !== 'Update') return;
+  }
+  skillRegistry.setPending(name, content);
+  await showSkillConfirmPrompt(skillRegistry, adapters);
+  provider.refresh();
+}
+
+async function cmdListProjects(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+  const data = dataService.get();
+  if (!data.projects.length) { vscode.window.showInformationMessage('No projects yet.'); return; }
+  const items = data.projects.map(p => ({
+    label: p.name,
+    description: `${p.bookmarks.length} bookmark${p.bookmarks.length !== 1 ? 's' : ''}`,
+    id: p.id,
+  }));
+  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a project to switch to' });
+  if (pick) provider.switchTab(pick.id);
+}
+
+async function cmdListBookmarks(dataService: DataService): Promise<void> {
+  const data = dataService.get();
+  const items = data.projects.flatMap(p =>
+    p.bookmarks.map(b => ({ label: b.title, description: b.url, detail: `Project: ${p.name}`, url: b.url }))
+  );
+  if (!items.length) { vscode.window.showInformationMessage('No bookmarks yet.'); return; }
+  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a bookmark to open' });
+  if (pick) vscode.commands.executeCommand('simpleBrowser.show', pick.url);
+}
+
+async function cmdListSkills(skillRegistry: SkillRegistry): Promise<void> {
+  const skills = skillRegistry.list();
+  if (!skills.length) { vscode.window.showInformationMessage('No skills installed.'); return; }
+  const items = skills.map(s => ({ label: s.name, description: s.description }));
+  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a skill to view' });
+  if (pick) {
+    const skill = skillRegistry.get(pick.label);
+    if (skill) {
+      const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: skill.content });
+      vscode.window.showTextDocument(doc);
+    }
+  }
+}
+
+async function cmdViewWorkflow(workflowConfigService: WorkflowConfigService): Promise<void> {
+  const config = workflowConfigService.get();
+  if (!config) { vscode.window.showInformationMessage('No workflow config saved yet.'); return; }
+  const lines: string[] = ['# Workflow Config', ''];
+  if (config.communication.length) {
+    lines.push('## Communication', '');
+    config.communication.forEach(e => lines.push(`- **${e.label}**: ${e.channel}`));
+    lines.push('');
+  }
+  if (config.general.length) {
+    lines.push('## General', '');
+    config.general.forEach(e => lines.push(`- **${e.label}**: ${e.value}`));
+  }
+  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: lines.join('\n') });
+  vscode.window.showTextDocument(doc);
 }
 
 function extractFrontmatterDescription(content: string): string | undefined {

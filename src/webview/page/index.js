@@ -14,7 +14,7 @@
     if (!href) return;
     e.preventDefault();
 
-    if (href.endsWith('.relay')) {
+    if (href.endsWith('.astrolabe')) {
       vscode.postMessage({ type: 'navigate', filename: href });
     } else {
       vscode.postMessage({ type: 'openUrl', url: href });

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Guide — Relay</title>
+  <title>User Guide — Desk</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -106,75 +106,75 @@
 <body>
   <div class="container">
 
-    <div class="breadcrumb"><a href="index.html">Relay Docs</a> / User Guide</div>
+    <div class="breadcrumb"><a href="index.html">Desk Docs</a> / User Guide</div>
 
     <h1>User Guide</h1>
-    <p class="subtitle">Everything you need to install Relay and start using it day-to-day.</p>
+    <p class="subtitle">Everything you need to install Desk and start using it day-to-day.</p>
 
     <!-- INSTALLATION -->
     <h2>Installation</h2>
-    <p>Relay ships as a standard VS Code extension (<code>.vsix</code> file). Install it from the Extension Development Host during development, or from the VS Code Marketplace once published.</p>
+    <p>Desk ships as a standard VS Code extension (<code>.vsix</code> file). Install it from the Extension Development Host during development, or from the VS Code Marketplace once published.</p>
 
     <h3>Install from a .vsix file</h3>
     <ol class="step-list">
       <li><span class="step-num">1</span><div>Open VS Code and press <kbd class="kbd">Ctrl+Shift+P</kbd> (macOS: <kbd class="kbd">⌘⇧P</kbd>) to open the Command Palette.</div></li>
       <li><span class="step-num">2</span><div>Type <strong>Extensions: Install from VSIX…</strong> and press Enter.</div></li>
-      <li><span class="step-num">3</span><div>Browse to the <code>relay-0.0.1.vsix</code> file and confirm. VS Code will reload.</div></li>
-      <li><span class="step-num">4</span><div>Look for the Relay icon in the Activity Bar on the left edge of the window.</div></li>
+      <li><span class="step-num">3</span><div>Browse to the <code>desk-0.0.1.vsix</code> file and confirm. VS Code will reload.</div></li>
+      <li><span class="step-num">4</span><div>Look for the Desk icon in the Activity Bar on the left edge of the window.</div></li>
     </ol>
 
     <h3>Run in development mode</h3>
     <ol class="step-list">
       <li><span class="step-num">1</span><div>Clone the repository and run <code>npm install &amp;&amp; npm run compile</code>.</div></li>
-      <li><span class="step-num">2</span><div>Open the folder in VS Code and press <kbd class="kbd">F5</kbd>. A new Extension Development Host window opens with Relay active.</div></li>
+      <li><span class="step-num">2</span><div>Open the folder in VS Code and press <kbd class="kbd">F5</kbd>. A new Extension Development Host window opens with Desk active.</div></li>
     </ol>
 
     <!-- SIDEBAR -->
     <h2>The Sidebar Panel</h2>
-    <p>Click the Relay icon in the Activity Bar to open the sidebar. The panel has three areas:</p>
+    <p>Click the Desk icon in the Activity Bar to open the sidebar. The panel has three areas:</p>
 
     <table>
       <tr><th>Area</th><th>What it does</th></tr>
-      <tr><td><strong>Header</strong></td><td>Shows the Relay name. Colors follow your active VS Code theme automatically.</td></tr>
+      <tr><td><strong>Header</strong></td><td>Shows the Desk name and the workspace/global scope toggle. Colors follow your active VS Code theme automatically.</td></tr>
       <tr><td><strong>Tab bar</strong></td><td>Horizontal tabs for each bookmark group. Click a tab to switch.</td></tr>
-      <tr><td><strong>Bookmark grid</strong></td><td>Cards for each bookmark in the selected tab. Click a card to open the URL.</td></tr>
+      <tr><td><strong>Bookmark grid</strong></td><td>Cards for each bookmark in the selected project. Click a card to open the URL.</td></tr>
     </table>
 
-    <!-- CREATING TABS -->
-    <h2>Creating a Tab</h2>
-    <p>Tabs are named groups that hold bookmarks. You must create at least one tab before you can add bookmarks.</p>
+    <!-- CREATING PROJECTS -->
+    <h2>Creating a Project</h2>
+    <p>Projects are named groups that hold bookmarks. You must create at least one project before you can add bookmarks.</p>
 
     <ol class="step-list">
       <li><span class="step-num">1</span><div>Open the Command Palette (<kbd class="kbd">Ctrl+Shift+P</kbd>).</div></li>
-      <li><span class="step-num">2</span><div>Run <strong>Relay: Add Tab</strong>.</div></li>
-      <li><span class="step-num">3</span><div>Type a name for the tab (e.g. <em>Work</em>, <em>Research</em>, <em>Tools</em>) and press Enter.</div></li>
+      <li><span class="step-num">2</span><div>Run <strong>Desk: Add Project</strong>.</div></li>
+      <li><span class="step-num">3</span><div>Type a name for the project (e.g. <em>Work</em>, <em>Research</em>, <em>Tools</em>) and press Enter.</div></li>
     </ol>
 
-    <p>The new tab appears immediately in the sidebar. You can create as many tabs as you like.</p>
+    <p>The new project appears immediately in the sidebar. You can create as many projects as you like.</p>
 
     <!-- ADDING BOOKMARKS -->
     <h2>Adding a Bookmark</h2>
     <ol class="step-list">
-      <li><span class="step-num">1</span><div>Run <strong>Relay: Add Bookmark</strong> from the Command Palette.</div></li>
-      <li><span class="step-num">2</span><div>Select the tab to add it to from the quick-pick list.</div></li>
+      <li><span class="step-num">1</span><div>Run <strong>Desk: Add Bookmark</strong> from the Command Palette.</div></li>
+      <li><span class="step-num">2</span><div>Select the project to add it to from the quick-pick list.</div></li>
       <li><span class="step-num">3</span><div>Enter a <strong>title</strong> for the bookmark.</div></li>
       <li><span class="step-num">4</span><div>Enter the <strong>URL</strong> (e.g. <code>https://example.com</code>).</div></li>
-      <li><span class="step-num">5</span><div>Optionally enter an <strong>emoji icon</strong>. Leave blank to have Relay auto-fetch the site's favicon.</div></li>
+      <li><span class="step-num">5</span><div>Optionally enter an <strong>emoji icon</strong>. Leave blank to have Desk auto-fetch the site's favicon.</div></li>
       <li><span class="step-num">6</span><div>Optionally enter a <strong>description</strong>. Press Enter or Escape to skip.</div></li>
     </ol>
 
     <div class="callout tip">
-      <strong>Tip:</strong> When you leave the icon field blank, Relay fetches the favicon from the site's <code>/favicon.ico</code> or <code>&lt;link rel="icon"&gt;</code> tag and stores it locally. This happens once and is cached for 30 days.
+      <strong>Tip:</strong> When you leave the icon field blank, Desk fetches the favicon from the site's <code>/favicon.ico</code> or <code>&lt;link rel="icon"&gt;</code> tag and stores it locally. This happens once and is cached for 30 days.
     </div>
 
     <!-- REMOVING -->
-    <h2>Removing Bookmarks and Tabs</h2>
+    <h2>Removing Bookmarks and Projects</h2>
 
     <h3>Remove a bookmark</h3>
-    <p>Run <strong>Relay: Remove Bookmark</strong> from the Command Palette. Pick the tab, then the bookmark. The card disappears immediately.</p>
+    <p>Run <strong>Desk: Remove Bookmark</strong> from the Command Palette. Pick the project, then the bookmark. The card disappears immediately.</p>
 
-    <h3>Remove a tab</h3>
-    <p>Run <strong>Relay: Remove Tab</strong>. Removing a tab also removes all bookmarks inside it — this cannot be undone.</p>
+    <h3>Remove a project</h3>
+    <p>Run <strong>Desk: Remove Project</strong>. Removing a project also removes all bookmarks inside it — this cannot be undone.</p>
 
     <div class="callout">
       <strong>Note:</strong> You can also remove bookmarks directly from the sidebar by clicking the × button on a bookmark card.
@@ -182,56 +182,75 @@
 
     <!-- PAGES -->
     <h2>Creating and Viewing Pages</h2>
-    <p>Pages are <code>.relay</code> files stored in <code>relay-pages/</code> inside the open workspace. They use a simple XML format with optional per-page CSS and render in a full VS Code editor tab.</p>
+    <p>Pages are <code>.desk</code> files stored in <code>desk-pages/</code> inside the open workspace. They use a simple XML format with optional per-page CSS and render in a full VS Code editor tab.</p>
+
+    <h3>Page format</h3>
+    <pre><code>&lt;desk-page title="Page Title"&gt;
+  &lt;style&gt;/* optional per-page CSS */&lt;/style&gt;
+  &lt;!-- HTML body content here --&gt;
+&lt;/desk-page&gt;</code></pre>
 
     <h3>Create a new page</h3>
     <ol class="step-list">
-      <li><span class="step-num">1</span><div>Run <strong>Relay: New Page</strong> from the Command Palette.</div></li>
-      <li><span class="step-num">2</span><div>Enter a title. Relay creates the <code>.relay</code> file in <code>relay-pages/</code> and names it from the title.</div></li>
+      <li><span class="step-num">1</span><div>Run <strong>Desk: New Page</strong> from the Command Palette.</div></li>
+      <li><span class="step-num">2</span><div>Enter a title. Desk creates the <code>.desk</code> file in <code>desk-pages/</code> and names it from the title.</div></li>
       <li><span class="step-num">3</span><div>Edit the file in VS Code's editor, or ask an AI agent to populate it via <code>create_page</code> / <code>update_page</code>.</div></li>
     </ol>
 
     <h3>Open a page</h3>
     <ol class="step-list">
-      <li><span class="step-num">1</span><div>Run <strong>Relay: Open Page</strong> from the Command Palette and pick a page from the list.</div></li>
-      <li><span class="step-num">2</span><div>Or add a bookmark with <code>relay-page:filename.relay</code> as the URL — clicking the card opens the viewer directly.</div></li>
+      <li><span class="step-num">1</span><div>Run <strong>Desk: Open Page</strong> from the Command Palette and pick a page from the list.</div></li>
+      <li><span class="step-num">2</span><div>Or add a bookmark with <code>desk-page:filename.desk</code> as the URL — clicking the card opens the viewer directly.</div></li>
     </ol>
 
     <div class="callout tip">
-      <strong>Navigation:</strong> Click any <code>.relay</code> link inside the viewer to navigate to another page. The ← Back button traces your history. External <code>https://</code> links open in your browser.
+      <strong>Navigation:</strong> Click any <code>.desk</code> link inside the viewer to navigate to another page. The ← Back button traces your history. External <code>https://</code> links open in your browser.
     </div>
 
     <!-- THEME -->
     <h2>Theming</h2>
-    <p>Relay reads VS Code's active color theme automatically — backgrounds, text, borders, and accent colors all adapt to whatever theme you have installed (One Dark Pro, Catppuccin, Solarized, etc.). Change your VS Code theme and Relay updates instantly; no separate toggle needed.</p>
+    <p>Desk reads VS Code's active color theme automatically — backgrounds, text, borders, and accent colors all adapt to whatever theme you have installed (One Dark Pro, Catppuccin, Solarized, etc.). Change your VS Code theme and Desk updates instantly; no separate toggle needed.</p>
 
     <!-- SETTINGS -->
     <h2>Settings</h2>
     <table>
       <tr><th>Setting</th><th>Default</th><th>Description</th></tr>
       <tr>
-        <td><code>relay.mcpPort</code></td>
+        <td><code>desk.mcpPort</code></td>
         <td><code>3333</code></td>
         <td>Port the embedded MCP HTTP server listens on. Change if 3333 conflicts with another local service. Requires a VS Code window reload to take effect.</td>
       </tr>
     </table>
 
-    <p>Open VS Code Settings (<kbd class="kbd">Ctrl+,</kbd>), search for <strong>Relay</strong>, and adjust there, or add it to your <code>settings.json</code>:</p>
+    <p>Open VS Code Settings (<kbd class="kbd">Ctrl+,</kbd>), search for <strong>Desk</strong>, and adjust there, or add it to your <code>settings.json</code>:</p>
 
     <pre><code>{
-  "relay.mcpPort": 4444
+  "desk.mcpPort": 4444
 }</code></pre>
+
+    <!-- SCOPE -->
+    <h2>Workspace vs. Global Scope</h2>
+    <p>Desk stores data in two scopes you can switch between using the toggle in the sidebar header:</p>
+    <table>
+      <tr><th>Scope</th><th>Storage location</th><th>When to use</th></tr>
+      <tr><td><strong>workspace</strong></td><td><code>~/.desk/workspaces/&lt;slug&gt;/</code></td><td>Projects and bookmarks tied to a specific repo or project folder.</td></tr>
+      <tr><td><strong>global</strong></td><td><code>~/.desk/global/</code></td><td>Projects and bookmarks available in every workspace.</td></tr>
+    </table>
+    <p>All MCP tools accept an optional <code>scope</code> parameter (<code>"workspace"</code> or <code>"global"</code>) to target either store from an AI agent.</p>
 
     <!-- COMMANDS TABLE -->
     <h2>All Commands</h2>
     <table>
       <tr><th>Command</th><th>Description</th></tr>
-      <tr><td><code>Relay: Add Tab</code></td><td>Create a new tab group.</td></tr>
-      <tr><td><code>Relay: Add Bookmark</code></td><td>Add a bookmark to an existing tab.</td></tr>
-      <tr><td><code>Relay: Remove Bookmark</code></td><td>Remove a specific bookmark.</td></tr>
-      <tr><td><code>Relay: Remove Tab</code></td><td>Remove a tab and all its bookmarks.</td></tr>
-      <tr><td><code>Relay: New Page</code></td><td>Create a new <code>.relay</code> page file in <code>relay-pages/</code>.</td></tr>
-      <tr><td><code>Relay: Open Page</code></td><td>Pick and open a <code>.relay</code> page in the viewer panel.</td></tr>
+      <tr><td><code>Desk: Add Project</code></td><td>Create a new project group.</td></tr>
+      <tr><td><code>Desk: Add Bookmark</code></td><td>Add a bookmark to an existing project.</td></tr>
+      <tr><td><code>Desk: Remove Bookmark</code></td><td>Remove a specific bookmark.</td></tr>
+      <tr><td><code>Desk: Remove Project</code></td><td>Remove a project and all its bookmarks.</td></tr>
+      <tr><td><code>Desk: New Page</code></td><td>Create a new <code>.desk</code> page file in <code>desk-pages/</code>.</td></tr>
+      <tr><td><code>Desk: Open Page</code></td><td>Pick and open a <code>.desk</code> page in the viewer panel.</td></tr>
+      <tr><td><code>Desk: Setup Agents</code></td><td>Force-show the MCP setup prompt for all detected AI agents.</td></tr>
+      <tr><td><code>Desk: Configure Workflow</code></td><td>Manually set workflow config fields via input boxes.</td></tr>
+      <tr><td><code>Desk: Install Workflow Skills</code></td><td>Show the skill install picker for all stored skills and detected agents.</td></tr>
     </table>
 
     <footer>
