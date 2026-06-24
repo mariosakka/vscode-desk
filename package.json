@@ -2,7 +2,7 @@
   "name": "vscode-desk",
   "displayName": "Desk",
   "description": "Your developer portal — tabbed bookmarks with an embedded MCP server",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "publisher": "mmswflow",
   "icon": "media/astrolabe.png",
   "engines": {
