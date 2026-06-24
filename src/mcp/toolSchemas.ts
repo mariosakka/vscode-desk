@@ -106,17 +106,17 @@ export const TOOLS: McpTool[] = [
   // ── Page tools ────────────────────────────────────────────────────────────
   {
     name: 'list_pages',
-    description: 'Returns all .astrolabe page files in the workspace astrolabe-pages/ folder',
+    description: 'Returns all .desk page files in the workspace desk-pages/ folder',
     inputSchema: { type: 'object', properties: { scope: SCOPE_PROPERTY }, additionalProperties: false },
   },
   {
     name: 'create_page',
-    description: 'Creates a new .astrolabe page file. content is the HTML body; customStyles is optional CSS injected only for this page.',
+    description: 'Creates a new .desk page file. content is the HTML body; customStyles is optional CSS injected only for this page.',
     inputSchema: {
       type: 'object',
       required: ['filename', 'title', 'content'],
       properties: {
-        filename: { type: 'string', description: 'File name including .astrolabe extension, e.g. "auth-flow.astrolabe"' },
+        filename: { type: 'string', description: 'File name including .desk extension, e.g. "auth-flow.desk"' },
         title: { type: 'string' },
         content: { type: 'string', description: 'HTML body content (no <script> tags)' },
         customStyles: { type: 'string', description: 'Optional CSS rules scoped to this page' },
@@ -127,7 +127,7 @@ export const TOOLS: McpTool[] = [
   },
   {
     name: 'update_page',
-    description: 'Overwrites fields on an existing .astrolabe page. Only provided fields are changed.',
+    description: 'Overwrites fields on an existing .desk page. Only provided fields are changed.',
     inputSchema: {
       type: 'object',
       required: ['filename'],
@@ -143,7 +143,7 @@ export const TOOLS: McpTool[] = [
   },
   {
     name: 'delete_page',
-    description: 'Deletes a .astrolabe page file from the workspace',
+    description: 'Deletes a .desk page file from the workspace',
     inputSchema: {
       type: 'object',
       required: ['filename'],

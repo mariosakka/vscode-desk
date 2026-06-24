@@ -1,18 +1,18 @@
-# Relay — CLAUDE.md
+# Desk — CLAUDE.md
 
 Guidelines for AI agents and contributors working on this codebase.
 
 ---
 
-## What Relay is
+## What Desk is
 
 A VS Code extension with four features:
 1. **Tabbed bookmark sidebar** — named tab groups each holding bookmark cards with auto-fetched favicons.
-2. **`.relay` page viewer** — an XML-based lightweight doc format that renders in a VS Code editor tab, with shared theme variables and per-page custom CSS.
+2. **`.desk` page viewer** — an XML-based lightweight doc format that renders in a VS Code editor tab, with shared theme variables and per-page custom CSS.
 3. **Embedded MCP server** — a local JSON-RPC 2.0 HTTP server so AI agents can read and write bookmarks, pages, workflow config, and skills programmatically.
 4. **Workflow companion** — stores team workflow config and a skill registry; agents submit config and skills via MCP, the extension installs skills on all detected AI agents after user confirmation.
 
-**Non-negotiable constraint:** Relay must be fully general-purpose. No hardcoded URLs, no org-specific content, no assumptions about what the user has installed. Everything must work for any developer on any machine.
+**Non-negotiable constraint:** Desk must be fully general-purpose. No hardcoded URLs, no org-specific content, no assumptions about what the user has installed. Everything must work for any developer on any machine.
 
 ---
 
@@ -38,11 +38,11 @@ A VS Code extension with four features:
   McpServer (127.0.0.1:3333 by default)
 ```
 
-**DataService** owns all reads and writes to `relay.data` in `globalState`. No other class touches it directly.  
+**DataService** owns all reads and writes to `desk.data` in `globalState`. No other class touches it directly.  
 **FaviconService** fetches and caches favicons. No other class fetches favicons.  
-**PageReader** reads and writes `.relay` files. No other class touches the `relay-pages/` directory.  
-**WorkflowConfigService** owns `relay.workflowConfig` and pending review state. No other class reads or writes workflow config directly.  
-**SkillRegistry** owns `relay.skills`, validates skill frontmatter, and drives installation via `AgentAdapter`. No other class installs skill files directly.  
+**PageReader** reads and writes `.desk` files. No other class touches the `desk-pages/` directory.  
+**WorkflowConfigService** owns `desk.workflowConfig` and pending review state. No other class reads or writes workflow config directly.  
+**SkillRegistry** owns `desk.skills`, validates skill frontmatter, and drives installation via `AgentAdapter`. No other class installs skill files directly.  
 **McpServer** has no business logic — it parses JSON-RPC and delegates to the services above.
 
 ---
@@ -55,14 +55,14 @@ src/
   models.ts                     Bookmark, Tab, PortalData interfaces
   portalViewProvider.ts         WebviewViewProvider for the sidebar
   pages/
-    pageReader.ts               Read/write .relay files in relay-pages/
+    pageReader.ts               Read/write .desk files in desk-pages/
     pageViewPanel.ts            Full-width WebviewPanel for the page viewer
   services/
     dataService/
-      dataService.ts            globalState CRUD (key: relay.data)
+      dataService.ts            globalState CRUD (key: desk.data)
       dataService.test.ts
     faviconService/
-      faviconService.ts         Favicon fetch + cache (key: relay.favicon-cache)
+      faviconService.ts         Favicon fetch + cache (key: desk.favicon-cache)
       faviconService.test.ts
     workflowConfigService/
       workflowConfigService.ts  WorkflowConfig read/write + pending review state
@@ -136,7 +136,7 @@ src/
     page/
       index.html                Page viewer template
       index.css                 VS Code theme token mapping + doc layout
-      index.js                  .relay link navigation, external link handling
+      index.js                  .desk link navigation, external link handling
 ```
 
 ---
@@ -207,18 +207,18 @@ Three steps:
 Always go through `FaviconService.getIcon(url)`. Never fetch favicon URLs directly. The service handles cache lookup, TTL (30 days), redirect following, fallback to `🌐`, and base64 encoding.
 
 ### Page files
-Always go through `PageReader`. It enforces the `relay-pages/` directory, parses the XML format, and strips `<script>` tags. Never read or write `.relay` files with raw `fs` calls.
+Always go through `PageReader`. It enforces the `desk-pages/` directory, parses the XML format, and strips `<script>` tags. Never read or write `.desk` files with raw `fs` calls.
 
-### .relay format
+### .desk format
 ```xml
-<relay-page title="Page Title">
+<desk-page title="Page Title">
   <style>/* optional per-page CSS */</style>
   <!-- HTML body — no <script> tags -->
-</relay-page>
+</desk-page>
 ```
-- `.relay` links in content → `navigate` message → page viewer stays open
+- `.desk` links in content → `navigate` message → page viewer stays open
 - `https://` links in content → `openUrl` message → opens in browser
-- `relay-page:<filename>` as a bookmark URL → opens page viewer from sidebar click
+- `desk-page:<filename>` as a bookmark URL → opens page viewer from sidebar click
 
 ---
 
@@ -226,11 +226,11 @@ Always go through `PageReader`. It enforces the `relay-pages/` directory, parses
 
 | `globalState` key | Type | Contents |
 |---|---|---|
-| `relay.data` | `PortalData` | All projects and bookmarks |
-| `relay.favicon-cache` | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
-| `relay.workflowConfig` | `WorkflowConfig` | Team workflow config submitted by agent and confirmed by user |
-| `relay.skills` | `Skill[]` | Workflow skills submitted by agent and confirmed by user |
-| `relay.workflowSkillDismissed` | `boolean` | Dismissed flag for the skill install activation prompt |
+| `desk.data` | `PortalData` | All projects and bookmarks |
+| `desk.favicon-cache` | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
+| `desk.workflowConfig` | `WorkflowConfig` | Team workflow config submitted by agent and confirmed by user |
+| `desk.skills` | `Skill[]` | Workflow skills submitted by agent and confirmed by user |
+| `desk.workflowSkillDismissed` | `boolean` | Dismissed flag for the skill install activation prompt |
 
 ---
 
@@ -240,15 +240,15 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 
 | Command ID | Title | Description |
 |---|---|---|
-| `relay.addBookmark` | Relay: Add Bookmark | Interactive prompt to add a bookmark |
-| `relay.addProject` | Relay: Add Project | Interactive prompt to create a project |
-| `relay.removeBookmark` | Relay: Remove Bookmark | QuickPick to remove a bookmark |
-| `relay.removeProject` | Relay: Remove Project | QuickPick to remove a project |
-| `relay.openPage` | Relay: Open Page | QuickPick to open a `.relay` page |
-| `relay.newPage` | Relay: New Page | Interactive prompt to create a new page |
-| `relay.setupAgents` | Relay: Setup Agents | Force-shows MCP setup prompt for all agents |
-| `relay.configureWorkflow` | Relay: Configure Workflow | Series of input boxes to set `WorkflowConfig` fields manually |
-| `relay.installWorkflowSkills` | Relay: Install Workflow Skills | Shows skill install picker for all stored skills × detected agents |
+| `desk.addBookmark` | Desk: Add Bookmark | Interactive prompt to add a bookmark |
+| `desk.addProject` | Desk: Add Project | Interactive prompt to create a project |
+| `desk.removeBookmark` | Desk: Remove Bookmark | QuickPick to remove a bookmark |
+| `desk.removeProject` | Desk: Remove Project | QuickPick to remove a project |
+| `desk.openPage` | Desk: Open Page | QuickPick to open a `.desk` page |
+| `desk.newPage` | Desk: New Page | Interactive prompt to create a new page |
+| `desk.setupAgents` | Desk: Setup Agents | Force-shows MCP setup prompt for all agents |
+| `desk.configureWorkflow` | Desk: Configure Workflow | Series of input boxes to set `WorkflowConfig` fields manually |
+| `desk.installWorkflowSkills` | Desk: Install Workflow Skills | Shows skill install picker for all stored skills × detected agents |
 
 ---
 
@@ -279,7 +279,7 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 
 ## MCP server
 
-- **Endpoint:** `POST http://127.0.0.1:<port>/mcp` (port from `relay.mcpPort` setting, default `3333`)
+- **Endpoint:** `POST http://127.0.0.1:<port>/mcp` (port from `desk.mcpPort` setting, default `3333`)
 - **Protocol:** JSON-RPC 2.0, MCP Streamable HTTP transport `2024-11-05`
 - **Capabilities:** `{ tools: {}, resources: {} }`
 - **HTTP status:** always `200` for valid JSON-RPC. Errors arrive as `{ error: { code, message } }` in the response body.
@@ -306,9 +306,9 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 | `remove_skill` | W | `name` |
 
 **3 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
-- `relay://guide/quick-start`
-- `relay://guide/relay-page-format`
-- `relay://guide/skill-format`
+- `desk://guide/quick-start`
+- `desk://guide/desk-page-format`
+- `desk://guide/skill-format`
 
 Page tools return an error when VS Code has no workspace folder open.  
 `submit_workflow_config` and `add_skill` queue for user confirmation and return `{ status: "submitted" }` immediately — they do not block.
@@ -329,7 +329,7 @@ npm run test:e2e:install   # install Playwright browsers (once per machine)
 npm run package            # create .vsix
 ```
 
-**F5** in VS Code opens the Extension Development Host with Relay active.
+**F5** in VS Code opens the Extension Development Host with Desk active.
 
 Tests run in Node via Jest. The `vscode` module is mocked at `src/__mocks__/vscode.ts` — no real VS Code instance is needed.
 

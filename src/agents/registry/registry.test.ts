@@ -54,7 +54,7 @@ describe('AgentRegistry', () => {
       const registry = new AgentRegistry([makeAdapter(true, false)], mockContext);
       await registry.showSetupPrompt(3333);
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Astrolabe detected 1 AI agent(s). Set up MCP integration?',
+        'Desk detected 1 AI agent(s). Set up MCP integration?',
         'Set up',
         'Not now',
         "Don't ask again",
@@ -65,7 +65,7 @@ describe('AgentRegistry', () => {
       (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue("Don't ask again");
       const registry = new AgentRegistry([makeAdapter(true, false)], mockContext);
       await registry.showSetupPrompt(3333);
-      expect(mockContext.globalState.update).toHaveBeenCalledWith('astrolabe.agentSetupDismissed', true);
+      expect(mockContext.globalState.update).toHaveBeenCalledWith('desk.agentSetupDismissed', true);
     });
 
     it('calls configure on each selected adapter', async () => {
@@ -90,7 +90,7 @@ describe('AgentRegistry', () => {
       const registry = new AgentRegistry([adapter], mockContext);
       await registry.showSetupPrompt(3333);
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Astrolabe: configured 1 agent(s).',
+        'Desk: configured 1 agent(s).',
       );
     });
 
@@ -106,7 +106,7 @@ describe('AgentRegistry', () => {
       const registry = new AgentRegistry([adapter], mockContext);
       await registry.showSetupPrompt(3333);
       expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
-        'Astrolabe: failed to configure 1 agent(s).',
+        'Desk: failed to configure 1 agent(s).',
       );
     });
   });
@@ -125,7 +125,7 @@ describe('AgentRegistry', () => {
       const registry = new AgentRegistry([makeAdapter(true, true)], mockContext);
       await registry.showSetupPromptForced(3333);
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Astrolabe: all detected agents are already configured.',
+        'Desk: all detected agents are already configured.',
       );
     });
   });
@@ -142,7 +142,7 @@ const makeSkillRegistry = (skillCount: number) => ({
 describe('AgentRegistry — showSkillInstallPrompt()', () => {
   it('does nothing when dismissed flag is set', async () => {
     mockContext.globalState.get.mockImplementation((key: string) =>
-      key === 'astrolabe.workflowSkillDismissed' ? true : false,
+      key === 'desk.workflowSkillDismissed' ? true : false,
     );
     const skillReg = makeSkillRegistry(1);
     const registry = new AgentRegistry([makeAdapter(true, true)], mockContext, skillReg as any);
@@ -163,7 +163,7 @@ describe('AgentRegistry — showSkillInstallPrompt()', () => {
     const registry = new AgentRegistry([makeAdapter(true, true)], mockContext, skillReg as any);
     await registry.showSkillInstallPrompt();
     expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-      'Astrolabe has 2 workflow skill(s) ready. Install on detected agents?',
+      'Desk has 2 workflow skill(s) ready. Install on detected agents?',
       'Install',
       'Not now',
       "Don't ask again",
@@ -175,7 +175,7 @@ describe('AgentRegistry — showSkillInstallPrompt()', () => {
     const skillReg = makeSkillRegistry(1);
     const registry = new AgentRegistry([makeAdapter(true, true)], mockContext, skillReg as any);
     await registry.showSkillInstallPrompt();
-    expect(mockContext.globalState.update).toHaveBeenCalledWith('astrolabe.workflowSkillDismissed', true);
+    expect(mockContext.globalState.update).toHaveBeenCalledWith('desk.workflowSkillDismissed', true);
   });
 
   it('calls installAll on skillRegistry when user clicks Install', async () => {

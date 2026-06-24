@@ -26,7 +26,7 @@ export class PageReader {
     const d = this.dir();
     if (!fs.existsSync(d)) return [];
     return fs.readdirSync(d)
-      .filter(f => f.endsWith('.astrolabe'))
+      .filter(f => f.endsWith('.desk'))
       .map(filename => {
         try {
           const raw = fs.readFileSync(path.join(d, filename), 'utf-8');

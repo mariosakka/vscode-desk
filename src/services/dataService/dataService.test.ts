@@ -5,7 +5,7 @@ import { DataService } from './dataService';
 
 let tmpDir: string;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astrolabe-test-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'desk-test-'));
 });
 afterEach(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });

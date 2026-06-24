@@ -27,8 +27,8 @@ describe('CursorAdapter', () => {
     (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
     await new CursorAdapter().configure(3333);
     const written = JSON.parse((fs.writeFileSync as jest.Mock).mock.calls[0][1] as string);
-    expect(written.mcpServers['vscode-astrolabe']).toEqual({ url: 'http://127.0.0.1:3333/mcp' });
-    expect(written.mcpServers['vscode-astrolabe'].type).toBeUndefined();
+    expect(written.mcpServers['vscode-desk']).toEqual({ url: 'http://127.0.0.1:3333/mcp' });
+    expect(written.mcpServers['vscode-desk'].type).toBeUndefined();
   });
 });
 

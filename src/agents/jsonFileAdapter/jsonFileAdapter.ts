@@ -8,7 +8,7 @@ export abstract class JsonFileAdapter implements AgentAdapter {
   abstract readonly configDir: string;
   abstract readonly configPath: string;
 
-  protected readonly serverKey = 'vscode-astrolabe';
+  protected readonly serverKey = 'vscode-desk';
 
   protected configureViaCli(_port: number): Promise<void | false> {
     return Promise.resolve(false);

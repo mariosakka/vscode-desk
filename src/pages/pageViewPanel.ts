@@ -24,8 +24,8 @@ export class PageViewPanel {
     filename: string,
   ) {
     this._panel = vscode.window.createWebviewPanel(
-      'astrolabe.pageView',
-      'Astrolabe Page',
+      'desk.pageView',
+      'Desk Page',
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -50,7 +50,7 @@ export class PageViewPanel {
     try {
       page = pageReader.read(filename);
     } catch {
-      vscode.window.showErrorMessage(`Astrolabe: page not found — ${filename}`);
+      vscode.window.showErrorMessage(`Desk: page not found — ${filename}`);
       return;
     }
 

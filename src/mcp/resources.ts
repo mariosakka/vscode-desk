@@ -7,29 +7,29 @@ export interface McpResource {
 
 export const RESOURCES: McpResource[] = [
   {
-    uri: 'astrolabe://guide/quick-start',
-    name: 'Astrolabe Agent Quick-Start',
+    uri: 'desk://guide/quick-start',
+    name: 'Desk Agent Quick-Start',
     description: 'How to connect, the data model, the typical tool call loop, and key rules. Read this first.',
     mimeType: 'text/markdown',
   },
   {
-    uri: 'astrolabe://guide/astrolabe-page-format',
-    name: 'Astrolabe Page Format (.astrolabe)',
-    description: 'The .astrolabe XML file format, available CSS variables, and built-in callout classes for customStyles.',
+    uri: 'desk://guide/desk-page-format',
+    name: 'Desk Page Format (.desk)',
+    description: 'The .desk XML file format, available CSS variables, and built-in callout classes for customStyles.',
     mimeType: 'text/markdown',
   },
   {
-    uri: 'astrolabe://guide/skill-format',
-    name: 'Astrolabe Skill Format',
+    uri: 'desk://guide/skill-format',
+    name: 'Desk Skill Format',
     description: 'YAML frontmatter spec, content rules, and install paths for workflow skills submitted via add_skill.',
     mimeType: 'text/markdown',
   },
 ];
 
 export const RESOURCE_CONTENT: Record<string, string> = {
-  'astrolabe://guide/quick-start': `# Astrolabe Agent Quick-Start
+  'desk://guide/quick-start': `# Desk Agent Quick-Start
 
-Astrolabe is a VS Code extension with tabbed bookmarks and \`.astrolabe\` doc pages.
+Desk is a VS Code extension with tabbed bookmarks and \`.desk\` doc pages.
 It runs a local JSON-RPC 2.0 MCP server at **http://localhost:3333/mcp**.
 
 ## Data model
@@ -42,12 +42,12 @@ PortalData
     └── bookmarks[]
         ├── id          string   ("bm_xyz789")
         ├── title       string
-        ├── url         string   (https://… or astrolabe-page:<filename>)
+        ├── url         string   (https://… or desk-page:<filename>)
         ├── icon        string   (emoji or "data:image/…" base64)
         └── description string
 \`\`\`
 
-Pages are \`.astrolabe\` files in \`<workspace>/astrolabe-pages/\` — separate from bookmarks.
+Pages are \`.desk\` files in \`<workspace>/desk-pages/\` — separate from bookmarks.
 
 ## Typical loop — bookmarks
 
@@ -63,7 +63,7 @@ remove_bookmark     → clean up
 
 \`\`\`
 list_pages          → see what exists
-create_page         → write a new .astrolabe file
+create_page         → write a new .desk file
 update_page         → revise title, body, or per-page CSS (only provided fields change)
 delete_page         → remove a page
 \`\`\`
@@ -78,8 +78,8 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 ## Key rules
 
 - **IDs are opaque** — always call list_projects / list_bookmarks to get current IDs; never cache across sessions.
-- **Favicon is free** — omit \`icon\` in add_bookmark and Astrolabe fetches it automatically (30-day cache).
-- **astrolabe-page: links** — set a bookmark's \`url\` to \`astrolabe-page:filename.astrolabe\` and clicking it opens the page viewer directly from the sidebar.
+- **Favicon is free** — omit \`icon\` in add_bookmark and Desk fetches it automatically (30-day cache).
+- **desk-page: links** — set a bookmark's \`url\` to \`desk-page:filename.desk\` and clicking it opens the page viewer directly from the sidebar.
 - **update_page is partial** — only fields you include are overwritten; omit \`content\` to change just the title, etc.
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
 - **HTTP 200 always** — errors arrive as a JSON-RPC \`error\` object, not as HTTP 4xx/5xx.
@@ -106,14 +106,14 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 | remove_skill | | ✓ | name |
 `,
 
-  'astrolabe://guide/astrolabe-page-format': `# Astrolabe Page Format (.astrolabe)
+  'desk://guide/desk-page-format': `# Desk Page Format (.desk)
 
-Pages are XML files stored in \`<workspace>/astrolabe-pages/\`.
+Pages are XML files stored in \`<workspace>/desk-pages/\`.
 
 ## File structure
 
 \`\`\`xml
-<astrolabe-page title="Page Title">
+<desk-page title="Page Title">
   <style>
     /* optional CSS — only active for this page */
     /* use theme variables (see below) to stay on-theme */
@@ -122,13 +122,13 @@ Pages are XML files stored in \`<workspace>/astrolabe-pages/\`.
 
   <!-- HTML body — any standard HTML except <script> tags -->
   <h2>Heading</h2>
-  <p>Link to another page: <a href="other.astrolabe">other page</a></p>
+  <p>Link to another page: <a href="other.desk">other page</a></p>
   <p>External link: <a href="https://example.com">opens in browser</a></p>
-</astrolabe-page>
+</desk-page>
 \`\`\`
 
 - \`<script>\` tags are stripped before rendering.
-- \`.astrolabe\` links navigate inside the viewer (back button maintained).
+- \`.desk\` links navigate inside the viewer (back button maintained).
 - \`https://\` links open in the browser.
 
 ## Theme CSS variables
@@ -159,7 +159,7 @@ Use these in content without adding customStyles:
 \`\`\`
 `,
 
-  'astrolabe://guide/skill-format': `# Astrolabe Skill Format
+  'desk://guide/skill-format': `# Desk Skill Format
 
 Skills submitted via \`add_skill\` use YAML frontmatter + a markdown body.
 

@@ -1,7 +1,7 @@
 import * as os from 'os';
 import * as path from 'path';
 
-const ROOT = path.join(os.homedir(), '.astrolabe');
+const ROOT = path.join(os.homedir(), '.desk');
 
 export function globalDir(): string {
   return path.join(ROOT, 'global');

@@ -1,6 +1,6 @@
 {
-  "name": "vscode-astrolabe",
-  "displayName": "Astrolabe",
+  "name": "vscode-desk",
+  "displayName": "Desk",
   "description": "Your developer portal — tabbed bookmarks with an embedded MCP server",
   "version": "1.0.0",
   "publisher": "mmswflow",
@@ -14,7 +14,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mariosakka/vscode-astrolabe.git"
+    "url": "https://github.com/mariosakka/vscode-desk.git"
   },
   "activationEvents": [
     "onStartupFinished"
@@ -24,107 +24,107 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "astrolabe",
-          "title": "Astrolabe",
+          "id": "desk",
+          "title": "Desk",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "astrolabe": [
+      "desk": [
         {
           "type": "webview",
-          "id": "astrolabe.sidebar",
-          "name": "Astrolabe"
+          "id": "desk.sidebar",
+          "name": "Desk"
         }
       ]
     },
     "commands": [
       {
-        "command": "astrolabe.addBookmark",
-        "title": "Astrolabe: Add Bookmark"
+        "command": "desk.addBookmark",
+        "title": "Desk: Add Bookmark"
       },
       {
-        "command": "astrolabe.addProject",
-        "title": "Astrolabe: Add Project"
+        "command": "desk.addProject",
+        "title": "Desk: Add Project"
       },
       {
-        "command": "astrolabe.removeBookmark",
-        "title": "Astrolabe: Remove Bookmark"
+        "command": "desk.removeBookmark",
+        "title": "Desk: Remove Bookmark"
       },
       {
-        "command": "astrolabe.removeProject",
-        "title": "Astrolabe: Remove Project"
+        "command": "desk.removeProject",
+        "title": "Desk: Remove Project"
       },
       {
-        "command": "astrolabe.openPage",
-        "title": "Astrolabe: Open Page"
+        "command": "desk.openPage",
+        "title": "Desk: Open Page"
       },
       {
-        "command": "astrolabe.newPage",
-        "title": "Astrolabe: New Page"
+        "command": "desk.newPage",
+        "title": "Desk: New Page"
       },
       {
-        "command": "astrolabe.setupAgents",
-        "title": "Astrolabe: Set Up Agent MCP Integration"
+        "command": "desk.setupAgents",
+        "title": "Desk: Set Up Agent MCP Integration"
       },
       {
-        "command": "astrolabe.configureWorkflow",
-        "title": "Astrolabe: Configure Workflow"
+        "command": "desk.configureWorkflow",
+        "title": "Desk: Configure Workflow"
       },
       {
-        "command": "astrolabe.installWorkflowSkills",
-        "title": "Astrolabe: Install Workflow Skills"
+        "command": "desk.installWorkflowSkills",
+        "title": "Desk: Install Workflow Skills"
       },
       {
-        "command": "astrolabe.openUrl",
-        "title": "Astrolabe: Open URL"
+        "command": "desk.openUrl",
+        "title": "Desk: Open URL"
       },
       {
-        "command": "astrolabe.updateBookmark",
-        "title": "Astrolabe: Edit Bookmark"
+        "command": "desk.updateBookmark",
+        "title": "Desk: Edit Bookmark"
       },
       {
-        "command": "astrolabe.deletePage",
-        "title": "Astrolabe: Delete Page"
+        "command": "desk.deletePage",
+        "title": "Desk: Delete Page"
       },
       {
-        "command": "astrolabe.removeSkill",
-        "title": "Astrolabe: Remove Skill"
+        "command": "desk.removeSkill",
+        "title": "Desk: Remove Skill"
       },
       {
-        "command": "astrolabe.newSkill",
-        "title": "Astrolabe: New Skill"
+        "command": "desk.newSkill",
+        "title": "Desk: New Skill"
       },
       {
-        "command": "astrolabe.editSkill",
-        "title": "Astrolabe: Edit Skill"
+        "command": "desk.editSkill",
+        "title": "Desk: Edit Skill"
       },
       {
-        "command": "astrolabe.submitSkill",
-        "title": "Astrolabe: Submit Skill"
+        "command": "desk.submitSkill",
+        "title": "Desk: Submit Skill"
       },
       {
-        "command": "astrolabe.listProjects",
-        "title": "Astrolabe: List Projects"
+        "command": "desk.listProjects",
+        "title": "Desk: List Projects"
       },
       {
-        "command": "astrolabe.listBookmarks",
-        "title": "Astrolabe: List Bookmarks"
+        "command": "desk.listBookmarks",
+        "title": "Desk: List Bookmarks"
       },
       {
-        "command": "astrolabe.listSkills",
-        "title": "Astrolabe: List Skills"
+        "command": "desk.listSkills",
+        "title": "Desk: List Skills"
       },
       {
-        "command": "astrolabe.viewWorkflow",
-        "title": "Astrolabe: View Workflow Config"
+        "command": "desk.viewWorkflow",
+        "title": "Desk: View Workflow Config"
       }
     ],
     "configuration": {
-      "title": "Astrolabe",
+      "title": "Desk",
       "properties": {
-        "astrolabe.mcpPort": {
+        "desk.mcpPort": {
           "type": "number",
           "default": 3333,
           "description": "Port for the embedded MCP HTTP server"

@@ -42,14 +42,14 @@ describe('FaviconService', () => {
     it('caches the result in globalState', async () => {
       const svc = new FaviconService(mockContext, pngFetcher);
       await svc.getIcon('https://example.com/page');
-      const cache = mockState['astrolabe.favicon-cache'];
+      const cache = mockState['desk.favicon-cache'];
       expect(cache['example.com']).toBeDefined();
       expect(cache['example.com'].dataUrl).toMatch(/^data:image\/png;base64,/);
     });
 
     it('returns cached value without fetching on cache hit', async () => {
       const freshEntry = { dataUrl: 'data:image/png;base64,CACHED', fetchedAt: Date.now() };
-      mockState['astrolabe.favicon-cache'] = { 'example.com': freshEntry };
+      mockState['desk.favicon-cache'] = { 'example.com': freshEntry };
       const svc = new FaviconService(mockContext, pngFetcher);
       const icon = await svc.getIcon('https://example.com/page');
       expect(icon).toBe('data:image/png;base64,CACHED');
@@ -61,7 +61,7 @@ describe('FaviconService', () => {
         dataUrl: 'data:image/png;base64,OLD',
         fetchedAt: Date.now() - (31 * 24 * 60 * 60 * 1000),
       };
-      mockState['astrolabe.favicon-cache'] = { 'example.com': staleEntry };
+      mockState['desk.favicon-cache'] = { 'example.com': staleEntry };
       const svc = new FaviconService(mockContext, pngFetcher);
       const icon = await svc.getIcon('https://example.com/page');
       expect(icon).toMatch(/^data:image\/png;base64,/);

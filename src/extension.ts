@@ -14,12 +14,12 @@ import { ClaudeCodeAdapter } from './agents/adapters/claudeCode/claudeCode';
 import { CursorAdapter } from './agents/adapters/cursor/cursor';
 import { CodexAdapter } from './agents/adapters/codex/codex';
 import { GeminiAdapter } from './agents/adapters/gemini/gemini';
-import { globalDir, workspaceDir } from './storage/astrolabeDir';
+import { globalDir, workspaceDir } from './storage/deskDir';
 
 export function activate(context: vscode.ExtensionContext): void {
   const faviconService = new FaviconService(context);
 
-  // Resolve ~/.astrolabe/ directories
+  // Resolve ~/.desk/ directories
   const gDir = globalDir();
   const workspaceName = vscode.workspace.name ?? null;
   const wDir = workspaceName ? workspaceDir(workspaceName) : null;
@@ -89,7 +89,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
   );
 
-  const port = vscode.workspace.getConfiguration('astrolabe').get<number>('mcpPort', 3333);
+  const port = vscode.workspace.getConfiguration('desk').get<number>('mcpPort', 3333);
   mcpServer.start(port);
   context.subscriptions.push({ dispose: () => mcpServer.stop() });
 
@@ -108,91 +108,91 @@ export function activate(context: vscode.ExtensionContext): void {
   }
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('astrolabe.addBookmark', async () => {
+    vscode.commands.registerCommand('desk.addBookmark', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdAddBookmark(ds, faviconService, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.addProject', async () => {
+    vscode.commands.registerCommand('desk.addProject', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdAddProject(ds, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.removeBookmark', async () => {
+    vscode.commands.registerCommand('desk.removeBookmark', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdRemoveBookmark(ds, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.removeProject', async () => {
+    vscode.commands.registerCommand('desk.removeProject', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdRemoveProject(ds, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageReader)),
-    vscode.commands.registerCommand('astrolabe.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageReader)),
-    vscode.commands.registerCommand('astrolabe.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
-    vscode.commands.registerCommand('astrolabe.configureWorkflow', async () => {
+    vscode.commands.registerCommand('desk.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageReader)),
+    vscode.commands.registerCommand('desk.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageReader)),
+    vscode.commands.registerCommand('desk.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
+    vscode.commands.registerCommand('desk.configureWorkflow', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const svc = scope === 'workspace' ? (workspaceWorkflowService ?? globalWorkflowService) : globalWorkflowService;
       await cmdConfigureWorkflow(svc);
     }),
-    vscode.commands.registerCommand('astrolabe.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
-    vscode.commands.registerCommand('astrolabe.openUrl',        () => cmdOpenUrl()),
-    vscode.commands.registerCommand('astrolabe.updateBookmark', async () => {
+    vscode.commands.registerCommand('desk.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
+    vscode.commands.registerCommand('desk.openUrl',        () => cmdOpenUrl()),
+    vscode.commands.registerCommand('desk.updateBookmark', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdUpdateBookmark(ds, faviconService, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.deletePage', async () => {
+    vscode.commands.registerCommand('desk.deletePage', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const store = scope === 'workspace' ? (workspacePageReader ?? globalPageReader) : globalPageReader;
       await cmdDeletePage(store, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.removeSkill', async () => {
+    vscode.commands.registerCommand('desk.removeSkill', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
       await cmdRemoveSkill(registry, adapters, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.newSkill',    () => cmdNewSkill()),
-    vscode.commands.registerCommand('astrolabe.editSkill', async () => {
+    vscode.commands.registerCommand('desk.newSkill',    () => cmdNewSkill()),
+    vscode.commands.registerCommand('desk.editSkill', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
       await cmdEditSkill(registry);
     }),
-    vscode.commands.registerCommand('astrolabe.submitSkill', async () => {
+    vscode.commands.registerCommand('desk.submitSkill', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
       await cmdSubmitSkill(registry, adapters, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.listProjects', async () => {
+    vscode.commands.registerCommand('desk.listProjects', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdListProjects(ds, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.listBookmarks', async () => {
+    vscode.commands.registerCommand('desk.listBookmarks', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdListBookmarks(ds);
     }),
-    vscode.commands.registerCommand('astrolabe.listSkills', async () => {
+    vscode.commands.registerCommand('desk.listSkills', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
       await cmdListSkills(registry);
     }),
-    vscode.commands.registerCommand('astrolabe.viewWorkflow', async () => {
+    vscode.commands.registerCommand('desk.viewWorkflow', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const svc = scope === 'workspace' ? (workspaceWorkflowService ?? globalWorkflowService) : globalWorkflowService;
@@ -301,7 +301,7 @@ async function cmdRemoveProject(dataService: DataService, provider: PortalViewPr
 async function pickProject(dataService: DataService): Promise<string | undefined> {
   const data = dataService.get();
   if (data.projects.length === 0) {
-    vscode.window.showErrorMessage('No projects yet. Run "Astrolabe: Add Project" first.');
+    vscode.window.showErrorMessage('No projects yet. Run "Desk: Add Project" first.');
     return undefined;
   }
   const pick = await vscode.window.showQuickPick(
@@ -313,12 +313,12 @@ async function pickProject(dataService: DataService): Promise<string | undefined
 
 async function cmdOpenPage(extensionUri: vscode.Uri, pageStore: PageReader | null): Promise<void> {
   if (!pageStore) {
-    vscode.window.showErrorMessage('Astrolabe: No page store available.');
+    vscode.window.showErrorMessage('Desk: No page store available.');
     return;
   }
   const pages = pageStore.list();
   if (pages.length === 0) {
-    vscode.window.showErrorMessage('No pages yet. Run "Astrolabe: New Page" to create one.');
+    vscode.window.showErrorMessage('No pages yet. Run "Desk: New Page" to create one.');
     return;
   }
   const pick = await vscode.window.showQuickPick(
@@ -331,7 +331,7 @@ async function cmdOpenPage(extensionUri: vscode.Uri, pageStore: PageReader | nul
 
 async function cmdNewPage(pageStore: PageReader | null): Promise<void> {
   if (!pageStore) {
-    vscode.window.showErrorMessage('Astrolabe: No page store available.');
+    vscode.window.showErrorMessage('Desk: No page store available.');
     return;
   }
   const title = await vscode.window.showInputBox({ prompt: 'Page title', ignoreFocusOut: true });
@@ -341,7 +341,7 @@ async function cmdNewPage(pageStore: PageReader | null): Promise<void> {
     prompt: 'File name (leave blank to derive from title)',
     ignoreFocusOut: true,
   });
-  const filename = normalizeFilename(rawFilename?.trim() || title) + '.astrolabe';
+  const filename = normalizeFilename(rawFilename?.trim() || title) + '.desk';
 
   if (pageStore.list().some(p => p.filename === filename)) {
     vscode.window.showWarningMessage(`A page named "${filename}" already exists.`);
@@ -349,7 +349,7 @@ async function cmdNewPage(pageStore: PageReader | null): Promise<void> {
   }
 
   pageStore.write(filename, title, `<p>Start writing your <strong>${escHtml(title)}</strong> page here.</p>`);
-  vscode.window.showInformationMessage(`Astrolabe: created ${filename} in pages/`);
+  vscode.window.showInformationMessage(`Desk: created ${filename} in pages/`);
 }
 
 function normalizeFilename(s: string): string {
@@ -383,11 +383,11 @@ async function showConfigConfirmPrompt(
       ...(pending.general ?? []).map(s => `- **${s.label}**: ${s.value}`),
     ].join('\n');
     pageReader.write(
-      '_pending-workflow-config.astrolabe',
+      '_pending-workflow-config.desk',
       'Pending Workflow Config',
       `<pre>${escHtml(lines)}</pre>`,
     );
-    PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.astrolabe');
+    PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.desk');
     const confirm = await vscode.window.showInformationMessage('Save workflow config?', 'Save');
     if (confirm !== 'Save') { svc.clearPending(); return; }
   } else if (action === 'Review first') {
@@ -398,7 +398,7 @@ async function showConfigConfirmPrompt(
   }
 
   svc.confirmPending();
-  vscode.window.showInformationMessage('Astrolabe: workflow config saved.');
+  vscode.window.showInformationMessage('Desk: workflow config saved.');
 }
 
 async function showSkillConfirmPrompt(
@@ -428,7 +428,7 @@ async function showSkillConfirmPrompt(
   }
 
   await skillRegistry.confirmPending(adapters);
-  vscode.window.showInformationMessage(`Astrolabe: skill '${pending.name}' installed.`);
+  vscode.window.showInformationMessage(`Desk: skill '${pending.name}' installed.`);
 }
 
 async function cmdConfigureWorkflow(svc: WorkflowConfigService): Promise<void> {
@@ -456,7 +456,7 @@ async function cmdConfigureWorkflow(svc: WorkflowConfigService): Promise<void> {
     svc.save({ ...existing, general: [...updated, { label, value }] });
   }
 
-  vscode.window.showInformationMessage('Astrolabe: workflow config saved.');
+  vscode.window.showInformationMessage('Desk: workflow config saved.');
 }
 
 async function cmdOpenUrl(): Promise<void> {
@@ -489,7 +489,7 @@ async function cmdUpdateBookmark(
 }
 
 async function cmdDeletePage(pageStore: PageReader | null, provider: PortalViewProvider): Promise<void> {
-  if (!pageStore) { vscode.window.showErrorMessage('Astrolabe: No page store available.'); return; }
+  if (!pageStore) { vscode.window.showErrorMessage('Desk: No page store available.'); return; }
   const pages = pageStore.list();
   if (pages.length === 0) { vscode.window.showErrorMessage('No pages yet.'); return; }
   const pick = await vscode.window.showQuickPick(
@@ -539,7 +539,7 @@ async function cmdNewSkill(): Promise<void> {
   ].join('\n');
   const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: template });
   await vscode.window.showTextDocument(doc);
-  vscode.window.showInformationMessage('Astrolabe: edit the skill, then run "Astrolabe: Submit Skill" to install it.');
+  vscode.window.showInformationMessage('Desk: edit the skill, then run "Desk: Submit Skill" to install it.');
 }
 
 async function cmdEditSkill(skillRegistry: SkillRegistry): Promise<void> {
@@ -552,7 +552,7 @@ async function cmdEditSkill(skillRegistry: SkillRegistry): Promise<void> {
   if (!pick) return;
   const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: (pick as { content: string }).content });
   await vscode.window.showTextDocument(doc);
-  vscode.window.showInformationMessage('Astrolabe: edit the skill, then run "Astrolabe: Submit Skill" to update it.');
+  vscode.window.showInformationMessage('Desk: edit the skill, then run "Desk: Submit Skill" to update it.');
 }
 
 async function cmdSubmitSkill(
@@ -561,10 +561,10 @@ async function cmdSubmitSkill(
   provider: PortalViewProvider,
 ): Promise<void> {
   const editor = vscode.window.activeTextEditor;
-  if (!editor) { vscode.window.showErrorMessage('Astrolabe: no active editor — open a skill file first.'); return; }
+  if (!editor) { vscode.window.showErrorMessage('Desk: no active editor — open a skill file first.'); return; }
   const content = editor.document.getText();
   const validation = skillRegistry.validateFrontmatter(content);
-  if (!validation.valid) { vscode.window.showErrorMessage(`Astrolabe: invalid skill — ${validation.error}`); return; }
+  if (!validation.valid) { vscode.window.showErrorMessage(`Desk: invalid skill — ${validation.error}`); return; }
   const nameMatch = content.match(/^name:\s*(.+)/m);
   const name = nameMatch?.[1]?.trim() ?? 'unnamed';
   const exists = skillRegistry.getAll().some(s => s.name === name);

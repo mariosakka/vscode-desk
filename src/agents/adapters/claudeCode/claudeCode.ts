@@ -14,7 +14,7 @@ export class ClaudeCodeAdapter extends JsonFileAdapter {
   protected async configureViaCli(port: number): Promise<void | false> {
     try {
       childProcess.execSync(
-        `${CliBinary.ClaudeCode} mcp add vscode-astrolabe -t ${McpTransport.Http} http://127.0.0.1:${port}/mcp --scope user`,
+        `${CliBinary.ClaudeCode} mcp add vscode-desk -t ${McpTransport.Http} http://127.0.0.1:${port}/mcp --scope user`,
         { stdio: 'pipe' },
       );
     } catch {

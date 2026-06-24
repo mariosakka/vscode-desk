@@ -118,7 +118,7 @@ export class McpServer {
       return {
         protocolVersion: '2024-11-05',
         capabilities: { tools: {}, resources: {} },
-        serverInfo: { name: 'vscode-astrolabe', version: '0.0.1' },
+        serverInfo: { name: 'vscode-desk', version: '0.0.1' },
       };
     }
     if (method === 'tools/list') {

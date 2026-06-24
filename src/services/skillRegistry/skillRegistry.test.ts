@@ -5,7 +5,7 @@ import { SkillRegistry } from './skillRegistry';
 import type { AgentAdapter } from '../../agents/agentAdapter';
 
 let tmpDir: string;
-beforeEach(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astrolabe-sr-')); });
+beforeEach(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'desk-sr-')); });
 afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
 const makeAdapter = (id: string): jest.Mocked<AgentAdapter> => ({

@@ -7,7 +7,7 @@ import type { WorkflowConfig } from './workflowConfigService';
 let tmpDir: string;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astrolabe-wf-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'desk-wf-'));
 });
 
 afterEach(() => {

@@ -23,7 +23,7 @@ interface SidebarData {
 }
 
 export class PortalViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'astrolabe.sidebar';
+  public static readonly viewType = 'desk.sidebar';
   private _view?: vscode.WebviewView;
 
   constructor(
@@ -85,8 +85,8 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
         case 'openUrl': {
           const url: string = message.url;
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          if (url.startsWith('astrolabe-page:') && resolved.pageStore) {
-            const filename = url.slice('astrolabe-page:'.length);
+          if (url.startsWith('desk-page:') && resolved.pageStore) {
+            const filename = url.slice('desk-page:'.length);
             if (resolved.pageStore instanceof PageReader) {
               PageViewPanel.open(this._extensionUri, resolved.pageStore, filename);
             }
@@ -138,7 +138,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
           const title: string = message.title;
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
           if (!title?.trim() || !resolved.pageStore) break;
-          const filename = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.astrolabe';
+          const filename = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.desk';
           if (resolved.pageStore.list().some(p => p.filename === filename)) {
             vscode.window.showWarningMessage(`A page named "${filename}" already exists.`);
             break;
@@ -174,7 +174,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case 'newSkill':
-          vscode.commands.executeCommand('astrolabe.newSkill');
+          vscode.commands.executeCommand('desk.newSkill');
           break;
         case 'editSkill': {
           const skillName: string = message.name;
@@ -183,12 +183,12 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
           if (skill) {
             const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: skill.content });
             await vscode.window.showTextDocument(doc);
-            vscode.window.showInformationMessage('Astrolabe: edit the skill, then run "Astrolabe: Submit Skill" to update it.');
+            vscode.window.showInformationMessage('Desk: edit the skill, then run "Desk: Submit Skill" to update it.');
           }
           break;
         }
         case 'submitSkill':
-          vscode.commands.executeCommand('astrolabe.submitSkill');
+          vscode.commands.executeCommand('desk.submitSkill');
           break;
         case 'editPage': {
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);

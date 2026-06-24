@@ -77,7 +77,7 @@ describe('McpServer', () => {
 
   it('responds to initialize', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'initialize', params: {}, id: 1 });
-    expect(res.result.serverInfo.name).toBe('vscode-astrolabe');
+    expect(res.result.serverInfo.name).toBe('vscode-desk');
     expect(res.result.protocolVersion).toBeDefined();
   });
 
@@ -102,12 +102,12 @@ describe('McpServer', () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 3 });
     expect(res.result.resources).toHaveLength(3);
     const uris = res.result.resources.map((r: any) => r.uri);
-    expect(uris).toContain('astrolabe://guide/quick-start');
-    expect(uris).toContain('astrolabe://guide/astrolabe-page-format');
+    expect(uris).toContain('desk://guide/quick-start');
+    expect(uris).toContain('desk://guide/desk-page-format');
   });
 
   it('reads the quick-start resource', async () => {
-    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'astrolabe://guide/quick-start' }, id: 4 });
+    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'desk://guide/quick-start' }, id: 4 });
     expect(res.result.contents[0].text).toContain('list_projects');
     expect(res.result.contents[0].mimeType).toBe('text/markdown');
   });
@@ -226,7 +226,7 @@ describe('McpServer — workflow tools', () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 2 });
     expect(res.result.resources).toHaveLength(3);
     const uris = res.result.resources.map((r: any) => r.uri);
-    expect(uris).toContain('astrolabe://guide/skill-format');
+    expect(uris).toContain('desk://guide/skill-format');
   });
 
   it('get_workflow_config returns config when set', async () => {
