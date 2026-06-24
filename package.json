@@ -3,7 +3,7 @@
   "displayName": "Desk",
   "description": "Your developer portal — tabbed bookmarks with an embedded MCP server",
   "version": "0.1.0",
-  "publisher": "mmswflow",
+  "publisher": "mariosakka",
   "icon": "media/astrolabe.png",
   "engines": {
     "vscode": "^1.85.0"
