@@ -12,10 +12,8 @@ const makeCtx = () => {
 };
 
 const baseConfig: WorkflowConfig = {
-  slack: { status: '#status', general: '#general', weekly: '#weekly', pulse: '#pulse', deploy: '#deploy' },
-  language: 'en',
-  githubOrg: 'acme',
-  prAccount: 'acme-bot',
+  communication: [{ label: 'General', channel: '#general' }, { label: 'Deploys', channel: '#deploys' }],
+  general: [{ label: 'Language', value: 'en' }, { label: 'Repo', value: 'my-repo' }],
 };
 
 describe('WorkflowConfigService', () => {
@@ -29,25 +27,26 @@ describe('WorkflowConfigService', () => {
     expect(svc.get()).toEqual(baseConfig);
   });
 
-  it('setPending merges top-level field with existing', () => {
+  it('setPending merges top-level keys with existing', () => {
     const svc = new WorkflowConfigService(makeCtx());
     svc.save(baseConfig);
-    svc.setPending({ language: 'ro' });
-    expect(svc.getPending()?.language).toBe('ro');
-    expect(svc.getPending()?.githubOrg).toBe('acme');
+    svc.setPending({ general: [{ label: 'Language', value: 'ro' }] });
+    expect(svc.getPending()?.general).toEqual([{ label: 'Language', value: 'ro' }]);
+    expect(svc.getPending()?.communication).toEqual(baseConfig.communication);
   });
 
-  it('setPending deep-merges nested slack fields', () => {
+  it('setPending replaces entire array for provided keys', () => {
     const svc = new WorkflowConfigService(makeCtx());
     svc.save(baseConfig);
-    svc.setPending({ slack: { status: '#new' } });
-    expect(svc.getPending()?.slack.status).toBe('#new');
-    expect(svc.getPending()?.slack.general).toBe('#general');
+    const newComm = [{ label: 'Status', channel: '#status' }];
+    svc.setPending({ communication: newComm });
+    expect(svc.getPending()?.communication).toEqual(newComm);
+    expect(svc.getPending()?.general).toEqual(baseConfig.general);
   });
 
   it('confirmPending persists and clears pending state', () => {
     const svc = new WorkflowConfigService(makeCtx());
-    svc.setPending(baseConfig as any);
+    svc.setPending(baseConfig);
     svc.confirmPending();
     expect(svc.get()).toEqual(baseConfig);
     expect(svc.getPending()).toBeNull();
@@ -55,7 +54,7 @@ describe('WorkflowConfigService', () => {
 
   it('clearPending discards without saving', () => {
     const svc = new WorkflowConfigService(makeCtx());
-    svc.setPending(baseConfig as any);
+    svc.setPending(baseConfig);
     svc.clearPending();
     expect(svc.getPending()).toBeNull();
     expect(svc.get()).toBeUndefined();

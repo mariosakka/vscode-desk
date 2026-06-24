@@ -1,8 +1,11 @@
+.container {
+  border-bottom: 1px solid var(--border);
+}
+
 .tabsBar {
   display: flex;
   gap: 2px;
   padding: 8px 10px 0;
-  border-bottom: 1px solid var(--border);
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
@@ -48,6 +51,7 @@
   background: none;
   border: none;
   padding: 3px 4px;
+  margin-bottom: 2px;
   color: transparent;
   cursor: pointer;
   line-height: 1;
@@ -59,4 +63,16 @@
 }
 
 .tabWrap:hover .tabRemove { color: var(--muted); }
-.tabRemove:hover { color: var(--vscode-errorForeground, #ef4444); }
+.tabWrap:hover .tabRemove:hover { color: var(--vscode-errorForeground, #ef4444); }
+
+.confirmBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 6px;
+}
+
+.confirmLabel {
+  font-size: 11px;
+  color: var(--muted);
+}

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Bookmark, Tab, PortalData } from '../../models';
 
-const STORAGE_KEY = 'fezzan.data';
+const STORAGE_KEY = 'astrolabe.data';
 
 const DEFAULT_DATA: PortalData = { tabs: [] };
 

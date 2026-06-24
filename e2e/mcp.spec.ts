@@ -73,7 +73,7 @@ function dispatch(
     return {
       protocolVersion: '2024-11-05',
       capabilities: { tools: {}, resources: {} },
-      serverInfo: { name: 'vscode-relay', version: '0.0.1' },
+      serverInfo: { name: 'vscode-astrolabe', version: '0.0.1' },
     };
   }
   if (method === 'tools/list') {
@@ -87,16 +87,16 @@ function dispatch(
   }
   if (method === 'resources/list') {
     return { resources: [
-      { uri: 'relay://guide/quick-start',       name: 'Relay Agent Quick-Start',     mimeType: 'text/markdown' },
-      { uri: 'relay://guide/relay-page-format',  name: 'Relay Page Format (.relay)',  mimeType: 'text/markdown' },
-      { uri: 'relay://guide/skill-format',       name: 'Relay Skill Format',          mimeType: 'text/markdown' },
+      { uri: 'astrolabe://guide/quick-start',       name: 'Astrolabe Agent Quick-Start',     mimeType: 'text/markdown' },
+      { uri: 'astrolabe://guide/astrolabe-page-format',  name: 'Astrolabe Page Format (.astrolabe)',  mimeType: 'text/markdown' },
+      { uri: 'astrolabe://guide/skill-format',       name: 'Astrolabe Skill Format',          mimeType: 'text/markdown' },
     ]};
   }
   if (method === 'resources/read') {
     const content: Record<string, string> = {
-      'relay://guide/quick-start': '# Relay Agent Quick-Start\nlist_tabs to get started.',
-      'relay://guide/relay-page-format': '# Relay Page Format (.relay)\n<relay-page title="...">...',
-      'relay://guide/skill-format': '# Relay Skill Format\nname and description required.',
+      'astrolabe://guide/quick-start': '# Astrolabe Agent Quick-Start\nlist_tabs to get started.',
+      'astrolabe://guide/astrolabe-page-format': '# Astrolabe Page Format (.astrolabe)\n<astrolabe-page title="...">...',
+      'astrolabe://guide/skill-format': '# Astrolabe Skill Format\nname and description required.',
     };
     if (!content[params.uri]) throw new Error(`Unknown resource: ${params.uri}`);
     return { contents: [{ uri: params.uri, mimeType: 'text/markdown', text: content[params.uri] }] };
@@ -222,7 +222,7 @@ test('initialize returns capabilities with tools and resources', async ({ reques
   const res = await rpc(request, 'initialize');
   expect(res.result.protocolVersion).toBe('2024-11-05');
   expect(res.result.capabilities).toEqual({ tools: {}, resources: {} });
-  expect(res.result.serverInfo.name).toBe('vscode-relay');
+  expect(res.result.serverInfo.name).toBe('vscode-astrolabe');
 });
 
 test('tools/list returns 16 tools', async ({ request }) => {
@@ -240,13 +240,13 @@ test('resources/list returns 3 resources including skill-format', async ({ reque
   const res = await rpc(request, 'resources/list');
   expect(res.result.resources).toHaveLength(3);
   const uris = res.result.resources.map((r: any) => r.uri);
-  expect(uris).toContain('relay://guide/quick-start');
-  expect(uris).toContain('relay://guide/relay-page-format');
-  expect(uris).toContain('relay://guide/skill-format');
+  expect(uris).toContain('astrolabe://guide/quick-start');
+  expect(uris).toContain('astrolabe://guide/astrolabe-page-format');
+  expect(uris).toContain('astrolabe://guide/skill-format');
 });
 
 test('resources/read returns markdown', async ({ request }) => {
-  const res = await rpc(request, 'resources/read', { uri: 'relay://guide/quick-start' });
+  const res = await rpc(request, 'resources/read', { uri: 'astrolabe://guide/quick-start' });
   expect(res.result.contents[0].mimeType).toBe('text/markdown');
   expect(res.result.contents[0].text).toContain('list_tabs');
 });
@@ -271,7 +271,7 @@ test('create_tab → add_bookmark → list_bookmarks round-trip', async ({ reque
 });
 
 test('resources/read returns skill-format markdown', async ({ request }) => {
-  const res = await rpc(request, 'resources/read', { uri: 'relay://guide/skill-format' });
+  const res = await rpc(request, 'resources/read', { uri: 'astrolabe://guide/skill-format' });
   expect(res.result.contents[0].mimeType).toBe('text/markdown');
   expect(res.result.contents[0].text).toContain('name');
 });

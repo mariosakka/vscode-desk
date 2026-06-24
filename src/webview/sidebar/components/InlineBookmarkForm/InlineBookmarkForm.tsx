@@ -20,11 +20,17 @@ export function InlineBookmarkForm({ existingTitles, onSubmit, onCancel }: Props
 
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
 
+  const BLOCKED = /^(javascript|data|vbscript|file):/i;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const t = title.trim();
     const u = url.trim();
     if (!t || !u) return;
+    if (BLOCKED.test(u)) {
+      setError('That URL scheme is not allowed.');
+      return;
+    }
     if (existingTitles.some(n => n.toLowerCase() === t.toLowerCase())) {
       setError(`A bookmark named "${t}" already exists in this tab.`);
       return;
@@ -47,8 +53,7 @@ export function InlineBookmarkForm({ existingTitles, onSubmit, onCancel }: Props
         value={url}
         onChange={e => setUrl(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="https://…"
-        type="url"
+        placeholder="URL (e.g. example.com)"
       />
       {error && <span className={styles.error}>{error}</span>}
       <div className={styles.actions}>

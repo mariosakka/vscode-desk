@@ -5,9 +5,12 @@ import { DataService } from './services/dataService/dataService';
 import { FaviconService } from './services/faviconService/faviconService';
 import { PageReader } from './pages/pageReader';
 import { PageViewPanel } from './pages/pageViewPanel';
+import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
+import { SkillRegistry } from './services/skillRegistry/skillRegistry';
+import { AgentAdapter } from './agents/agentAdapter';
 
 export class PortalViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'fezzan.sidebar';
+  public static readonly viewType = 'astrolabe.sidebar';
   private _view?: vscode.WebviewView;
 
   constructor(
@@ -15,6 +18,9 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
     private readonly _dataService: DataService,
     private readonly _pageReader: PageReader | null = null,
     private readonly _faviconService: FaviconService | null = null,
+    private readonly _workflowConfigService: WorkflowConfigService | null = null,
+    private readonly _skillRegistry: SkillRegistry | null = null,
+    private readonly _adapters: AgentAdapter[] = [],
   ) {}
 
   resolveWebviewView(
@@ -38,11 +44,12 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'openUrl': {
           const url: string = message.url;
-          if (url.startsWith('fezzan-page:') && this._pageReader) {
-            const filename = url.slice('fezzan-page:'.length);
+          if (url.startsWith('astrolabe-page:') && this._pageReader) {
+            const filename = url.slice('astrolabe-page:'.length);
             PageViewPanel.open(this._extensionUri, this._pageReader, filename);
           } else {
-            vscode.commands.executeCommand('simpleBrowser.show', url);
+            const openUrl = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+            vscode.commands.executeCommand('simpleBrowser.show', openUrl);
           }
           break;
         }
@@ -70,14 +77,75 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
           this._dataService.removeTab(message.tabId);
           this.refresh();
           break;
+        case 'openPage': {
+          const filename: string = message.filename;
+          if (this._pageReader) {
+            PageViewPanel.open(this._extensionUri, this._pageReader, filename);
+          }
+          break;
+        }
+        case 'newPage': {
+          const title: string = message.title;
+          if (!title?.trim() || !this._pageReader) break;
+          const filename = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.astrolabe';
+          if (this._pageReader.list().some(p => p.filename === filename)) {
+            vscode.window.showWarningMessage(`A page named "${filename}" already exists.`);
+            break;
+          }
+          this._pageReader.write(filename, title.trim(), `<p>${title.trim()}</p>`);
+          this.refresh();
+          break;
+        }
+        case 'deletePage': {
+          const filename: string = message.filename;
+          if (this._pageReader) {
+            this._pageReader.delete(filename);
+            this.refresh();
+          }
+          break;
+        }
+        case 'removeSkill': {
+          const name: string = message.name;
+          if (this._skillRegistry) {
+            await this._skillRegistry.remove(name, this._adapters);
+            this.refresh();
+          }
+          break;
+        }
+        case 'saveWorkflow': {
+          if (this._workflowConfigService) {
+            this._workflowConfigService.save(message.config);
+            this.refresh();
+          }
+          break;
+        }
+        case 'newSkill':
+          vscode.commands.executeCommand('astrolabe.newSkill');
+          break;
+        case 'editSkill': {
+          const skillName: string = message.name;
+          const skill = this._skillRegistry?.getAll().find(s => s.name === skillName);
+          if (skill) {
+            const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: skill.content });
+            await vscode.window.showTextDocument(doc);
+            vscode.window.showInformationMessage('Astrolabe: edit the skill, then run "Astrolabe: Submit Skill" to update it.');
+          }
+          break;
+        }
+        case 'submitSkill':
+          vscode.commands.executeCommand('astrolabe.submitSkill');
+          break;
       }
     });
   }
 
   refresh(): void {
     if (!this._view) return;
-    const data = this._dataService.get();
-    this._view.webview.postMessage({ type: 'update', data });
+    const portal = this._dataService.get();
+    const pages = this._pageReader ? this._pageReader.list() : [];
+    const workflow = this._workflowConfigService ? (this._workflowConfigService.get() ?? null) : null;
+    const skills = this._skillRegistry ? this._skillRegistry.list() : [];
+    this._view.webview.postMessage({ type: 'update', data: { portal, pages, workflow, skills } });
   }
 
   private _getHtmlForWebview(webview: vscode.Webview): string {

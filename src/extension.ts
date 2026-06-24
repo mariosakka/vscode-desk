@@ -24,14 +24,17 @@ export function activate(context: vscode.ExtensionContext): void {
   const workflowConfigService = new WorkflowConfigService(context);
   const skillRegistry = new SkillRegistry(context);
 
-  const provider = new PortalViewProvider(context.extensionUri, dataService, pageReader, faviconService);
-
-  const adapters = [
+  const adapters: AgentAdapter[] = [
     new ClaudeCodeAdapter(),
     new CursorAdapter(workspaceRoot),
     new CodexAdapter(workspaceRoot),
     new GeminiAdapter(),
   ];
+
+  const provider = new PortalViewProvider(
+    context.extensionUri, dataService, pageReader, faviconService,
+    workflowConfigService, skillRegistry, adapters,
+  );
 
   const agentRegistry = new AgentRegistry(adapters, context, skillRegistry);
 
@@ -51,22 +54,29 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
   );
 
-  const port = vscode.workspace.getConfiguration('fezzan').get<number>('mcpPort', 3333);
+  const port = vscode.workspace.getConfiguration('astrolabe').get<number>('mcpPort', 3333);
   mcpServer.start(port);
   context.subscriptions.push({ dispose: () => mcpServer.stop() });
 
   agentRegistry.showSetupPrompt(port).then(() => agentRegistry.showSkillInstallPrompt()).catch(() => {});
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('fezzan.addBookmark',           () => cmdAddBookmark(dataService, faviconService, provider)),
-    vscode.commands.registerCommand('fezzan.addTab',                () => cmdAddTab(dataService, provider)),
-    vscode.commands.registerCommand('fezzan.removeBookmark',        () => cmdRemoveBookmark(dataService, provider)),
-    vscode.commands.registerCommand('fezzan.removeTab',             () => cmdRemoveTab(dataService, provider)),
-    vscode.commands.registerCommand('fezzan.openPage',              () => cmdOpenPage(context.extensionUri, pageReader)),
-    vscode.commands.registerCommand('fezzan.newPage',               () => cmdNewPage(pageReader)),
-    vscode.commands.registerCommand('fezzan.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
-    vscode.commands.registerCommand('fezzan.configureWorkflow',     () => cmdConfigureWorkflow(workflowConfigService)),
-    vscode.commands.registerCommand('fezzan.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
+    vscode.commands.registerCommand('astrolabe.addBookmark',           () => cmdAddBookmark(dataService, faviconService, provider)),
+    vscode.commands.registerCommand('astrolabe.addTab',                () => cmdAddTab(dataService, provider)),
+    vscode.commands.registerCommand('astrolabe.removeBookmark',        () => cmdRemoveBookmark(dataService, provider)),
+    vscode.commands.registerCommand('astrolabe.removeTab',             () => cmdRemoveTab(dataService, provider)),
+    vscode.commands.registerCommand('astrolabe.openPage',              () => cmdOpenPage(context.extensionUri, pageReader)),
+    vscode.commands.registerCommand('astrolabe.newPage',               () => cmdNewPage(pageReader)),
+    vscode.commands.registerCommand('astrolabe.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
+    vscode.commands.registerCommand('astrolabe.configureWorkflow',     () => cmdConfigureWorkflow(workflowConfigService)),
+    vscode.commands.registerCommand('astrolabe.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
+    vscode.commands.registerCommand('astrolabe.openUrl',        () => cmdOpenUrl()),
+    vscode.commands.registerCommand('astrolabe.updateBookmark', () => cmdUpdateBookmark(dataService, faviconService, provider)),
+    vscode.commands.registerCommand('astrolabe.deletePage',     () => cmdDeletePage(pageReader, provider)),
+    vscode.commands.registerCommand('astrolabe.removeSkill',    () => cmdRemoveSkill(skillRegistry, adapters, provider)),
+    vscode.commands.registerCommand('astrolabe.newSkill',    () => cmdNewSkill()),
+    vscode.commands.registerCommand('astrolabe.editSkill',   () => cmdEditSkill(skillRegistry)),
+    vscode.commands.registerCommand('astrolabe.submitSkill', () => cmdSubmitSkill(skillRegistry, adapters, provider)),
   );
 }
 
@@ -84,6 +94,12 @@ async function cmdAddBookmark(
 
   const title = await vscode.window.showInputBox({ prompt: 'Bookmark title', ignoreFocusOut: true });
   if (!title) return;
+
+  const tab = dataService.get().tabs.find(t => t.id === tabId);
+  if (tab?.bookmarks.some(b => b.title.toLowerCase() === title.toLowerCase())) {
+    vscode.window.showWarningMessage(`A bookmark named "${title}" already exists in this tab.`);
+    return;
+  }
 
   const url = await vscode.window.showInputBox({ prompt: 'URL (e.g. https://example.com)', ignoreFocusOut: true });
   if (!url) return;
@@ -106,6 +122,10 @@ async function cmdAddBookmark(
 async function cmdAddTab(dataService: DataService, provider: PortalViewProvider): Promise<void> {
   const name = await vscode.window.showInputBox({ prompt: 'Tab name', ignoreFocusOut: true });
   if (!name) return;
+  if (dataService.get().tabs.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+    vscode.window.showWarningMessage(`A tab named "${name}" already exists.`);
+    return;
+  }
   dataService.createTab(name);
   provider.refresh();
 }
@@ -153,7 +173,7 @@ async function cmdRemoveTab(dataService: DataService, provider: PortalViewProvid
 async function pickTab(dataService: DataService): Promise<string | undefined> {
   const data = dataService.get();
   if (data.tabs.length === 0) {
-    vscode.window.showErrorMessage('No tabs yet. Run "Fezzan: Add Tab" first.');
+    vscode.window.showErrorMessage('No tabs yet. Run "Astrolabe: Add Tab" first.');
     return undefined;
   }
   const pick = await vscode.window.showQuickPick(
@@ -165,12 +185,12 @@ async function pickTab(dataService: DataService): Promise<string | undefined> {
 
 async function cmdOpenPage(extensionUri: vscode.Uri, pageReader: PageReader | null): Promise<void> {
   if (!pageReader) {
-    vscode.window.showErrorMessage('Fezzan: Open a workspace folder first to use pages.');
+    vscode.window.showErrorMessage('Astrolabe: Open a workspace folder first to use pages.');
     return;
   }
   const pages = pageReader.list();
   if (pages.length === 0) {
-    vscode.window.showErrorMessage('No pages yet. Run "Fezzan: New Page" to create one.');
+    vscode.window.showErrorMessage('No pages yet. Run "Astrolabe: New Page" to create one.');
     return;
   }
   const pick = await vscode.window.showQuickPick(
@@ -183,7 +203,7 @@ async function cmdOpenPage(extensionUri: vscode.Uri, pageReader: PageReader | nu
 
 async function cmdNewPage(pageReader: PageReader | null): Promise<void> {
   if (!pageReader) {
-    vscode.window.showErrorMessage('Fezzan: Open a workspace folder first to use pages.');
+    vscode.window.showErrorMessage('Astrolabe: Open a workspace folder first to use pages.');
     return;
   }
   const title = await vscode.window.showInputBox({ prompt: 'Page title', ignoreFocusOut: true });
@@ -193,10 +213,15 @@ async function cmdNewPage(pageReader: PageReader | null): Promise<void> {
     prompt: 'File name (leave blank to derive from title)',
     ignoreFocusOut: true,
   });
-  const filename = normalizeFilename(rawFilename?.trim() || title) + '.fezzan';
+  const filename = normalizeFilename(rawFilename?.trim() || title) + '.astrolabe';
+
+  if (pageReader.list().some(p => p.filename === filename)) {
+    vscode.window.showWarningMessage(`A page named "${filename}" already exists.`);
+    return;
+  }
 
   pageReader.write(filename, title, `<p>Start writing your <strong>${escHtml(title)}</strong> page here.</p>`);
-  vscode.window.showInformationMessage(`Fezzan: created ${filename} in fezzan-pages/`);
+  vscode.window.showInformationMessage(`Astrolabe: created ${filename} in astrolabe-pages/`);
 }
 
 function normalizeFilename(s: string): string {
@@ -222,13 +247,19 @@ async function showConfigConfirmPrompt(
   );
 
   if (action === 'Review first' && pageReader) {
-    const json = JSON.stringify(pending, null, 2);
+    const lines = [
+      '## Communication',
+      ...(pending.communication ?? []).map(c => `- **${c.label}**: ${c.channel}`),
+      '',
+      '## General',
+      ...(pending.general ?? []).map(s => `- **${s.label}**: ${s.value}`),
+    ].join('\n');
     pageReader.write(
-      '_pending-workflow-config.fezzan',
+      '_pending-workflow-config.astrolabe',
       'Pending Workflow Config',
-      `<pre><code>${escHtml(json)}</code></pre>`,
+      `<pre>${escHtml(lines)}</pre>`,
     );
-    PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.fezzan');
+    PageViewPanel.open(extensionUri, pageReader, '_pending-workflow-config.astrolabe');
     const confirm = await vscode.window.showInformationMessage('Save workflow config?', 'Save');
     if (confirm !== 'Save') { svc.clearPending(); return; }
   } else if (action === 'Review first') {
@@ -239,7 +270,7 @@ async function showConfigConfirmPrompt(
   }
 
   svc.confirmPending();
-  vscode.window.showInformationMessage('Fezzan: workflow config saved.');
+  vscode.window.showInformationMessage('Astrolabe: workflow config saved.');
 }
 
 async function showSkillConfirmPrompt(
@@ -269,34 +300,155 @@ async function showSkillConfirmPrompt(
   }
 
   await skillRegistry.confirmPending(adapters);
-  vscode.window.showInformationMessage(`Fezzan: skill '${pending.name}' installed.`);
+  vscode.window.showInformationMessage(`Astrolabe: skill '${pending.name}' installed.`);
 }
 
 async function cmdConfigureWorkflow(svc: WorkflowConfigService): Promise<void> {
-  const existing = svc.get();
-  const s = existing?.slack;
+  const existing = svc.get() ?? { communication: [], general: [] };
 
-  const prompts: Array<{ prompt: string; value: string }> = [
-    { prompt: 'Slack status channel (e.g. #status)', value: s?.status ?? '' },
-    { prompt: 'Slack general channel (e.g. #general)', value: s?.general ?? '' },
-    { prompt: 'Slack weekly channel (e.g. #weekly)', value: s?.weekly ?? '' },
-    { prompt: 'Slack pulse channel (e.g. #pulse)', value: s?.pulse ?? '' },
-    { prompt: 'Slack deploy channel (e.g. #deploy)', value: s?.deploy ?? '' },
-    { prompt: 'Language code (e.g. en, ro)', value: existing?.language ?? '' },
-    { prompt: 'GitHub org', value: existing?.githubOrg ?? '' },
-    { prompt: 'PR account', value: existing?.prAccount ?? '' },
-  ];
+  const section = await vscode.window.showQuickPick(
+    ['Communication channels', 'General settings'],
+    { placeHolder: 'Which section to edit?' },
+  );
+  if (!section) return;
 
-  const results: string[] = [];
-  for (const { prompt, value } of prompts) {
-    const input = await vscode.window.showInputBox({ prompt, value, ignoreFocusOut: true });
-    if (input === undefined) return;
-    results.push(input);
+  if (section === 'Communication channels') {
+    const label = await vscode.window.showInputBox({ prompt: 'Channel label (e.g. General, Deploys)', ignoreFocusOut: true });
+    if (!label) return;
+    const channel = await vscode.window.showInputBox({ prompt: 'Channel (e.g. #general)', ignoreFocusOut: true });
+    if (!channel) return;
+    const updated = existing.communication.filter(c => c.label.toLowerCase() !== label.toLowerCase());
+    svc.save({ ...existing, communication: [...updated, { label, channel }] });
+  } else {
+    const label = await vscode.window.showInputBox({ prompt: 'Setting label (e.g. Language, GitHub org)', ignoreFocusOut: true });
+    if (!label) return;
+    const value = await vscode.window.showInputBox({ prompt: 'Value', ignoreFocusOut: true });
+    if (!value) return;
+    const updated = existing.general.filter(s => s.label.toLowerCase() !== label.toLowerCase());
+    svc.save({ ...existing, general: [...updated, { label, value }] });
   }
 
-  const [status, general, weekly, pulse, deploy, language, githubOrg, prAccount] = results;
-  svc.save({ slack: { status, general, weekly, pulse, deploy }, language, githubOrg, prAccount });
-  vscode.window.showInformationMessage('Fezzan: workflow config saved.');
+  vscode.window.showInformationMessage('Astrolabe: workflow config saved.');
+}
+
+async function cmdOpenUrl(): Promise<void> {
+  const url = await vscode.window.showInputBox({ prompt: 'URL to open', ignoreFocusOut: true });
+  if (!url?.trim()) return;
+  const openUrl = /^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`;
+  vscode.commands.executeCommand('simpleBrowser.show', openUrl);
+}
+
+async function cmdUpdateBookmark(
+  dataService: DataService,
+  faviconService: FaviconService,
+  provider: PortalViewProvider,
+): Promise<void> {
+  const data = dataService.get();
+  const allBookmarks = data.tabs.flatMap(t => t.bookmarks.map(b => ({ ...b, tabId: t.id, tabName: t.name })));
+  if (allBookmarks.length === 0) { vscode.window.showErrorMessage('No bookmarks yet.'); return; }
+  const pick = await vscode.window.showQuickPick(
+    allBookmarks.map(b => ({ label: b.title, description: `${b.tabName} — ${b.url}`, id: b.id, tabId: b.tabId, b })),
+    { placeHolder: 'Select bookmark to edit' },
+  );
+  if (!pick) return;
+  const title = await vscode.window.showInputBox({ prompt: 'New title', value: pick.b.title, ignoreFocusOut: true });
+  if (title === undefined) return;
+  const url = await vscode.window.showInputBox({ prompt: 'New URL', value: pick.b.url, ignoreFocusOut: true });
+  if (url === undefined) return;
+  const icon = await faviconService.getIcon(url || pick.b.url);
+  dataService.updateBookmark(pick.tabId, pick.id, { title: title || pick.b.title, url: url || pick.b.url, icon });
+  provider.refresh();
+}
+
+async function cmdDeletePage(pageReader: PageReader | null, provider: PortalViewProvider): Promise<void> {
+  if (!pageReader) { vscode.window.showErrorMessage('Astrolabe: Open a workspace folder first.'); return; }
+  const pages = pageReader.list();
+  if (pages.length === 0) { vscode.window.showErrorMessage('No pages yet.'); return; }
+  const pick = await vscode.window.showQuickPick(
+    pages.map(p => ({ label: p.title, description: p.filename, filename: p.filename })),
+    { placeHolder: 'Select page to delete' },
+  );
+  if (!pick) return;
+  const confirm = await vscode.window.showWarningMessage(`Delete "${pick.label}"?`, { modal: true }, 'Delete');
+  if (confirm !== 'Delete') return;
+  pageReader.delete(pick.filename);
+  provider.refresh();
+}
+
+async function cmdRemoveSkill(
+  skillRegistry: SkillRegistry,
+  adapters: AgentAdapter[],
+  provider: PortalViewProvider,
+): Promise<void> {
+  const skills = skillRegistry.list();
+  if (skills.length === 0) { vscode.window.showErrorMessage('No skills installed.'); return; }
+  const pick = await vscode.window.showQuickPick(
+    skills.map(s => ({ label: s.name, description: s.description })),
+    { placeHolder: 'Select skill to remove' },
+  );
+  if (!pick) return;
+  const confirm = await vscode.window.showWarningMessage(`Remove skill "${pick.label}"?`, { modal: true }, 'Remove');
+  if (confirm !== 'Remove') return;
+  await skillRegistry.remove(pick.label, adapters);
+  provider.refresh();
+}
+
+async function cmdNewSkill(): Promise<void> {
+  const template = [
+    '---',
+    'name: my-skill',
+    'description: >-',
+    '  One-line description used by agents to decide when to invoke.',
+    'triggers:',
+    '  - starting a new task',
+    'agents: all',
+    'version: 1',
+    '---',
+    '',
+    'Write your skill instructions here. Plain markdown.',
+    'Call `get_workflow_config` to read team-specific values.',
+    '',
+  ].join('\n');
+  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: template });
+  await vscode.window.showTextDocument(doc);
+  vscode.window.showInformationMessage('Astrolabe: edit the skill, then run "Astrolabe: Submit Skill" to install it.');
+}
+
+async function cmdEditSkill(skillRegistry: SkillRegistry): Promise<void> {
+  const skills = skillRegistry.getAll();
+  if (skills.length === 0) { vscode.window.showErrorMessage('No skills installed.'); return; }
+  const pick = await vscode.window.showQuickPick(
+    skills.map(s => ({ label: s.name, description: s.description, content: s.content })),
+    { placeHolder: 'Select skill to edit' },
+  );
+  if (!pick) return;
+  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: (pick as { content: string }).content });
+  await vscode.window.showTextDocument(doc);
+  vscode.window.showInformationMessage('Astrolabe: edit the skill, then run "Astrolabe: Submit Skill" to update it.');
+}
+
+async function cmdSubmitSkill(
+  skillRegistry: SkillRegistry,
+  adapters: AgentAdapter[],
+  provider: PortalViewProvider,
+): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) { vscode.window.showErrorMessage('Astrolabe: no active editor — open a skill file first.'); return; }
+  const content = editor.document.getText();
+  const validation = skillRegistry.validateFrontmatter(content);
+  if (!validation.valid) { vscode.window.showErrorMessage(`Astrolabe: invalid skill — ${validation.error}`); return; }
+  const nameMatch = content.match(/^name:\s*(.+)/m);
+  const name = nameMatch?.[1]?.trim() ?? 'unnamed';
+  const exists = skillRegistry.getAll().some(s => s.name === name);
+  if (exists) {
+    const choice = await vscode.window.showWarningMessage(
+      `Skill "${name}" already exists. This will overwrite it.`, 'Update', 'Cancel',
+    );
+    if (choice !== 'Update') return;
+  }
+  skillRegistry.setPending(name, content);
+  await showSkillConfirmPrompt(skillRegistry, adapters);
+  provider.refresh();
 }
 
 function extractFrontmatterDescription(content: string): string | undefined {

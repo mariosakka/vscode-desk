@@ -2,7 +2,7 @@ import * as https from 'https';
 import * as http from 'http';
 import * as vscode from 'vscode';
 
-const CACHE_KEY = 'fezzan.favicon-cache';
+const CACHE_KEY = 'astrolabe.favicon-cache';
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export const FALLBACK_ICON = '🌐';
 

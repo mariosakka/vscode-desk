@@ -1,6 +1,6 @@
 {
-  "name": "vscode-fezzan",
-  "displayName": "Fezzan",
+  "name": "vscode-astrolabe",
+  "displayName": "Astrolabe",
   "description": "Your developer portal — tabbed bookmarks with an embedded MCP server",
   "version": "1.0.0",
   "publisher": "mmswflow",
@@ -14,7 +14,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mariosakka/vscode-fezzan.git"
+    "url": "https://github.com/mariosakka/vscode-astrolabe.git"
   },
   "activationEvents": [
     "onStartupFinished"
@@ -24,63 +24,91 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "fezzan",
-          "title": "Fezzan",
+          "id": "astrolabe",
+          "title": "Astrolabe",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "fezzan": [
+      "astrolabe": [
         {
           "type": "webview",
-          "id": "fezzan.sidebar",
-          "name": "Fezzan"
+          "id": "astrolabe.sidebar",
+          "name": "Astrolabe"
         }
       ]
     },
     "commands": [
       {
-        "command": "fezzan.addBookmark",
-        "title": "Fezzan: Add Bookmark"
+        "command": "astrolabe.addBookmark",
+        "title": "Astrolabe: Add Bookmark"
       },
       {
-        "command": "fezzan.addTab",
-        "title": "Fezzan: Add Tab"
+        "command": "astrolabe.addTab",
+        "title": "Astrolabe: Add Tab"
       },
       {
-        "command": "fezzan.removeBookmark",
-        "title": "Fezzan: Remove Bookmark"
+        "command": "astrolabe.removeBookmark",
+        "title": "Astrolabe: Remove Bookmark"
       },
       {
-        "command": "fezzan.removeTab",
-        "title": "Fezzan: Remove Tab"
+        "command": "astrolabe.removeTab",
+        "title": "Astrolabe: Remove Tab"
       },
       {
-        "command": "fezzan.openPage",
-        "title": "Fezzan: Open Page"
+        "command": "astrolabe.openPage",
+        "title": "Astrolabe: Open Page"
       },
       {
-        "command": "fezzan.newPage",
-        "title": "Fezzan: New Page"
+        "command": "astrolabe.newPage",
+        "title": "Astrolabe: New Page"
       },
       {
-        "command": "fezzan.setupAgents",
-        "title": "Fezzan: Set Up Agent MCP Integration"
+        "command": "astrolabe.setupAgents",
+        "title": "Astrolabe: Set Up Agent MCP Integration"
       },
       {
-        "command": "fezzan.configureWorkflow",
-        "title": "Fezzan: Configure Workflow"
+        "command": "astrolabe.configureWorkflow",
+        "title": "Astrolabe: Configure Workflow"
       },
       {
-        "command": "fezzan.installWorkflowSkills",
-        "title": "Fezzan: Install Workflow Skills"
+        "command": "astrolabe.installWorkflowSkills",
+        "title": "Astrolabe: Install Workflow Skills"
+      },
+      {
+        "command": "astrolabe.openUrl",
+        "title": "Astrolabe: Open URL"
+      },
+      {
+        "command": "astrolabe.updateBookmark",
+        "title": "Astrolabe: Edit Bookmark"
+      },
+      {
+        "command": "astrolabe.deletePage",
+        "title": "Astrolabe: Delete Page"
+      },
+      {
+        "command": "astrolabe.removeSkill",
+        "title": "Astrolabe: Remove Skill"
+      },
+      {
+        "command": "astrolabe.newSkill",
+        "title": "Astrolabe: New Skill"
+      },
+      {
+        "command": "astrolabe.editSkill",
+        "title": "Astrolabe: Edit Skill"
+      },
+      {
+        "command": "astrolabe.submitSkill",
+        "title": "Astrolabe: Submit Skill"
       }
     ],
     "configuration": {
-      "title": "Fezzan",
+      "title": "Astrolabe",
       "properties": {
-        "fezzan.mcpPort": {
+        "astrolabe.mcpPort": {
           "type": "number",
           "default": 3333,
           "description": "Port for the embedded MCP HTTP server"

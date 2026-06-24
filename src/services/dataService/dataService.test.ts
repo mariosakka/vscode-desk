@@ -25,7 +25,7 @@ describe('DataService', () => {
     });
 
     it('returns stored data when present', () => {
-      mockState['fezzan.data'] = { tabs: [{ id: 'tab_1', name: 'Custom', bookmarks: [] }] };
+      mockState['astrolabe.data'] = { tabs: [{ id: 'tab_1', name: 'Custom', bookmarks: [] }] };
       const svc = new DataService(mockContext);
       expect(svc.get().tabs[0].name).toBe('Custom');
     });

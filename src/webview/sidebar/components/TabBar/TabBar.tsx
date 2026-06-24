@@ -13,29 +13,25 @@ interface Props {
 
 export function TabBar({ tabs, activeTabId, onSelect, onRemove }: Props) {
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const pendingTab = pendingId ? tabs.find(t => t.id === pendingId) : null;
 
   return (
-    <div className={styles.tabsBar}>
-      {tabs.map(tab => (
-        <span
-          key={tab.id}
-          className={styles.tabWrap}
-          data-active={tab.id === activeTabId ? 'true' : 'false'}
-        >
-          <button
-            className={styles.tabBtn}
-            data-testid="tab-button"
+    <div className={styles.container}>
+      <div className={styles.tabsBar}>
+        {tabs.map(tab => (
+          <span
+            key={tab.id}
+            className={styles.tabWrap}
             data-active={tab.id === activeTabId ? 'true' : 'false'}
-            onClick={() => { setPendingId(null); onSelect(tab.id); }}
           >
-            {tab.name}
-          </button>
-          {pendingId === tab.id ? (
-            <ConfirmButtons
-              onConfirm={() => { setPendingId(null); onRemove(tab.id); }}
-              onCancel={() => setPendingId(null)}
-            />
-          ) : (
+            <button
+              className={styles.tabBtn}
+              data-testid="tab-button"
+              data-active={tab.id === activeTabId ? 'true' : 'false'}
+              onClick={() => { setPendingId(null); onSelect(tab.id); }}
+            >
+              {tab.name}
+            </button>
             <button
               className={styles.tabRemove}
               title="Remove tab"
@@ -43,9 +39,18 @@ export function TabBar({ tabs, activeTabId, onSelect, onRemove }: Props) {
             >
               <TrashIcon size={14} />
             </button>
-          )}
-        </span>
-      ))}
+          </span>
+        ))}
+      </div>
+      {pendingTab && (
+        <div className={styles.confirmBar}>
+          <span className={styles.confirmLabel}>Delete "{pendingTab.name}"?</span>
+          <ConfirmButtons
+            onConfirm={() => { setPendingId(null); onRemove(pendingTab.id); }}
+            onCancel={() => setPendingId(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }

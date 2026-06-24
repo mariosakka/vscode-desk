@@ -1,0 +1,835 @@
+<fezzan-page title="Angular + Client Guide">
+  <style>
+    /* ═══════════════════════════════════════════════
+       Study guide — shared base styles (fezzan port)
+       Sidebar + body-flex layout removed; theme is fixed
+       to the dark palette (no JS theme toggle in fezzan).
+       ═══════════════════════════════════════════════ */
+    
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #7c6af7;
+      --accent2: #5eead4;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #12141f;
+      --tag-domain: #7c6af7;
+      --tag-app: #5eead4;
+      --tag-infra: #f59e0b;
+      --tag-warn: #ef4444;
+      --radius: 10px;
+      --font-code: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+    
+    /* ── Main column (centered, no sidebar) ── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 32px 96px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    
+    /* ── Page header ── */
+    .page-header {
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .page-header h1 {
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .page-header p { color: var(--muted); max-width: 620px; margin-bottom: 0; }
+    
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      margin-right: 5px;
+    }
+    .bd-domain  { background: rgba(124,106,247,.16); color: var(--tag-domain); }
+    .bd-app     { background: rgba(94,234,212,.14);  color: var(--tag-app); }
+    .bd-infra   { background: rgba(245,158,11,.14);  color: var(--tag-infra); }
+    .bd-warn    { background: rgba(239,68,68,.14);   color: var(--tag-warn); }
+    .bd-ok      { background: rgba(34,197,94,.14);   color: #22c55e; }
+    
+    /* ── Section ── */
+    .section { margin-bottom: 60px; scroll-margin-top: 24px; }
+    
+    h2.section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2.section-title .icon {
+      width: 30px; height: 30px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    
+    h3.sub { font-size: 14px; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: .08em; margin: 28px 0 12px; }
+    
+    p { color: var(--muted); margin-bottom: 12px; }
+    p strong, li strong { color: var(--text); }
+    ul, ol { padding-left: 20px; color: var(--muted); margin-bottom: 12px; }
+    li { margin-bottom: 4px; }
+    
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 14px;
+    }
+    .card-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .card p { margin: 0; font-size: 13.5px; }
+    
+    /* ── Callouts ── */
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: rgba(124,106,247,.07);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 13px 17px;
+      margin: 14px 0;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+    .callout strong { color: var(--text); }
+    .callout.tip  { border-color: var(--accent2); background: rgba(94,234,212,.06); }
+    .callout.warn { border-color: var(--tag-warn); background: rgba(239,68,68,.06); }
+    .callout.ok   { border-color: #22c55e; background: rgba(34,197,94,.06); }
+    .callout.infra{ border-color: var(--tag-infra); background: rgba(245,158,11,.06); }
+    
+    /* ── Code blocks ── */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 14px 0;
+      overflow: hidden;
+    }
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 15px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      gap: 8px;
+    }
+    .code-lang { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; flex-shrink: 0; }
+    .code-file { font-size: 11px; color: var(--muted); font-family: var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 2px 9px;
+      cursor: pointer;
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+    .copy-btn.copied { color: var(--accent2); border-color: var(--accent2); }
+    
+    pre {
+      padding: 16px 18px;
+      overflow-x: auto;
+      font-family: var(--font-code);
+      font-size: 12.5px;
+      line-height: 1.65;
+      color: var(--text);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    code { font-family: var(--font-code); }
+    
+    .ic {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: var(--font-code);
+      font-size: 12px;
+      color: var(--accent2);
+    }
+    
+    /* Syntax colours — dark */
+    .kw   { color: #c792ea; }
+    .fn   { color: #82aaff; }
+    .str  { color: #c3e88d; }
+    .num  { color: #f78c6c; }
+    .cmt  { color: #546e7a; font-style: italic; }
+    .ty   { color: #ffcb6b; }
+    .prop { color: #89ddff; }
+    .dec  { color: #ff5370; }
+    
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13.5px; }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      text-align: left;
+      padding: 9px 13px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 13px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.015); }
+    td.mono { font-family: var(--font-code); font-size: 12px; color: var(--accent2); white-space: nowrap; }
+    td.center { text-align: center; }
+    
+    /* ── Flow / step diagrams ── */
+    .flow {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin: 14px 0 20px;
+    }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .flow-step:last-child { border-bottom: none; }
+    .flow-num {
+      width: 24px; height: 24px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700;
+      flex-shrink: 0; margin-top: 3px;
+    }
+    .flow-num.ret  { background: var(--accent2); color: var(--bg); }
+    .flow-num.warn { background: var(--tag-warn); }
+    .flow-num.infra{ background: var(--tag-infra); color: #0f1117; }
+    .flow-content { flex: 1; min-width: 0; }
+    .flow-label { font-size: 13px; color: var(--text); font-weight: 500; flex-wrap: wrap; }
+    .flow-detail { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .arr { color: var(--muted); margin: 0 4px; font-size: 11px; }
+    
+    /* ── Layer diagram ── */
+    .layer-diagram { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; }
+    .layer {
+      border-radius: 8px;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .layer.l-infra  { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); }
+    .layer.l-app    { background: rgba(94,234,212,.08); border: 1px solid rgba(94,234,212,.25); }
+    .layer.l-domain { background: rgba(124,106,247,.1); border: 1px solid rgba(124,106,247,.3); }
+    .layer .layer-name { font-weight: 700; font-size: 12px; min-width: 90px; }
+    .layer.l-infra  .layer-name { color: var(--tag-infra); }
+    .layer.l-app    .layer-name { color: var(--tag-app); }
+    .layer.l-domain .layer-name { color: var(--tag-domain); }
+    .layer .layer-items { color: var(--muted); font-size: 12.5px; }
+    .layer .dep-arrow { margin-left: auto; font-size: 11px; color: var(--muted); white-space: nowrap; }
+    
+    /* ── Checklist ── */
+    .checklist { list-style: none; margin: 14px 0; }
+    .checklist li {
+      display: flex;
+      gap: 11px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .check-num {
+      width: 22px; height: 22px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .checklist li strong { color: var(--text); }
+    
+    /* ── Collapsible ── */
+    details {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    summary {
+      padding: 13px 17px;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--surface);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: '▸'; color: var(--muted); font-size: 11px; }
+    details[open] summary::after { content: '▾'; }
+    details[open] summary { border-bottom: 1px solid var(--border); }
+    .details-body { padding: 16px 18px; background: var(--code-bg); }
+    
+    /* ── Rule pill ── */
+    .rule {
+      display: inline-block;
+      font-family: var(--font-code);
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 4px;
+      margin: 0 2px;
+    }
+    .rule.err  { background: rgba(239,68,68,.14); color: var(--tag-warn); border: 1px solid rgba(239,68,68,.3); }
+    .rule.warn { background: rgba(245,158,11,.14); color: var(--tag-infra); border: 1px solid rgba(245,158,11,.3); }
+    .rule.ok   { background: rgba(34,197,94,.12); color: #22c55e; border: 1px solid rgba(34,197,94,.25); }
+    
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    
+    /* ═══ Page-specific rules (from source <head>, content-related only) ═══ */
+    
+    /* Badge palette used by this page's header + DDD flow badge */
+    .badge-admin  { background: rgba(124,106,247,.18); color: var(--tag-admin, #7c6af7); }
+    .badge-public { background: rgba(94,234,212,.15);  color: var(--tag-public, #5eead4); }
+    .badge-ddd    { background: rgba(245,158,11,.15);  color: var(--tag-ddd, #f59e0b); }
+    
+    /* Inline code style used throughout the body */
+    .inline-code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: var(--font-code);
+      font-size: 12.5px;
+      color: var(--accent2);
+    }
+    
+    /* h3 sub-headings (source used bare h3, not h3.sub) */
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 28px 0 12px;
+    }
+    
+    /* Return-step flow node (source used .return, base uses .ret) */
+    .flow-num.return { background: var(--accent2); color: var(--bg); }
+    
+    /* Inline arrow used in flow labels (source used .arrow, base uses .arr) */
+    .arrow { color: var(--muted); font-size: 12px; margin: 0 4px; }
+  </style>
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="eyebrow">Frontend × Backend DDD</div>
+    <h1>Angular pe platforma<br/>colete-online.ro</h1>
+    <p>Cum sunt legate componentele Angular de backend-ul DDD prin <code class="inline-code">ApiProvider</code>, interceptori JWT și signals. Feature de referință: <strong>„Versiuni plugin" (COL-321)</strong>.</p>
+    <br/>
+    <span class="badge badge-admin">Admin</span>
+    <span class="badge badge-public">Public</span>
+    <span class="badge badge-ddd">DDD backend</span>
+  </div>
+
+  <!-- ── Glosar ── -->
+  <div class="section" id="glosar">
+    <h2 class="section-title"><span class="icon">📖</span>Glosar rapid</h2>
+    <table>
+      <thead><tr><th>Termen</th><th>Ce înseamnă</th></tr></thead>
+      <tbody>
+        <tr><td>Component</td><td>Clasă TypeScript + template HTML — o bucată de UI.</td></tr>
+        <tr><td>Signal</td><td>Valoare reactivă (<code class="inline-code">signal(v)</code>); template-ul se re-randează automat la schimbare.</td></tr>
+        <tr><td>Service / Provider</td><td>Clasă cu logică reutilizabilă, injectată prin DI. Analog cu un <em>application service</em> din DDD.</td></tr>
+        <tr><td>Observable</td><td>Flux asincron (RxJS); <code class="inline-code">HttpClient</code> întoarce Observables.</td></tr>
+        <tr><td>inject(X)</td><td>Cere injectorul instanța lui <code class="inline-code">X</code> (alternativa modernă la constructor DI).</td></tr>
+        <tr><td>OnPush</td><td>Componenta se re-randează doar când se schimbă un signal sau input — mai eficient.</td></tr>
+        <tr><td>DI (Dependency Injection)</td><td>Angular creează și injectează obiecte; tu nu scrii <code class="inline-code">new Service()</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Bootstrap ── -->
+  <div class="section" id="bootstrap">
+    <h2 class="section-title"><span class="icon">🚀</span>Bootstrap</h2>
+    <p>Fișier: <code class="inline-code">src/main.ts</code> — punctul de intrare al aplicației. Fără <code class="inline-code">NgModule</code>, totul e standalone.</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">TypeScript</span>
+        <span class="code-file">src/main.ts</span>
+      </div>
+      <pre><code><span class="fn">bootstrapApplication</span>(<span class="type">AppComponent</span>, appConfig)
+  .<span class="fn">catch</span>(err <span class="kw">=></span> console.<span class="fn">error</span>(err));
+
+<span class="kw">if</span> (!<span class="fn">isDevMode</span>()) {
+  console.log = () => {}; <span class="cmt">// în producție, mut console.log</span>
+}</code></pre>
+    </div>
+  </div>
+
+  <!-- ── Provideri ── -->
+  <div class="section" id="providers">
+    <h2 class="section-title"><span class="icon">⚙️</span>Provideri globali</h2>
+    <p>Fișier: <code class="inline-code">src/app/app.config.ts</code> — înregistrați o singură dată, disponibili peste tot în aplicație.</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">TypeScript</span>
+        <span class="code-file">src/app/app.config.ts</span>
+      </div>
+      <pre><code><span class="kw">export const</span> appConfig: <span class="type">ApplicationConfig</span> = {
+  providers: [
+    <span class="fn">provideRouter</span>(routes, <span class="fn">withPreloading</span>(<span class="type">NoPreloading</span>),
+      <span class="fn">withViewTransitions</span>(), <span class="fn">withRouterConfig</span>({ onSameUrlNavigation: <span class="str">"reload"</span> })),
+
+    <span class="fn">provideHttpClient</span>(
+      <span class="fn">withInterceptors</span>([headerInterceptor]), <span class="cmt">// → adaugă JWT</span>
+      <span class="fn">withFetch</span>()),
+
+    <span class="fn">provideClientHydration</span>(              <span class="cmt">// → SSR / hydration</span>
+      <span class="fn">withIncrementalHydration</span>(),
+      <span class="fn">withEventReplay</span>()),
+
+    ApiProvider, UserProvider, TokenProvider,
+    CacheProvider, EventBusService,          <span class="cmt">// → singleton-uri globale</span>
+    AuthGuardService, AdminGuardService,
+
+    { provide: <span class="type">LOCALE_ID</span>, useValue: <span class="str">"ro-RO"</span> },
+    { provide: <span class="type">ErrorHandler</span>, useClass: <span class="type">ErrorHandlerService</span> },
+  ],
+};</code></pre>
+    </div>
+  </div>
+
+  <!-- ── Routing ── -->
+  <div class="section" id="routing">
+    <h2 class="section-title"><span class="icon">🗺️</span>Routing & lazy loading</h2>
+    <p>Rutele rădăcină sunt în <code class="inline-code">src/app/app.routes.ts</code>. Fiecare zonă mare are propriul fișier în <code class="inline-code">src/app/routing/</code>.</p>
+
+    <h3>Zona admin — lazy + protejată</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">TypeScript</span>
+        <span class="code-file">src/app/app.routes.ts</span>
+      </div>
+      <pre><code>{
+  path: <span class="str">"admin"</span>,
+  <span class="prop">loadChildren</span>: () => <span class="kw">import</span>(<span class="str">"./routing/admin.routing"</span>)
+                          .<span class="fn">then</span>(m => m.adminRoutes),
+  <span class="prop">canActivate</span>: [adminCanActivate],
+  <span class="prop">canMatch</span>: [adminCanMatch],  <span class="cmt">// nici bundle-ul nu se descarcă fără permisiune</span>
+}</code></pre>
+    </div>
+
+    <h3>Ruta feature-ului (COL-321)</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">TypeScript</span>
+        <span class="code-file">src/app/routing/admin.routing.ts</span>
+      </div>
+      <pre><code>{
+  path: <span class="str">"plugin-versions"</span>,
+  <span class="prop">loadComponent</span>: () => <span class="kw">import</span>(
+    <span class="str">"@components/admin/plugin-versions/plugin-versions.component"</span>
+  ).<span class="fn">then</span>(m => m.<span class="type">PluginVersionsComponent</span>),
+}</code></pre>
+    </div>
+
+    <div class="callout tip">
+      <strong>Path aliases</strong> — definite în <code class="inline-code">tsconfig.json</code>:<br/>
+      <code class="inline-code">@components</code> → <code class="inline-code">src/app/components</code> &nbsp;|&nbsp;
+      <code class="inline-code">@provider</code> → <code class="inline-code">src/app/providers</code> &nbsp;|&nbsp;
+      <code class="inline-code">@server</code> → <code class="inline-code">../../server/src</code> (doar tipuri, niciodată cod runtime)
+    </div>
+
+    <h3>Date statice pe rută (fără URL params)</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">TypeScript</span>
+      </div>
+      <pre><code><span class="cmt">// routing:</span>
+{ path: <span class="str">"prestashop/changelog"</span>, ..., data: { platform: <span class="str">"prestashop"</span> } }
+
+<span class="cmt">// în componentă:</span>
+<span class="kw">readonly</span> platform = <span class="kw">this</span>.route.snapshot.data[<span class="str">"platform"</span>];</code></pre>
+    </div>
+  </div>
+
+  <!-- ── Guards ── -->
+  <div class="section" id="guards">
+    <h2 class="section-title"><span class="icon">🛡️</span>Guards pe /admin</h2>
+    <p>Fișier: <code class="inline-code">src/app/guards/admin.guard.ts</code>. Zona admin e triplu-protejată.</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">TypeScript</span>
+        <span class="code-file">src/app/guards/admin.guard.ts</span>
+      </div>
+      <pre><code><span class="fn">isAdmin</span>(auth: <span class="type">AuthService</span>, router: <span class="type">Router</span>) {
+  <span class="kw">if</span> (<span class="fn">isPlatformServer</span>(<span class="kw">this</span>.platformId)) {
+    <span class="kw">return false</span>; <span class="cmt">// SSR: nu randăm /admin pe server</span>
+  }
+  <span class="kw">return</span> auth.<span class="fn">isAdmin</span>();
+}</code></pre>
+    </div>
+    <div class="card">
+      <div class="card-title">De ce triplu-protejat?</div>
+      <p><code class="inline-code">canActivate</code> blochează navigarea &nbsp;·&nbsp; <code class="inline-code">canLoad</code> + <code class="inline-code">canMatch</code> fac ca bundle-ul lazy să nu fie descărcat deloc dacă nu ești admin.</p>
+    </div>
+    <div class="callout warn">
+      <strong>SSR guard:</strong> pe server (Node) nu există stare de login, deci <code class="inline-code">isPlatformServer</code> întoarce <code class="inline-code">false</code> direct. Admin-ul se randează doar în browser.
+    </div>
+  </div>
+
+  <!-- ── Servicii ── -->
+  <div class="section" id="servicii">
+    <h2 class="section-title"><span class="icon">🔧</span>Servicii cheie</h2>
+    <p>Toate sunt singleton globale, injectate cu <code class="inline-code">inject(X)</code>. Se găsesc în <code class="inline-code">src/app/providers/</code>.</p>
+    <table>
+      <thead><tr><th>Serviciu</th><th>Fișier</th><th>Rol</th></tr></thead>
+      <tbody>
+        <tr><td>ApiProvider</td><td>providers/api/api.ts</td><td>Wrapper HTTP: <code class="inline-code">get/post/put/patch/delete</code>. Alege URL-ul backend per mediu. <code class="inline-code">.auth()</code> atașează JWT pe cerere.</td></tr>
+        <tr><td>UserProvider</td><td>providers/user/user.ts</td><td>Stare user logat; <code class="inline-code">isAdmin</code> expus ca <strong>signal</strong>.</td></tr>
+        <tr><td>TokenProvider</td><td>providers/token/token.ts</td><td>JWT în <code class="inline-code">localStorage</code> (browser) sau în memorie (SSR).</td></tr>
+        <tr><td>CacheProvider</td><td>providers/cache/cache.ts</td><td>Cache simplu peste <code class="inline-code">localStorage</code>.</td></tr>
+        <tr><td>EventBusService</td><td>providers/event-bus/…</td><td>Comunicare între componente fără relație părinte-copil.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>ApiProvider — selecția URL-ului de backend</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">TypeScript</span>
+        <span class="code-file">providers/api/api.ts</span>
+      </div>
+      <pre><code><span class="kw">readonly</span> url = <span class="fn">isPlatformServer</span>(<span class="kw">this</span>.platformId)
+  ? <span class="str">"http://localhost:3000"</span>
+  : <span class="fn">isDevMode</span>()
+    ? LOCAL_DEV_SERVER_URL
+    : IS_STAGING
+      ? <span class="str">"https://staging.colete-online.ro/backend"</span>
+      : <span class="str">"https://www.colete-online.ro/backend"</span>;</code></pre>
+    </div>
+  </div>
+
+  <!-- ── Flux ── -->
+  <div class="section" id="flux">
+    <h2 class="section-title"><span class="icon">🔄</span>Fluxul complet de date</h2>
+    <p>De la componentă până în baza de date și înapoi.</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <div class="flow-label"><code class="inline-code">api.auth().get("admin/platform-versions/prestashop")</code></div>
+          <div class="flow-detail">Componenta apelează ApiProvider; <code class="inline-code">.auth()</code> marchează că cererea are nevoie de JWT.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <div class="flow-label"><code class="inline-code">headerInterceptor</code> <span class="arrow">→</span> adaugă <code class="inline-code">Authorization: JWT &lt;token&gt;</code></div>
+          <div class="flow-detail">TokenProvider preia JWT-ul din memorie / localStorage și îl atașează pe toate cererile.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <div class="flow-label"><span class="badge badge-ddd">DDD</span> Backend Express <span class="arrow">→</span> Application Service <span class="arrow">→</span> Prisma (MySQL)</div>
+          <div class="flow-detail">Serverul verifică tipul userului (admin), apelează use case-ul, citește baza de date și întoarce JSON.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num return">4</div>
+        <div class="flow-content">
+          <div class="flow-label"><code class="inline-code">.subscribe({ next: res => versions.set(res.versions) })</code></div>
+          <div class="flow-detail">Răspunsul HTTP scrie rezultatul într-un signal.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num return">5</div>
+        <div class="flow-content">
+          <div class="flow-label"><code class="inline-code">@for (v of versions(); track v.id)</code> <span class="arrow">→</span> OnPush re-randează</div>
+          <div class="flow-detail">Template-ul citește signal-ul; Angular re-randează automat.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>headerInterceptor</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">TypeScript</span>
+        <span class="code-file">providers/interceptors/header.interceptor.ts</span>
+      </div>
+      <pre><code><span class="kw">export function</span> <span class="fn">headerInterceptor</span>(req, next) {
+  <span class="kw">const</span> tokenService = <span class="fn">inject</span>(<span class="type">TokenProvider</span>);
+  <span class="kw">return</span> <span class="fn">from</span>(tokenService.<span class="fn">getToken</span>()).<span class="fn">pipe</span>(
+    <span class="fn">switchMap</span>(token => {
+      <span class="kw">if</span> (token) {
+        req = req.<span class="fn">clone</span>({ setHeaders: { Authorization: <span class="str">`JWT <span class="num">${token}</span>`</span> } });
+      }
+      <span class="kw">return</span> <span class="fn">next</span>(req);
+    })
+  );
+}</code></pre>
+    </div>
+  </div>
+
+  <!-- ── Shell admin ── -->
+  <div class="section" id="shell">
+    <h2 class="section-title"><span class="icon">🏗️</span>Shell-ul de admin</h2>
+    <p>Fișier: <code class="inline-code">src/app/components/admin/admin.component.ts</code> — cadrul vizual al zonei admin: meniu lateral + <code class="inline-code">&lt;router-outlet&gt;</code> unde se randează pagina curentă.</p>
+    <div class="card">
+      <div class="card-title">NavLink pentru feature-ul nostru</div>
+      <p><code class="inline-code">{ name: "Versiuni plugin-uri", href: "./plugin-versions", iconName: "extension" }</code> — adăugat în lista <code class="inline-code">navLinks</code> din AdminComponent.</p>
+    </div>
+    <p>Shell-ul ascultă <code class="inline-code">router.events</code> (filtrate pe <code class="inline-code">NavigationEnd</code>) pentru a seta titlul paginii per rută, inclusiv pentru <code class="inline-code">/admin/plugin-versions</code>.</p>
+  </div>
+
+  <!-- ── Feature admin ── -->
+  <div class="section" id="admin-feature">
+    <h2 class="section-title"><span class="icon">🔒</span>Feature admin — Versiuni plugin</h2>
+
+    <div id="admin-lista">
+      <h3>Lista versiuni</h3>
+      <p>Componentă standalone, <code class="inline-code">OnPush</code>, cu signals de stare: <code class="inline-code">platform</code>, <code class="inline-code">fetching</code>, <code class="inline-code">versions</code>.</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">TypeScript</span>
+          <span class="code-file">components/admin/plugin-versions/plugin-versions.component.ts</span>
+        </div>
+        <pre><code><span class="fn">load</span>(): <span class="type">void</span> {
+  <span class="kw">const</span> requestId = ++<span class="kw">this</span>.requestId; <span class="cmt">// anti race-condition</span>
+  <span class="kw">this</span>.fetching.<span class="fn">set</span>(<span class="kw">true</span>);
+  <span class="kw">this</span>.api.<span class="fn">auth</span>()
+    .<span class="fn">get</span>&lt;{ versions: <span class="type">PluginVersion</span>[] }&gt;(
+      <span class="str">`admin/platform-versions/<span class="num">${this.platform()}</span>`</span>
+    )
+    .<span class="fn">pipe</span>(<span class="fn">first</span>(), <span class="fn">takeUntilDestroyed</span>(<span class="kw">this</span>.destroyRef))
+    .<span class="fn">subscribe</span>({
+      next: res => {
+        <span class="kw">if</span> (requestId !== <span class="kw">this</span>.requestId) <span class="kw">return</span>; <span class="cmt">// ignoră răspunsuri vechi</span>
+        <span class="kw">this</span>.versions.<span class="fn">set</span>(res.versions ?? []);
+        <span class="kw">this</span>.fetching.<span class="fn">set</span>(<span class="kw">false</span>);
+      },
+      error: () => { <span class="kw">this</span>.versions.<span class="fn">set</span>([]); <span class="kw">this</span>.fetching.<span class="fn">set</span>(<span class="kw">false</span>); },
+    });
+}</code></pre>
+      </div>
+    </div>
+
+    <div id="admin-dialog">
+      <h3>Create / Edit — dialog + switchMap</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">TypeScript</span>
+        </div>
+        <pre><code><span class="fn">add</span>(): <span class="type">void</span> {
+  <span class="kw">this</span>.dialog.<span class="fn">open</span>(<span class="type">DialogEditVersionComponent</span>, {
+    data: { title: <span class="str">"Adauga versiune"</span>, platform: <span class="kw">this</span>.<span class="fn">platform</span>() },
+  }).<span class="fn">afterClosed</span>().<span class="fn">pipe</span>(
+    <span class="fn">first</span>(),
+    <span class="fn">switchMap</span>(result => {
+      <span class="kw">if</span> (result?.success === <span class="kw">true</span>) {
+        <span class="kw">return</span> <span class="kw">this</span>.api.<span class="fn">auth</span>()
+          .<span class="fn">post</span>(<span class="str">`admin/platform-versions/<span class="num">${this.platform()}</span>`</span>, result.data)
+          .<span class="fn">pipe</span>(<span class="fn">first</span>());
+      }
+      <span class="kw">return</span> <span class="fn">of</span>(<span class="kw">null</span>); <span class="cmt">// dialog anulat</span>
+    }),
+    <span class="fn">takeUntilDestroyed</span>(<span class="kw">this</span>.destroyRef),
+  ).<span class="fn">subscribe</span>({ next: () => <span class="kw">this</span>.<span class="fn">load</span>() });
+}</code></pre>
+      </div>
+
+      <h3>Dialogul — Reactive Form + upload</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">TypeScript</span>
+          <span class="code-file">components/admin/plugin-versions/dialog-edit-version.component.ts</span>
+        </div>
+        <pre><code>versionForm = <span class="kw">this</span>.fb.<span class="fn">group</span>({
+  version:      [<span class="str">""</span>, [Validators.required, Validators.<span class="fn">pattern</span>(<span class="str">/^\d+\.\d+\.\d+$/</span>)]],
+  release_date: [<span class="str">""</span>],
+  description:  [<span class="str">""</span>],
+  critical:     [<span class="kw">false</span>],
+  major:        [<span class="kw">false</span>],
+});</code></pre>
+      </div>
+      <div class="callout">
+        Upload arhivă <code class="inline-code">.zip</code> prin componenta reutilizabilă <code class="inline-code">&lt;app-file-upload&gt;</code> → trimite <code class="inline-code">FormData</code> la <code class="inline-code">POST admin/platform-versions/version/:id/archive</code>.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Feature public ── -->
+  <div class="section" id="public-feature">
+    <h2 class="section-title"><span class="icon">🌐</span>Feature public — Changelog & Download</h2>
+    <p>Același pattern ca admin-ul, dar <strong>fără</strong> <code class="inline-code">.auth()</code> (endpoint public).</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">TypeScript</span>
+        <span class="code-file">components/info/integration/changelog/platform-changelog.component.ts</span>
+      </div>
+      <pre><code><span class="kw">private</span> <span class="fn">load</span>(): <span class="type">void</span> {
+  <span class="kw">this</span>.api
+    .<span class="fn">get</span>&lt;{ versions: <span class="type">PublicVersion</span>[] }&gt;(
+      <span class="str">`platform/<span class="num">${this.platform}</span>/versions`</span>
+    )
+    .<span class="fn">pipe</span>(<span class="fn">first</span>(), <span class="fn">takeUntilDestroyed</span>(<span class="kw">this</span>.destroyRef))
+    .<span class="fn">subscribe</span>({
+      next: res => { <span class="kw">this</span>.versions.<span class="fn">set</span>(res.versions ?? []); <span class="kw">this</span>.loading.<span class="fn">set</span>(<span class="kw">false</span>); },
+      error: () =>  { <span class="kw">this</span>.versions.<span class="fn">set</span>([]); <span class="kw">this</span>.loading.<span class="fn">set</span>(<span class="kw">false</span>); },
+    });
+}
+
+<span class="fn">downloadUrl</span>(version: <span class="type">string</span>): <span class="type">string</span> {
+  <span class="cmt">// Link direct către backend — nu asset static.</span>
+  <span class="cmt">// Adminii publică versiuni noi fără redeploy frontend.</span>
+  <span class="kw">return</span> <span class="str">`<span class="num">${this.api.url}</span>/platform/<span class="num">${this.platform}</span>/download/<span class="num">${version}</span>`</span>;
+}</code></pre>
+    </div>
+  </div>
+
+  <!-- ── Backend DDD ── -->
+  <div class="section" id="backend-ddd">
+    <h2 class="section-title"><span class="icon">🏛️</span>Backend DDD — context pentru frontend</h2>
+    <p>Endpoint-urile sunt implementate în <code class="inline-code">server/</code> ca <strong>modul DDD</strong> cu trei straturi. Din perspectiva frontend-ului contează doar <em>contractul</em>: endpoint + tipul JSON-ului de răspuns.</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">D</div>
+        <div class="flow-content">
+          <div class="flow-label"><strong>Domain</strong></div>
+          <div class="flow-detail">Entitățile și regulile de business: versiuni, arhive .zip, invarianți.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">A</div>
+        <div class="flow-content">
+          <div class="flow-label"><strong>Application</strong></div>
+          <div class="flow-detail">Use cases: creează versiune, listează, șterge, uploadează arhivă.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">I</div>
+        <div class="flow-content">
+          <div class="flow-label"><strong>Infrastructure</strong></div>
+          <div class="flow-detail">Prisma (MySQL) + Express routes. Endpoints: <code class="inline-code">admin/platform-versions/*</code>, <code class="inline-code">platform/:p/versions</code>, <code class="inline-code">platform/:p/download/:v</code>.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <code class="inline-code">@server</code> exportă tipuri TypeScript partajate (<code class="inline-code">plugin-versions.types.ts</code>) — niciodată cod runtime. Importul se face doar pentru tipuri, ca frontend-ul să cunoască structura JSON fără a aduce dependențe de server.
+    </div>
+  </div>
+
+  <!-- ── Checklist ── -->
+  <div class="section" id="checklist">
+    <h2 class="section-title"><span class="icon">✅</span>Checklist — pagină nouă</h2>
+    <p>Pe modelul feature-ului COL-321, atingi aceste fișiere în ordine:</p>
+    <ul class="checklist">
+      <li>
+        <div class="check-num">1</div>
+        <div><strong>Componentă</strong> — <code class="inline-code">components/&lt;zona&gt;/&lt;nume&gt;/&lt;nume&gt;.component.{ts,html,scss}</code><br/><span style="color:var(--muted);font-size:13px">Standalone, OnPush, <code class="inline-code">imports</code> cu tot ce folosești în template.</span></div>
+      </li>
+      <li>
+        <div class="check-num">2</div>
+        <div><strong>Tipuri</strong> — <code class="inline-code">&lt;nume&gt;.types.ts</code> pentru forma răspunsului<br/><span style="color:var(--muted);font-size:13px">Nu importa cod de server în client — doar tipuri prin <code class="inline-code">@server</code>.</span></div>
+      </li>
+      <li>
+        <div class="check-num">3</div>
+        <div><strong>Rută</strong> — <code class="inline-code">routing/*.routing.ts</code> cu <code class="inline-code">loadComponent</code> (lazy)<br/><span style="color:var(--muted);font-size:13px">Adaugă <code class="inline-code">data</code> / <code class="inline-code">:param</code> dacă ai nevoie de argumente fără URL.</span></div>
+      </li>
+      <li>
+        <div class="check-num">4</div>
+        <div><strong>Meniu</strong> — dacă e în admin, adaugă <code class="inline-code">NavLink</code> în <code class="inline-code">admin.component.ts</code><br/><span style="color:var(--muted);font-size:13px">+ caz pentru titlul paginii în <code class="inline-code">router.events</code>.</span></div>
+      </li>
+      <li>
+        <div class="check-num">5</div>
+        <div><strong>Date</strong> — injectează <code class="inline-code">ApiProvider</code>, apelează endpoint-ul, scrie în signal, randează cu <code class="inline-code">@if</code>/<code class="inline-code">@for</code><br/><span style="color:var(--muted);font-size:13px">Dacă e protejat: <code class="inline-code">api.auth().get(...)</code>. Public: <code class="inline-code">api.get(...)</code>.</span></div>
+      </li>
+      <li>
+        <div class="check-num">6</div>
+        <div><strong>SSR</strong> — orice atinge browser-ul → în <code class="inline-code">if (isPlatformBrowser(...))</code><br/><span style="color:var(--muted);font-size:13px">DOM, localStorage, IntersectionObserver nu există pe server.</span></div>
+      </li>
+      <li>
+        <div class="check-num">7</div>
+        <div><strong>(opțional) Dialog/Form</strong> — <code class="inline-code">MatDialog</code> + Reactive Form<br/><span style="color:var(--muted);font-size:13px">Întoarce rezultatul prin <code class="inline-code">dialogRef.close(...)</code>, fă <code class="inline-code">POST</code>/<code class="inline-code">PATCH</code> cu <code class="inline-code">switchMap</code> din <code class="inline-code">afterClosed()</code>.</span></div>
+      </li>
+    </ul>
+
+    <h3>Fișiere de referință</h3>
+    <details>
+      <summary>Listează fișierele relevante</summary>
+      <div class="details-body">
+        <table style="margin:0">
+          <thead><tr><th>Fișier</th><th>Ce conține</th></tr></thead>
+          <tbody>
+            <tr><td>components/admin/plugin-versions/*</td><td>Lista + dialog + upload + tipuri (feature admin)</td></tr>
+            <tr><td>components/info/integration/changelog/*</td><td>Changelog public</td></tr>
+            <tr><td>components/info/integration/prestashop/docs/*</td><td>Download din pagina de docs</td></tr>
+            <tr><td>providers/api/api.ts</td><td>Wrapper HTTP, URL per mediu</td></tr>
+            <tr><td>providers/token/token.ts</td><td>JWT storage SSR-safe</td></tr>
+            <tr><td>providers/interceptors/header.interceptor.ts</td><td>Adaugă Authorization pe cereri</td></tr>
+            <tr><td>guards/admin.guard.ts</td><td>Protecția zonei de admin</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</fezzan-page>

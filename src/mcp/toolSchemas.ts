@@ -97,17 +97,17 @@ export const TOOLS: McpTool[] = [
   // ── Page tools ────────────────────────────────────────────────────────────
   {
     name: 'list_pages',
-    description: 'Returns all .fezzan page files in the workspace fezzan-pages/ folder',
+    description: 'Returns all .astrolabe page files in the workspace astrolabe-pages/ folder',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
     name: 'create_page',
-    description: 'Creates a new .fezzan page file. content is the HTML body; customStyles is optional CSS injected only for this page.',
+    description: 'Creates a new .astrolabe page file. content is the HTML body; customStyles is optional CSS injected only for this page.',
     inputSchema: {
       type: 'object',
       required: ['filename', 'title', 'content'],
       properties: {
-        filename: { type: 'string', description: 'File name including .fezzan extension, e.g. "auth-flow.fezzan"' },
+        filename: { type: 'string', description: 'File name including .astrolabe extension, e.g. "auth-flow.astrolabe"' },
         title: { type: 'string' },
         content: { type: 'string', description: 'HTML body content (no <script> tags)' },
         customStyles: { type: 'string', description: 'Optional CSS rules scoped to this page' },
@@ -117,7 +117,7 @@ export const TOOLS: McpTool[] = [
   },
   {
     name: 'update_page',
-    description: 'Overwrites fields on an existing .fezzan page. Only provided fields are changed.',
+    description: 'Overwrites fields on an existing .astrolabe page. Only provided fields are changed.',
     inputSchema: {
       type: 'object',
       required: ['filename'],
@@ -132,7 +132,7 @@ export const TOOLS: McpTool[] = [
   },
   {
     name: 'delete_page',
-    description: 'Deletes a .fezzan page file from the workspace',
+    description: 'Deletes a .astrolabe page file from the workspace',
     inputSchema: {
       type: 'object',
       required: ['filename'],
@@ -149,15 +149,40 @@ export const TOOLS: McpTool[] = [
   },
   {
     name: 'submit_workflow_config',
-    description: 'Submits a partial WorkflowConfig for user review. Fields are deep-merged with existing config. Non-blocking — returns { status: "submitted" } immediately; the user confirms in VS Code before anything is persisted.',
+    description: 'Submits a partial WorkflowConfig for user review. Non-blocking — returns { status: "submitted" } immediately; the user confirms in VS Code before anything is persisted.',
     inputSchema: {
       type: 'object',
       required: ['config'],
       properties: {
         config: {
           type: 'object',
-          description: 'Partial WorkflowConfig. Top-level and nested fields are deep-merged.',
-          additionalProperties: true,
+          properties: {
+            communication: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  label: { type: 'string' },
+                  channel: { type: 'string' },
+                },
+                required: ['label', 'channel'],
+              },
+              description: 'Communication channels with user-defined labels',
+            },
+            general: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  label: { type: 'string' },
+                  value: { type: 'string' },
+                },
+                required: ['label', 'value'],
+              },
+              description: 'General key-value settings with user-defined labels',
+            },
+          },
+          additionalProperties: false,
         },
       },
       additionalProperties: false,

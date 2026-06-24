@@ -75,7 +75,7 @@ describe('McpServer', () => {
 
   it('responds to initialize', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'initialize', params: {}, id: 1 });
-    expect(res.result.serverInfo.name).toBe('vscode-fezzan');
+    expect(res.result.serverInfo.name).toBe('vscode-astrolabe');
     expect(res.result.protocolVersion).toBeDefined();
   });
 
@@ -100,12 +100,12 @@ describe('McpServer', () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 3 });
     expect(res.result.resources).toHaveLength(3);
     const uris = res.result.resources.map((r: any) => r.uri);
-    expect(uris).toContain('fezzan://guide/quick-start');
-    expect(uris).toContain('fezzan://guide/fezzan-page-format');
+    expect(uris).toContain('astrolabe://guide/quick-start');
+    expect(uris).toContain('astrolabe://guide/astrolabe-page-format');
   });
 
   it('reads the quick-start resource', async () => {
-    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'fezzan://guide/quick-start' }, id: 4 });
+    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'astrolabe://guide/quick-start' }, id: 4 });
     expect(res.result.contents[0].text).toContain('list_tabs');
     expect(res.result.contents[0].mimeType).toBe('text/markdown');
   });
@@ -219,17 +219,20 @@ describe('McpServer — workflow tools', () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 2 });
     expect(res.result.resources).toHaveLength(3);
     const uris = res.result.resources.map((r: any) => r.uri);
-    expect(uris).toContain('fezzan://guide/skill-format');
+    expect(uris).toContain('astrolabe://guide/skill-format');
   });
 
   it('get_workflow_config returns config when set', async () => {
-    mockWorkflowConfigService.get.mockReturnValue({ language: 'en', githubOrg: 'acme' });
+    mockWorkflowConfigService.get.mockReturnValue({
+      communication: [{ label: 'General', channel: '#general' }],
+      general: [{ label: 'Language', value: 'en' }],
+    });
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
       params: { name: 'get_workflow_config', arguments: {} }, id: 3,
     });
     const config = JSON.parse(res.result.content[0].text);
-    expect(config.language).toBe('en');
+    expect(config.communication[0].channel).toBe('#general');
   });
 
   it('get_workflow_config returns error when not configured', async () => {
@@ -243,11 +246,15 @@ describe('McpServer — workflow tools', () => {
   });
 
   it('submit_workflow_config calls setPending and fires callback', async () => {
+    const config = {
+      communication: [{ label: 'General', channel: '#general' }],
+      general: [{ label: 'Language', value: 'en' }],
+    };
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
-      params: { name: 'submit_workflow_config', arguments: { config: { language: 'ro' } } }, id: 5,
+      params: { name: 'submit_workflow_config', arguments: { config } }, id: 5,
     });
-    expect(mockWorkflowConfigService.setPending).toHaveBeenCalledWith({ language: 'ro' });
+    expect(mockWorkflowConfigService.setPending).toHaveBeenCalledWith(config);
     expect(onConfigSubmitted).toHaveBeenCalled();
     expect(JSON.parse(res.result.content[0].text).status).toBe('submitted');
   });

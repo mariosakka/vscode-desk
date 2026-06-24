@@ -54,3 +54,8 @@
   border-color: var(--border);
   background: var(--surface);
 }
+
+.actionBtnIcon {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+}

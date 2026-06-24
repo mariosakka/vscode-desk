@@ -10,7 +10,7 @@ export class AgentRegistry {
   ) {}
 
   async showSetupPrompt(port: number): Promise<void> {
-    if (this.context.globalState.get('fezzan.agentSetupDismissed')) return;
+    if (this.context.globalState.get('astrolabe.agentSetupDismissed')) return;
     await this.runPrompt(port, false);
   }
 
@@ -19,7 +19,7 @@ export class AgentRegistry {
   }
 
   async showSkillInstallPrompt(): Promise<void> {
-    if (this.context.globalState.get<boolean>('fezzan.workflowSkillDismissed')) return;
+    if (this.context.globalState.get<boolean>('astrolabe.workflowSkillDismissed')) return;
     const skills = this.skillRegistry?.list() ?? [];
     if (skills.length === 0) return;
     await this.runSkillPrompt(skills.length);
@@ -28,7 +28,7 @@ export class AgentRegistry {
   async showSkillInstallPromptForced(): Promise<void> {
     const skills = this.skillRegistry?.list() ?? [];
     if (skills.length === 0) {
-      vscode.window.showInformationMessage('Fezzan: no workflow skills stored yet.');
+      vscode.window.showInformationMessage('Astrolabe: no workflow skills stored yet.');
       return;
     }
     await this.runSkillPrompt(skills.length);
@@ -36,22 +36,22 @@ export class AgentRegistry {
 
   private async runSkillPrompt(count: number): Promise<void> {
     const action = await vscode.window.showInformationMessage(
-      `Fezzan has ${count} workflow skill(s) ready. Install on detected agents?`,
+      `Astrolabe has ${count} workflow skill(s) ready. Install on detected agents?`,
       'Install',
       'Not now',
       "Don't ask again",
     );
     if (action === "Don't ask again") {
-      await this.context.globalState.update('fezzan.workflowSkillDismissed', true);
+      await this.context.globalState.update('astrolabe.workflowSkillDismissed', true);
     }
     if (action !== 'Install') return;
     const installed = await this.findInstalled();
     if (installed.length === 0) {
-      vscode.window.showInformationMessage('Fezzan: no installed agents found.');
+      vscode.window.showInformationMessage('Astrolabe: no installed agents found.');
       return;
     }
     await this.skillRegistry?.installAll(installed);
-    vscode.window.showInformationMessage(`Fezzan: installed ${count} skill(s) on ${installed.length} agent(s).`);
+    vscode.window.showInformationMessage(`Astrolabe: installed ${count} skill(s) on ${installed.length} agent(s).`);
   }
 
   private async findInstalled(): Promise<AgentAdapter[]> {
@@ -65,20 +65,20 @@ export class AgentRegistry {
     const candidates = await this.findUnconfigured(port);
     if (candidates.length === 0) {
       if (fromCommand) {
-        vscode.window.showInformationMessage('Fezzan: all detected agents are already configured.');
+        vscode.window.showInformationMessage('Astrolabe: all detected agents are already configured.');
       }
       return;
     }
 
     const action = await vscode.window.showInformationMessage(
-      `Fezzan detected ${candidates.length} AI agent(s). Set up MCP integration?`,
+      `Astrolabe detected ${candidates.length} AI agent(s). Set up MCP integration?`,
       'Set up',
       'Not now',
       "Don't ask again",
     );
 
     if (action === "Don't ask again") {
-      await this.context.globalState.update('fezzan.agentSetupDismissed', true);
+      await this.context.globalState.update('astrolabe.agentSetupDismissed', true);
     }
     if (action !== 'Set up') return;
 
@@ -95,8 +95,8 @@ export class AgentRegistry {
     const failed = results.filter(r => r.status === 'rejected');
     const ok = results.length - failed.length;
 
-    if (ok > 0) vscode.window.showInformationMessage(`Fezzan: configured ${ok} agent(s).`);
-    if (failed.length > 0) vscode.window.showErrorMessage(`Fezzan: failed to configure ${failed.length} agent(s).`);
+    if (ok > 0) vscode.window.showInformationMessage(`Astrolabe: configured ${ok} agent(s).`);
+    if (failed.length > 0) vscode.window.showErrorMessage(`Astrolabe: failed to configure ${failed.length} agent(s).`);
   }
 
   private async findUnconfigured(port: number): Promise<AgentAdapter[]> {
