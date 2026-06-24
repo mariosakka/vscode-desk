@@ -14,7 +14,7 @@
     if (!href) return;
     e.preventDefault();
 
-    if (href.endsWith('.astrolabe')) {
+    if (href.endsWith('.desk')) {
       vscode.postMessage({ type: 'navigate', filename: href });
     } else {
       vscode.postMessage({ type: 'openUrl', url: href });

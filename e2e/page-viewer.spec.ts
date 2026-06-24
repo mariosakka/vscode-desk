@@ -40,17 +40,17 @@ test('clicking back button posts back message', async ({ page }) => {
   expect(msg).not.toBeNull();
 });
 
-test('clicking a .relay link posts navigate message', async ({ page }) => {
+test('clicking a .desk link posts navigate message', async ({ page }) => {
   await page.setContent(buildPageViewerHtml({
     title: 'Index',
-    content: '<p><a href="setup.relay">Setup guide</a></p>',
+    content: '<p><a href="setup.desk">Setup guide</a></p>',
   }));
 
-  await page.locator('a[href="setup.relay"]').click();
+  await page.locator('a[href="setup.desk"]').click();
 
   const msg = await findSentMessage(page, 'navigate');
   expect(msg).not.toBeNull();
-  expect(msg.filename).toBe('setup.relay');
+  expect(msg.filename).toBe('setup.desk');
 });
 
 test('clicking an https:// link posts openUrl message', async ({ page }) => {
