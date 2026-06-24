@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { DataService } from './services/dataService/dataService';
 import { FaviconService } from './services/faviconService/faviconService';
 import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
@@ -6,7 +7,6 @@ import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { McpServer } from './mcp/server/server';
 import { PortalViewProvider } from './portalViewProvider';
 import { PageReader } from './pages/pageReader';
-import { GlobalPageStore } from './pages/globalPageStore';
 import { PageViewPanel } from './pages/pageViewPanel';
 import { AgentAdapter } from './agents/agentAdapter';
 import { AgentRegistry } from './agents/registry/registry';
@@ -14,29 +14,29 @@ import { ClaudeCodeAdapter } from './agents/adapters/claudeCode/claudeCode';
 import { CursorAdapter } from './agents/adapters/cursor/cursor';
 import { CodexAdapter } from './agents/adapters/codex/codex';
 import { GeminiAdapter } from './agents/adapters/gemini/gemini';
+import { globalDir, workspaceDir } from './storage/astrolabeDir';
 
 export function activate(context: vscode.ExtensionContext): void {
   const faviconService = new FaviconService(context);
 
-  // Global services — always available
-  const globalDataService = new DataService(context.globalState, 'astrolabe.global.data');
-  const globalPageStore = new GlobalPageStore(context.globalState);
-  const globalWorkflowService = new WorkflowConfigService(context.globalState, 'astrolabe.global.workflowConfig');
-  const globalSkillRegistry = new SkillRegistry(context.globalState, 'astrolabe.global.skills');
-
-  // Workspace services — only when a folder is open
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null;
+  // Resolve ~/.astrolabe/ directories
+  const gDir = globalDir();
   const workspaceName = vscode.workspace.name ?? null;
-  const workspaceDataService = workspaceRoot
-    ? new DataService(context.workspaceState, 'astrolabe.data')
-    : null;
-  const workspacePageReader = workspaceRoot ? new PageReader(workspaceRoot) : null;
-  const workspaceWorkflowService = workspaceRoot
-    ? new WorkflowConfigService(context.workspaceState, 'astrolabe.workflowConfig')
-    : null;
-  const workspaceSkillRegistry = workspaceRoot
-    ? new SkillRegistry(context.workspaceState, 'astrolabe.skills')
-    : null;
+  const wDir = workspaceName ? workspaceDir(workspaceName) : null;
+
+  // Global services — always available
+  const globalDataService = new DataService(gDir);
+  const globalPageReader = new PageReader(path.join(gDir, 'pages'));
+  const globalWorkflowService = new WorkflowConfigService(gDir);
+  const globalSkillRegistry = new SkillRegistry(gDir);
+
+  // Workspace services — only when a folder/workspace is open
+  const workspaceDataService = wDir ? new DataService(wDir) : null;
+  const workspacePageReader = wDir ? new PageReader(path.join(wDir, 'pages')) : null;
+  const workspaceWorkflowService = wDir ? new WorkflowConfigService(wDir) : null;
+  const workspaceSkillRegistry = wDir ? new SkillRegistry(wDir) : null;
+
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null;
 
   const adapters: AgentAdapter[] = [
     new ClaudeCodeAdapter(),
@@ -48,7 +48,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const provider = new PortalViewProvider(
     context.extensionUri,
     globalDataService,
-    globalPageStore,
+    globalPageReader,
     globalWorkflowService,
     globalSkillRegistry,
     workspaceDataService,
@@ -64,7 +64,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const mcpServer = new McpServer(
     globalDataService,
-    globalPageStore,
+    globalPageReader,
     globalWorkflowService,
     globalSkillRegistry,
     workspaceDataService,
@@ -132,8 +132,8 @@ export function activate(context: vscode.ExtensionContext): void {
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdRemoveProject(ds, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageStore)),
-    vscode.commands.registerCommand('astrolabe.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageStore)),
+    vscode.commands.registerCommand('astrolabe.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageReader)),
+    vscode.commands.registerCommand('astrolabe.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageReader)),
     vscode.commands.registerCommand('astrolabe.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
     vscode.commands.registerCommand('astrolabe.configureWorkflow', async () => {
       const scope = await pickScope();
@@ -152,7 +152,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('astrolabe.deletePage', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
-      const store = scope === 'workspace' ? (workspacePageReader ?? globalPageStore) : globalPageStore;
+      const store = scope === 'workspace' ? (workspacePageReader ?? globalPageReader) : globalPageReader;
       await cmdDeletePage(store, provider);
     }),
     vscode.commands.registerCommand('astrolabe.removeSkill', async () => {
@@ -311,7 +311,7 @@ async function pickProject(dataService: DataService): Promise<string | undefined
   return pick?.id;
 }
 
-async function cmdOpenPage(extensionUri: vscode.Uri, pageStore: PageReader | GlobalPageStore | null): Promise<void> {
+async function cmdOpenPage(extensionUri: vscode.Uri, pageStore: PageReader | null): Promise<void> {
   if (!pageStore) {
     vscode.window.showErrorMessage('Astrolabe: No page store available.');
     return;
@@ -326,14 +326,10 @@ async function cmdOpenPage(extensionUri: vscode.Uri, pageStore: PageReader | Glo
     { placeHolder: 'Select a page to open' },
   );
   if (!pick) return;
-  if (pageStore instanceof PageReader) {
-    PageViewPanel.open(extensionUri, pageStore, pick.filename);
-  } else {
-    vscode.window.showWarningMessage('Astrolabe: global pages cannot be opened in the page viewer.');
-  }
+  PageViewPanel.open(extensionUri, pageStore, pick.filename);
 }
 
-async function cmdNewPage(pageStore: PageReader | GlobalPageStore | null): Promise<void> {
+async function cmdNewPage(pageStore: PageReader | null): Promise<void> {
   if (!pageStore) {
     vscode.window.showErrorMessage('Astrolabe: No page store available.');
     return;
@@ -353,11 +349,7 @@ async function cmdNewPage(pageStore: PageReader | GlobalPageStore | null): Promi
   }
 
   pageStore.write(filename, title, `<p>Start writing your <strong>${escHtml(title)}</strong> page here.</p>`);
-  if (pageStore instanceof PageReader) {
-    vscode.window.showInformationMessage(`Astrolabe: created ${filename} in astrolabe-pages/`);
-  } else {
-    vscode.window.showInformationMessage(`Astrolabe: created global page ${filename}.`);
-  }
+  vscode.window.showInformationMessage(`Astrolabe: created ${filename} in pages/`);
 }
 
 function normalizeFilename(s: string): string {
@@ -496,7 +488,7 @@ async function cmdUpdateBookmark(
   provider.refresh();
 }
 
-async function cmdDeletePage(pageStore: PageReader | GlobalPageStore | null, provider: PortalViewProvider): Promise<void> {
+async function cmdDeletePage(pageStore: PageReader | null, provider: PortalViewProvider): Promise<void> {
   if (!pageStore) { vscode.window.showErrorMessage('Astrolabe: No page store available.'); return; }
   const pages = pageStore.list();
   if (pages.length === 0) { vscode.window.showErrorMessage('No pages yet.'); return; }

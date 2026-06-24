@@ -4,7 +4,6 @@ import * as path from 'path';
 import { DataService } from './services/dataService/dataService';
 import { FaviconService } from './services/faviconService/faviconService';
 import { PageReader } from './pages/pageReader';
-import { GlobalPageStore } from './pages/globalPageStore';
 import { PageViewPanel } from './pages/pageViewPanel';
 import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from './services/skillRegistry/skillRegistry';
@@ -30,7 +29,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
   constructor(
     private readonly _extensionUri: vscode.Uri,
     private readonly _globalDataService: DataService,
-    private readonly _globalPageStore: GlobalPageStore,
+    private readonly _globalPageStore: PageReader,
     private readonly _globalWorkflowService: WorkflowConfigService,
     private readonly _globalSkillRegistry: SkillRegistry,
     private readonly _workspaceDataService: DataService | null,
@@ -44,7 +43,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
 
   private _resolveScope(scope: 'workspace' | 'global' = 'workspace'): {
     dataService: DataService;
-    pageStore: PageReader | GlobalPageStore | null;
+    pageStore: PageReader | null;
     workflowService: WorkflowConfigService | null;
     skillRegistry: SkillRegistry | null;
   } {
@@ -213,7 +212,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
 
     const buildScoped = (
       ds: DataService,
-      ps: PageReader | GlobalPageStore | null,
+      ps: PageReader | null,
       wf: WorkflowConfigService | null,
       sr: SkillRegistry | null,
     ): ScopedData => ({

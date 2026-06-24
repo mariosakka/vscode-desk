@@ -3,7 +3,6 @@ import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
 import { PortalViewProvider } from '../../portalViewProvider';
 import { PageReader } from '../../pages/pageReader';
-import { GlobalPageStore } from '../../pages/globalPageStore';
 import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from '../../services/skillRegistry/skillRegistry';
 import { AgentAdapter } from '../../agents/agentAdapter';
@@ -15,7 +14,7 @@ export class McpServer {
 
   constructor(
     private readonly globalDataService: DataService,
-    private readonly globalPageStore: GlobalPageStore | null,
+    private readonly globalPageStore: PageReader | null,
     private readonly globalWorkflowService: WorkflowConfigService | null,
     private readonly globalSkillRegistry: SkillRegistry | null,
     private readonly workspaceDataService: DataService | null,
@@ -46,7 +45,7 @@ export class McpServer {
 
   private _resolveScope(args: Record<string, unknown>): {
     dataService: DataService;
-    pageReader: PageReader | GlobalPageStore | null;
+    pageReader: PageReader | null;
     workflowService: WorkflowConfigService | null;
     skillRegistry: SkillRegistry | null;
   } {

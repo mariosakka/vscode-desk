@@ -1,4 +1,5 @@
-import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Bookmark, Project, PortalData } from '../../models';
 
 const DEFAULT_DATA: PortalData = { projects: [] };
@@ -8,15 +9,19 @@ function generateId(prefix: string): string {
 }
 
 export class DataService {
-  constructor(private readonly store: vscode.Memento, private readonly storageKey: string = 'astrolabe.data') {}
+  constructor(private readonly dir: string) {}
 
   get(): PortalData {
-    return this.store.get<PortalData>(this.storageKey)
-      ?? JSON.parse(JSON.stringify(DEFAULT_DATA));
+    try {
+      return JSON.parse(fs.readFileSync(path.join(this.dir, 'data.json'), 'utf-8'));
+    } catch {
+      return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
   }
 
   save(data: PortalData): void {
-    this.store.update(this.storageKey, data);
+    fs.mkdirSync(this.dir, { recursive: true });
+    fs.writeFileSync(path.join(this.dir, 'data.json'), JSON.stringify(data, null, 2), 'utf-8');
   }
 
   addBookmark(projectId: string, fields: Omit<Bookmark, 'id'>): Bookmark {

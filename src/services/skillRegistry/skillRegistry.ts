@@ -1,4 +1,5 @@
-import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AgentAdapter } from '../../agents/agentAdapter';
 
 export interface Skill {
@@ -13,10 +14,23 @@ export interface Skill {
 export class SkillRegistry {
   private pending: { name: string; content: string; descriptionOverride?: string } | null = null;
 
-  constructor(private readonly store: vscode.Memento, private readonly storageKey: string = 'astrolabe.skills') {}
+  constructor(private readonly dir: string) {}
+
+  private readAll(): Skill[] {
+    try {
+      return JSON.parse(fs.readFileSync(path.join(this.dir, 'skills.json'), 'utf-8'));
+    } catch {
+      return [];
+    }
+  }
+
+  private writeAll(skills: Skill[]): void {
+    fs.mkdirSync(this.dir, { recursive: true });
+    fs.writeFileSync(path.join(this.dir, 'skills.json'), JSON.stringify(skills, null, 2), 'utf-8');
+  }
 
   getAll(): Skill[] {
-    return this.store.get<Skill[]>(this.storageKey) ?? [];
+    return this.readAll();
   }
 
   list(): Omit<Skill, 'content'>[] {
@@ -70,7 +84,7 @@ export class SkillRegistry {
     } else {
       skills.push(skill);
     }
-    await this.store.update(this.storageKey, skills);
+    this.writeAll(skills);
 
     const body = stripFrontmatter(content);
     await this.installOnAdapters(skillName, body, agents, adapters);
@@ -82,7 +96,7 @@ export class SkillRegistry {
     const idx = skills.findIndex(s => s.name === name);
     if (idx === -1) throw new Error(`Skill not found: ${name}`);
     skills.splice(idx, 1);
-    await this.store.update(this.storageKey, skills);
+    this.writeAll(skills);
     await Promise.all(adapters.map(a => a.uninstallSkill(name).catch(() => {})));
   }
 

@@ -52,7 +52,7 @@ function ScopedPane({ scopedData, scope, activeTabId, setActiveTabId, formMode, 
         />
       )}
       <div>
-        <div style={{ display: 'flex', gap: '6px', padding: '4px 12px 0' }}>
+        <div style={{ display: 'flex', gap: '6px', padding: '8px 12px 0' }}>
           <button
             className={sectionBtnStyles.btn}
             onClick={() => setFormMode('addingProject')}
@@ -170,8 +170,9 @@ export function SidebarApp() {
       {hasWorkspace && (
         <div style={{
           display: 'flex',
-          gap: '2px',
-          padding: '8px 12px 0',
+          gap: '4px',
+          padding: '8px 12px',
+          borderBottom: '1px solid var(--border)',
         }}>
           {(['workspace', 'global'] as Scope[]).map(s => (
             <button
@@ -185,8 +186,8 @@ export function SidebarApp() {
                 textTransform: 'capitalize',
                 cursor: 'pointer',
                 border: 'none',
-                borderRadius: 'var(--radius)',
-                background: activeScope === s ? 'var(--accent)' : 'var(--surface)',
+                borderRadius: '6px',
+                background: activeScope === s ? 'var(--accent)' : 'transparent',
                 color: activeScope === s ? 'var(--vscode-button-foreground, #fff)' : 'var(--muted)',
                 transition: 'background 150ms, color 150ms',
               }}

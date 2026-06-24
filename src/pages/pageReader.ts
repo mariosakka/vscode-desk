@@ -5,14 +5,14 @@ import { PageMeta, PageContent, extractTitle, parse, serialize, stem } from './p
 export type { PageMeta, PageContent };
 
 export class PageReader {
-  constructor(private readonly workspaceRoot: string) {}
+  constructor(private readonly pagesDir: string) {}
 
   dir(): string {
-    return path.join(this.workspaceRoot, 'astrolabe-pages');
+    return this.pagesDir;
   }
 
   filePath(filename: string): string {
-    return path.join(this.dir(), filename);
+    return path.join(this.pagesDir, filename);
   }
 
   private ensureDir(): void {

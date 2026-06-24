@@ -1,4 +1,5 @@
-import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface WorkflowChannel {
   label: string;
@@ -18,14 +19,19 @@ export interface WorkflowConfig {
 export class WorkflowConfigService {
   private pending: WorkflowConfig | null = null;
 
-  constructor(private readonly store: vscode.Memento, private readonly storageKey: string = 'astrolabe.workflowConfig') {}
+  constructor(private readonly dir: string) {}
 
   get(): WorkflowConfig | undefined {
-    return this.store.get<WorkflowConfig>(this.storageKey);
+    try {
+      return JSON.parse(fs.readFileSync(path.join(this.dir, 'workflow.json'), 'utf-8'));
+    } catch {
+      return undefined;
+    }
   }
 
   save(config: WorkflowConfig): void {
-    this.store.update(this.storageKey, config);
+    fs.mkdirSync(this.dir, { recursive: true });
+    fs.writeFileSync(path.join(this.dir, 'workflow.json'), JSON.stringify(config, null, 2), 'utf-8');
   }
 
   setPending(incoming: Partial<WorkflowConfig>): void {
