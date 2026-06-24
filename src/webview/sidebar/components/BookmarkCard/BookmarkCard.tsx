@@ -91,7 +91,7 @@ export function BookmarkCard({ bookmark, tabId, onOpen, onRemove, onEdit }: Prop
             onClick={() => { setEditTitle(bookmark.title); setEditUrl(bookmark.url); setEditing(true); }}>
             <PencilIcon size={15} />
           </HoverIconButton>
-          <HoverIconButton title="Remove" hoverColor="danger" size="md"
+          <HoverIconButton title="Remove" hoverColor="danger" size="md" testId="bookmark-remove"
             onClick={() => setConfirming(true)}>
             <TrashIcon size={15} />
           </HoverIconButton>

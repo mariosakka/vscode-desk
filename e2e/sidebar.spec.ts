@@ -87,6 +87,7 @@ test('clicking × button posts removeBookmark', async ({ page }) => {
 
   await page.locator('[data-testid="bookmark-card"]').hover();
   await page.locator('[data-testid="bookmark-remove"]').click();
+  await page.locator('button[title="Confirm"]').click();
 
   const msg = await findSentMessage(page, 'removeBookmark');
   expect(msg).not.toBeNull();
