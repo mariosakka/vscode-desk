@@ -10,15 +10,13 @@ export interface Skill {
   installedAt: number;
 }
 
-const STORAGE_KEY = 'astrolabe.skills';
-
 export class SkillRegistry {
   private pending: { name: string; content: string; descriptionOverride?: string } | null = null;
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly store: vscode.Memento, private readonly storageKey: string = 'astrolabe.skills') {}
 
   getAll(): Skill[] {
-    return this.context.globalState.get<Skill[]>(STORAGE_KEY) ?? [];
+    return this.store.get<Skill[]>(this.storageKey) ?? [];
   }
 
   list(): Omit<Skill, 'content'>[] {
@@ -72,7 +70,7 @@ export class SkillRegistry {
     } else {
       skills.push(skill);
     }
-    await this.context.globalState.update(STORAGE_KEY, skills);
+    await this.store.update(this.storageKey, skills);
 
     const body = stripFrontmatter(content);
     await this.installOnAdapters(skillName, body, agents, adapters);
@@ -84,7 +82,7 @@ export class SkillRegistry {
     const idx = skills.findIndex(s => s.name === name);
     if (idx === -1) throw new Error(`Skill not found: ${name}`);
     skills.splice(idx, 1);
-    await this.context.globalState.update(STORAGE_KEY, skills);
+    await this.store.update(this.storageKey, skills);
     await Promise.all(adapters.map(a => a.uninstallSkill(name).catch(() => {})));
   }
 

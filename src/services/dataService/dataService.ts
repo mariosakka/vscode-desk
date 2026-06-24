@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
 import { Bookmark, Tab, PortalData } from '../../models';
 
-const STORAGE_KEY = 'astrolabe.data';
-
 const DEFAULT_DATA: PortalData = { tabs: [] };
 
 function generateId(prefix: string): string {
@@ -10,15 +8,15 @@ function generateId(prefix: string): string {
 }
 
 export class DataService {
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly store: vscode.Memento, private readonly storageKey: string = 'astrolabe.data') {}
 
   get(): PortalData {
-    return this.context.globalState.get<PortalData>(STORAGE_KEY)
+    return this.store.get<PortalData>(this.storageKey)
       ?? JSON.parse(JSON.stringify(DEFAULT_DATA));
   }
 
   save(data: PortalData): void {
-    this.context.globalState.update(STORAGE_KEY, data);
+    this.store.update(this.storageKey, data);
   }
 
   addBookmark(tabId: string, fields: Omit<Bookmark, 'id'>): Bookmark {

@@ -44,9 +44,17 @@ export interface SkillSummary {
   installedAt: number;
 }
 
-export interface SidebarData {
+export type Scope = 'workspace' | 'global';
+
+export interface ScopedData {
   portal: PortalData;
   pages: PageMeta[];
   workflow: WorkflowConfig | null;
   skills: SkillSummary[];
+}
+
+export interface SidebarData {
+  workspaceName: string | null;
+  workspace: ScopedData | null;
+  global: ScopedData;
 }

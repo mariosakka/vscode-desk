@@ -13,18 +13,38 @@ const BM_IMG = {
   icon: 'data:image/png;base64,iVBORw0KGgo=', description: '',
 };
 
+const TAB_DATA = [TAB_1];
+
+function makeData(tabs: typeof TAB_DATA = TAB_DATA) {
+  return {
+    workspaceName: 'test-workspace',
+    workspace: {
+      portal: { tabs },
+      pages: [],
+      workflow: null,
+      skills: [],
+    },
+    global: {
+      portal: { tabs: [] },
+      pages: [],
+      workflow: null,
+      skills: [],
+    },
+  };
+}
+
 test.beforeEach(async ({ page }) => {
   await page.setContent(buildSidebarHtml());
 });
 
 test('empty state — shows "No tabs yet" prompt', async ({ page }) => {
-  await dispatchToWebview(page, { type: 'update', data: { tabs: [] } });
+  await dispatchToWebview(page, { type: 'update', data: makeData([]) });
   await expect(page.locator('#bookmarks-grid')).toContainText('No tabs yet');
   await expect(page.locator('#tabs-bar')).toBeEmpty();
 });
 
 test('renders tab buttons from update message', async ({ page }) => {
-  await dispatchToWebview(page, { type: 'update', data: { tabs: [TAB_1, TAB_2] } });
+  await dispatchToWebview(page, { type: 'update', data: makeData([TAB_1, TAB_2]) });
   const tabs = page.locator('[data-testid="tab-button"]');
   await expect(tabs).toHaveCount(2);
   await expect(tabs.nth(0)).toHaveText('Work');
@@ -32,13 +52,13 @@ test('renders tab buttons from update message', async ({ page }) => {
 });
 
 test('first tab is active by default', async ({ page }) => {
-  await dispatchToWebview(page, { type: 'update', data: { tabs: [TAB_1, TAB_2] } });
+  await dispatchToWebview(page, { type: 'update', data: makeData([TAB_1, TAB_2]) });
   await expect(page.locator('[data-testid="tab-button"][data-active="true"]')).toHaveText('Work');
 });
 
 test('clicking a tab switches the active tab and shows its bookmarks', async ({ page }) => {
   const tab2WithBm = { ...TAB_2, bookmarks: [BM_EMOJI] };
-  await dispatchToWebview(page, { type: 'update', data: { tabs: [TAB_1, tab2WithBm] } });
+  await dispatchToWebview(page, { type: 'update', data: makeData([TAB_1, tab2WithBm]) });
 
   await page.locator('[data-testid="tab-button"]', { hasText: 'Research' }).click();
 
@@ -49,7 +69,7 @@ test('clicking a tab switches the active tab and shows its bookmarks', async ({ 
 test('clicking a bookmark card posts openUrl', async ({ page }) => {
   await dispatchToWebview(page, {
     type: 'update',
-    data: { tabs: [{ ...TAB_1, bookmarks: [BM_EMOJI] }] },
+    data: makeData([{ ...TAB_1, bookmarks: [BM_EMOJI] }]),
   });
 
   await page.locator('[data-testid="bookmark-card"]').click();
@@ -62,7 +82,7 @@ test('clicking a bookmark card posts openUrl', async ({ page }) => {
 test('clicking × button posts removeBookmark', async ({ page }) => {
   await dispatchToWebview(page, {
     type: 'update',
-    data: { tabs: [{ ...TAB_1, bookmarks: [BM_EMOJI] }] },
+    data: makeData([{ ...TAB_1, bookmarks: [BM_EMOJI] }]),
   });
 
   await page.locator('[data-testid="bookmark-card"]').hover();
@@ -77,7 +97,7 @@ test('clicking × button posts removeBookmark', async ({ page }) => {
 test('base64 icon renders as <img>', async ({ page }) => {
   await dispatchToWebview(page, {
     type: 'update',
-    data: { tabs: [{ ...TAB_1, bookmarks: [BM_IMG] }] },
+    data: makeData([{ ...TAB_1, bookmarks: [BM_IMG] }]),
   });
 
   const img = page.locator('[data-testid="bookmark-icon"] img');
@@ -88,7 +108,7 @@ test('base64 icon renders as <img>', async ({ page }) => {
 test('emoji icon renders as text (no <img>)', async ({ page }) => {
   await dispatchToWebview(page, {
     type: 'update',
-    data: { tabs: [{ ...TAB_1, bookmarks: [BM_EMOJI] }] },
+    data: makeData([{ ...TAB_1, bookmarks: [BM_EMOJI] }]),
   });
 
   await expect(page.locator('[data-testid="bookmark-icon"] img')).toHaveCount(0);
@@ -99,4 +119,26 @@ test('webview sends ready message on load', async ({ page }) => {
   await page.waitForFunction(() => (window as any).__sentMessages?.some((m: any) => m.type === 'ready'));
   const msg = await findSentMessage(page, 'ready');
   expect(msg).not.toBeNull();
+});
+
+test('workspace section is hidden when workspace is null', async ({ page }) => {
+  await dispatchToWebview(page, {
+    type: 'update',
+    data: {
+      workspaceName: null,
+      workspace: null,
+      global: {
+        portal: { tabs: [] },
+        pages: [],
+        workflow: null,
+        skills: [],
+      },
+    },
+  });
+
+  const workspaceHeading = page.locator('text=Workspace');
+  await expect(workspaceHeading).toHaveCount(0);
+
+  const openFolderMsg = page.locator('text=Open a folder');
+  await expect(openFolderMsg).toBeVisible();
 });

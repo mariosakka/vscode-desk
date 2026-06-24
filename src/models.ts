@@ -15,3 +15,5 @@ export interface Tab {
 export interface PortalData {
   tabs: Tab[];
 }
+
+export type Scope = 'workspace' | 'global';

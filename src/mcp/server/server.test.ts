@@ -64,7 +64,8 @@ describe('McpServer', () => {
 
   beforeEach(done => {
     jest.clearAllMocks();
-    server = new McpServer(mockDataService as any, mockProvider as any, mockFaviconService as any, null);
+    // globalDataService=mockDataService, all others null; workspaceDataService=null so resolver falls back to global
+    server = new McpServer(mockDataService as any, null, null, null, null, null, null, null, mockProvider as any, mockFaviconService as any);
     server.start(PORT);
     setTimeout(done, 30);
   });
@@ -193,11 +194,15 @@ describe('McpServer — workflow tools', () => {
     mockSkillRegistry.validateFrontmatter.mockReturnValue({ valid: true });
     server = new McpServer(
       mockDataService as any,
-      mockProvider as any,
-      mockFaviconService as any,
       null,
       mockWorkflowConfigService as any,
       mockSkillRegistry as any,
+      null,
+      null,
+      null,
+      null,
+      mockProvider as any,
+      mockFaviconService as any,
       [],
       onConfigSubmitted,
       onSkillSubmitted,

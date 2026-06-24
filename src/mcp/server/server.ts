@@ -3,6 +3,7 @@ import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
 import { PortalViewProvider } from '../../portalViewProvider';
 import { PageReader } from '../../pages/pageReader';
+import { GlobalPageStore } from '../../pages/globalPageStore';
 import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from '../../services/skillRegistry/skillRegistry';
 import { AgentAdapter } from '../../agents/agentAdapter';
@@ -13,15 +14,19 @@ export class McpServer {
   private server: http.Server | null = null;
 
   constructor(
-    private readonly dataService: DataService,
+    private readonly globalDataService: DataService,
+    private readonly globalPageStore: GlobalPageStore | null,
+    private readonly globalWorkflowService: WorkflowConfigService | null,
+    private readonly globalSkillRegistry: SkillRegistry | null,
+    private readonly workspaceDataService: DataService | null,
+    private readonly workspacePageReader: PageReader | null,
+    private readonly workspaceWorkflowService: WorkflowConfigService | null,
+    private readonly workspaceSkillRegistry: SkillRegistry | null,
     private readonly provider: PortalViewProvider,
     private readonly faviconService: FaviconService,
-    private readonly pageReader: PageReader | null,
-    private readonly workflowConfigService: WorkflowConfigService | null = null,
-    private readonly skillRegistry: SkillRegistry | null = null,
     private readonly adapters: AgentAdapter[] = [],
-    private readonly onConfigSubmitted: (() => void) | null = null,
-    private readonly onSkillSubmitted: (() => void) | null = null,
+    private readonly onConfigSubmitted: ((scope: string) => void) | null = null,
+    private readonly onSkillSubmitted: ((scope: string) => void) | null = null,
   ) {}
 
   start(port: number): void {
@@ -37,6 +42,29 @@ export class McpServer {
   stop(): void {
     this.server?.close();
     this.server = null;
+  }
+
+  private _resolveScope(args: Record<string, unknown>): {
+    dataService: DataService;
+    pageReader: PageReader | GlobalPageStore | null;
+    workflowService: WorkflowConfigService | null;
+    skillRegistry: SkillRegistry | null;
+  } {
+    const scope = args.scope as string ?? 'workspace';
+    if (scope === 'global' || !this.workspaceDataService) {
+      return {
+        dataService: this.globalDataService,
+        pageReader: this.globalPageStore,
+        workflowService: this.globalWorkflowService,
+        skillRegistry: this.globalSkillRegistry,
+      };
+    }
+    return {
+      dataService: this.workspaceDataService,
+      pageReader: this.workspacePageReader,
+      workflowService: this.workspaceWorkflowService,
+      skillRegistry: this.workspaceSkillRegistry,
+    };
   }
 
   private async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
@@ -114,12 +142,14 @@ export class McpServer {
   private async callTool(name: string, args: any): Promise<any> {
     switch (name) {
       case 'list_tabs': {
-        const data = this.dataService.get();
+        const { dataService } = this._resolveScope(args);
+        const data = dataService.get();
         const tabs = data.tabs.map(t => ({ id: t.id, name: t.name, bookmarkCount: t.bookmarks.length }));
         return { content: [{ type: 'text', text: JSON.stringify(tabs) }] };
       }
       case 'list_bookmarks': {
-        const data = this.dataService.get();
+        const { dataService } = this._resolveScope(args);
+        const data = dataService.get();
         if (args.tab_id) {
           const tab = data.tabs.find(t => t.id === args.tab_id);
           if (!tab) throw new Error(`Tab not found: ${args.tab_id}`);
@@ -129,8 +159,9 @@ export class McpServer {
         return { content: [{ type: 'text', text: JSON.stringify(all) }] };
       }
       case 'add_bookmark': {
+        const { dataService } = this._resolveScope(args);
         const icon = args.icon ?? await this.faviconService.getIcon(args.url);
-        const bm = this.dataService.addBookmark(args.tab_id, {
+        const bm = dataService.addBookmark(args.tab_id, {
           title: args.title,
           url: args.url,
           icon,
@@ -140,41 +171,48 @@ export class McpServer {
         return { content: [{ type: 'text', text: JSON.stringify(bm) }] };
       }
       case 'remove_bookmark': {
-        this.dataService.removeBookmark(args.tab_id, args.bookmark_id);
+        const { dataService } = this._resolveScope(args);
+        dataService.removeBookmark(args.tab_id, args.bookmark_id);
         this.provider.refresh();
         return { content: [{ type: 'text', text: 'removed' }] };
       }
       case 'create_tab': {
-        const tab = this.dataService.createTab(args.name);
+        const { dataService } = this._resolveScope(args);
+        const tab = dataService.createTab(args.name);
         this.provider.refresh();
         return { content: [{ type: 'text', text: JSON.stringify(tab) }] };
       }
       case 'remove_tab': {
-        this.dataService.removeTab(args.tab_id);
+        const { dataService } = this._resolveScope(args);
+        dataService.removeTab(args.tab_id);
         this.provider.refresh();
         return { content: [{ type: 'text', text: 'removed' }] };
       }
       case 'update_bookmark': {
-        const bm = this.dataService.updateBookmark(args.tab_id, args.bookmark_id, args.fields ?? {});
+        const { dataService } = this._resolveScope(args);
+        const bm = dataService.updateBookmark(args.tab_id, args.bookmark_id, args.fields ?? {});
         this.provider.refresh();
         return { content: [{ type: 'text', text: JSON.stringify(bm) }] };
       }
 
       // ── Page tools ────────────────────────────────────────────────────────
       case 'list_pages': {
-        if (!this.pageReader) throw new Error('No workspace open — pages unavailable');
-        const pages = this.pageReader.list();
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const pages = pageReader.list();
         return { content: [{ type: 'text', text: JSON.stringify(pages) }] };
       }
       case 'create_page': {
-        if (!this.pageReader) throw new Error('No workspace open — pages unavailable');
-        this.pageReader.write(args.filename, args.title, args.content, args.customStyles ?? '');
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        pageReader.write(args.filename, args.title, args.content, args.customStyles ?? '');
         return { content: [{ type: 'text', text: `created ${args.filename}` }] };
       }
       case 'update_page': {
-        if (!this.pageReader) throw new Error('No workspace open — pages unavailable');
-        const existing = this.pageReader.read(args.filename);
-        this.pageReader.write(
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const existing = pageReader.read(args.filename);
+        pageReader.write(
           args.filename,
           args.title ?? existing.title,
           args.content ?? existing.bodyHtml,
@@ -183,49 +221,58 @@ export class McpServer {
         return { content: [{ type: 'text', text: `updated ${args.filename}` }] };
       }
       case 'delete_page': {
-        if (!this.pageReader) throw new Error('No workspace open — pages unavailable');
-        this.pageReader.delete(args.filename);
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        pageReader.delete(args.filename);
         return { content: [{ type: 'text', text: `deleted ${args.filename}` }] };
       }
 
       // ── Workflow tools ────────────────────────────────────────────────────
       case 'get_workflow_config': {
-        const config = this.workflowConfigService?.get();
+        const { workflowService } = this._resolveScope(args);
+        const config = workflowService?.get();
         if (!config) throw new Error('Workflow config not configured');
         return { content: [{ type: 'text', text: JSON.stringify(config) }] };
       }
 
       case 'submit_workflow_config': {
-        if (!this.workflowConfigService) throw new Error('WorkflowConfigService not available');
-        this.workflowConfigService.setPending(args.config);
-        this.onConfigSubmitted?.();
+        const { workflowService } = this._resolveScope(args);
+        if (!workflowService) throw new Error('WorkflowConfigService not available');
+        const scope = args.scope as string ?? 'workspace';
+        workflowService.setPending(args.config);
+        this.onConfigSubmitted?.(scope);
         return { content: [{ type: 'text', text: JSON.stringify({ status: 'submitted' }) }] };
       }
 
       case 'list_skills': {
-        if (!this.skillRegistry) throw new Error('SkillRegistry not available');
-        return { content: [{ type: 'text', text: JSON.stringify(this.skillRegistry.list()) }] };
+        const { skillRegistry } = this._resolveScope(args);
+        if (!skillRegistry) throw new Error('SkillRegistry not available');
+        return { content: [{ type: 'text', text: JSON.stringify(skillRegistry.list()) }] };
       }
 
       case 'get_skill': {
-        if (!this.skillRegistry) throw new Error('SkillRegistry not available');
-        const skill = this.skillRegistry.get(args.name);
+        const { skillRegistry } = this._resolveScope(args);
+        if (!skillRegistry) throw new Error('SkillRegistry not available');
+        const skill = skillRegistry.get(args.name);
         if (!skill) return { isError: true, content: [{ type: 'text', text: `Skill '${args.name}' not found` }] };
         return { content: [{ type: 'text', text: JSON.stringify(skill) }] };
       }
 
       case 'add_skill': {
-        if (!this.skillRegistry) throw new Error('SkillRegistry not available');
-        const validation = this.skillRegistry.validateFrontmatter(args.content);
+        const { skillRegistry } = this._resolveScope(args);
+        if (!skillRegistry) throw new Error('SkillRegistry not available');
+        const validation = skillRegistry.validateFrontmatter(args.content);
         if (!validation.valid) throw new Error(validation.error);
-        this.skillRegistry.setPending(args.name, args.content, args.description);
-        this.onSkillSubmitted?.();
+        const scope = args.scope as string ?? 'workspace';
+        skillRegistry.setPending(args.name, args.content, args.description);
+        this.onSkillSubmitted?.(scope);
         return { content: [{ type: 'text', text: JSON.stringify({ status: 'submitted' }) }] };
       }
 
       case 'remove_skill': {
-        if (!this.skillRegistry) throw new Error('SkillRegistry not available');
-        await this.skillRegistry.remove(args.name, this.adapters);
+        const { skillRegistry } = this._resolveScope(args);
+        if (!skillRegistry) throw new Error('SkillRegistry not available');
+        await skillRegistry.remove(args.name, this.adapters);
         return { content: [{ type: 'text', text: JSON.stringify({ removed: args.name }) }] };
       }
 

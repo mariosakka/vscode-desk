@@ -9,18 +9,25 @@ export interface McpTool {
   };
 }
 
+const SCOPE_PROPERTY = {
+  type: 'string',
+  enum: ['workspace', 'global'],
+  description: 'Data scope. Defaults to "workspace"; use "global" for cross-workspace data.',
+  default: 'workspace',
+};
+
 export const TOOLS: McpTool[] = [
   {
     name: 'list_tabs',
     description: 'Returns all tabs with their bookmark counts',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    inputSchema: { type: 'object', properties: { scope: SCOPE_PROPERTY }, additionalProperties: false },
   },
   {
     name: 'list_bookmarks',
     description: 'Returns bookmarks; pass tab_id to filter to one tab',
     inputSchema: {
       type: 'object',
-      properties: { tab_id: { type: 'string', description: 'Optional tab ID' } },
+      properties: { tab_id: { type: 'string', description: 'Optional tab ID' }, scope: SCOPE_PROPERTY },
       additionalProperties: false,
     },
   },
@@ -36,6 +43,7 @@ export const TOOLS: McpTool[] = [
         url: { type: 'string' },
         icon: { type: 'string', description: 'Emoji or leave blank to auto-fetch favicon' },
         description: { type: 'string' },
+        scope: SCOPE_PROPERTY,
       },
       additionalProperties: false,
     },
@@ -46,7 +54,7 @@ export const TOOLS: McpTool[] = [
     inputSchema: {
       type: 'object',
       required: ['tab_id', 'bookmark_id'],
-      properties: { tab_id: { type: 'string' }, bookmark_id: { type: 'string' } },
+      properties: { tab_id: { type: 'string' }, bookmark_id: { type: 'string' }, scope: SCOPE_PROPERTY },
       additionalProperties: false,
     },
   },
@@ -56,7 +64,7 @@ export const TOOLS: McpTool[] = [
     inputSchema: {
       type: 'object',
       required: ['name'],
-      properties: { name: { type: 'string' } },
+      properties: { name: { type: 'string' }, scope: SCOPE_PROPERTY },
       additionalProperties: false,
     },
   },
@@ -66,7 +74,7 @@ export const TOOLS: McpTool[] = [
     inputSchema: {
       type: 'object',
       required: ['tab_id'],
-      properties: { tab_id: { type: 'string' } },
+      properties: { tab_id: { type: 'string' }, scope: SCOPE_PROPERTY },
       additionalProperties: false,
     },
   },
@@ -89,6 +97,7 @@ export const TOOLS: McpTool[] = [
           },
           additionalProperties: false,
         },
+        scope: SCOPE_PROPERTY,
       },
       additionalProperties: false,
     },
@@ -98,7 +107,7 @@ export const TOOLS: McpTool[] = [
   {
     name: 'list_pages',
     description: 'Returns all .astrolabe page files in the workspace astrolabe-pages/ folder',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    inputSchema: { type: 'object', properties: { scope: SCOPE_PROPERTY }, additionalProperties: false },
   },
   {
     name: 'create_page',
@@ -111,6 +120,7 @@ export const TOOLS: McpTool[] = [
         title: { type: 'string' },
         content: { type: 'string', description: 'HTML body content (no <script> tags)' },
         customStyles: { type: 'string', description: 'Optional CSS rules scoped to this page' },
+        scope: SCOPE_PROPERTY,
       },
       additionalProperties: false,
     },
@@ -126,6 +136,7 @@ export const TOOLS: McpTool[] = [
         title: { type: 'string' },
         content: { type: 'string' },
         customStyles: { type: 'string' },
+        scope: SCOPE_PROPERTY,
       },
       additionalProperties: false,
     },
@@ -136,7 +147,7 @@ export const TOOLS: McpTool[] = [
     inputSchema: {
       type: 'object',
       required: ['filename'],
-      properties: { filename: { type: 'string' } },
+      properties: { filename: { type: 'string' }, scope: SCOPE_PROPERTY },
       additionalProperties: false,
     },
   },
@@ -145,7 +156,7 @@ export const TOOLS: McpTool[] = [
   {
     name: 'get_workflow_config',
     description: 'Returns the current team workflow config (Slack channels, GitHub org, language, PR account). Returns -32603 error if no config has been saved yet.',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    inputSchema: { type: 'object', properties: { scope: SCOPE_PROPERTY }, additionalProperties: false },
   },
   {
     name: 'submit_workflow_config',
@@ -184,6 +195,7 @@ export const TOOLS: McpTool[] = [
           },
           additionalProperties: false,
         },
+        scope: SCOPE_PROPERTY,
       },
       additionalProperties: false,
     },
@@ -191,7 +203,7 @@ export const TOOLS: McpTool[] = [
   {
     name: 'list_skills',
     description: 'Returns all stored workflow skills without their content bodies.',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    inputSchema: { type: 'object', properties: { scope: SCOPE_PROPERTY }, additionalProperties: false },
   },
   {
     name: 'get_skill',
@@ -199,7 +211,7 @@ export const TOOLS: McpTool[] = [
     inputSchema: {
       type: 'object',
       required: ['name'],
-      properties: { name: { type: 'string' } },
+      properties: { name: { type: 'string' }, scope: SCOPE_PROPERTY },
       additionalProperties: false,
     },
   },
@@ -213,6 +225,7 @@ export const TOOLS: McpTool[] = [
         name: { type: 'string', description: 'Kebab-case skill name, e.g. "dev-flow"' },
         content: { type: 'string', description: 'Full skill markdown with YAML frontmatter' },
         description: { type: 'string', description: 'Optional override for the frontmatter description' },
+        scope: SCOPE_PROPERTY,
       },
       additionalProperties: false,
     },
@@ -223,7 +236,7 @@ export const TOOLS: McpTool[] = [
     inputSchema: {
       type: 'object',
       required: ['name'],
-      properties: { name: { type: 'string' } },
+      properties: { name: { type: 'string' }, scope: SCOPE_PROPERTY },
       additionalProperties: false,
     },
   },
