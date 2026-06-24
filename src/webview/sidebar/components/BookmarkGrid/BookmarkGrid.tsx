@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bookmark } from '../../types';
 import { BookmarkCard } from '../BookmarkCard/BookmarkCard';
+import { EmptyState } from '../shared/EmptyState';
 import styles from './BookmarkGrid.module.css';
 
 interface Props {
@@ -8,15 +9,14 @@ interface Props {
   tabId: string;
   onOpen: (url: string) => void;
   onRemove: (tabId: string, bookmarkId: string) => void;
+  onEdit: (tabId: string, bookmarkId: string, title: string, url: string) => void;
 }
 
-export function BookmarkGrid({ bookmarks, tabId, onOpen, onRemove }: Props) {
+export function BookmarkGrid({ bookmarks, tabId, onOpen, onRemove, onEdit }: Props) {
   return (
     <div id="bookmarks-grid" className={styles.grid}>
       {bookmarks.length === 0 ? (
-        <p className={styles.empty}>
-          No bookmarks yet. Click <strong>+ Bookmark</strong> above to add one.
-        </p>
+        <EmptyState message="No bookmarks yet. Click + Bookmark below to add one." />
       ) : (
         bookmarks.map(bm => (
           <BookmarkCard
@@ -25,6 +25,7 @@ export function BookmarkGrid({ bookmarks, tabId, onOpen, onRemove }: Props) {
             tabId={tabId}
             onOpen={onOpen}
             onRemove={onRemove}
+            onEdit={onEdit}
           />
         ))
       )}

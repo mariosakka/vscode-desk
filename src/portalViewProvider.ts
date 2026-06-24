@@ -135,8 +135,19 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
         case 'submitSkill':
           vscode.commands.executeCommand('astrolabe.submitSkill');
           break;
+        case 'editPage': {
+          if (!this._pageReader) break;
+          const filePath = this._pageReader.filePath(message.filename);
+          const uri = vscode.Uri.file(filePath);
+          vscode.window.showTextDocument(uri);
+          break;
+        }
       }
     });
+  }
+
+  switchTab(tabId: string): void {
+    this._view?.webview.postMessage({ type: 'switchTab', tabId });
   }
 
   refresh(): void {

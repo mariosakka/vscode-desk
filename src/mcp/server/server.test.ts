@@ -25,6 +25,7 @@ const mockWorkflowConfigService = {
 const mockSkillRegistry = {
   list: jest.fn().mockReturnValue([]),
   getAll: jest.fn().mockReturnValue([]),
+  get: jest.fn().mockReturnValue(null),
   validateFrontmatter: jest.fn().mockReturnValue({ valid: true }),
   setPending: jest.fn(),
   getPending: jest.fn(),
@@ -79,9 +80,9 @@ describe('McpServer', () => {
     expect(res.result.protocolVersion).toBeDefined();
   });
 
-  it('lists 16 tools', async () => {
+  it('lists 17 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 2 });
-    expect(res.result.tools).toHaveLength(16);
+    expect(res.result.tools).toHaveLength(17);
     const names = res.result.tools.map((t: any) => t.name);
     expect(names).toContain('list_tabs');
     expect(names).toContain('list_bookmarks');
@@ -210,9 +211,9 @@ describe('McpServer — workflow tools', () => {
     setTimeout(done, 30);
   });
 
-  it('lists 16 tools', async () => {
+  it('lists 17 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 });
-    expect(res.result.tools).toHaveLength(16);
+    expect(res.result.tools).toHaveLength(17);
   });
 
   it('lists 3 resources', async () => {
@@ -265,6 +266,29 @@ describe('McpServer — workflow tools', () => {
       params: { name: 'list_skills', arguments: {} }, id: 6,
     });
     expect(JSON.parse(res.result.content[0].text)).toEqual([]);
+  });
+
+  it('get_skill returns full skill when found', async () => {
+    const skill = { name: 'dev-flow', description: 'Dev workflow', content: '---\nname: dev-flow\n---\nbody', agents: ['all'], version: 1, installedAt: 0 };
+    mockSkillRegistry.get.mockReturnValueOnce(skill);
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_skill', arguments: { name: 'dev-flow' } }, id: 10,
+    });
+    const result = JSON.parse(res.result.content[0].text);
+    expect(result.name).toBe('dev-flow');
+    expect(result.content).toContain('body');
+    expect(mockSkillRegistry.get).toHaveBeenCalledWith('dev-flow');
+  });
+
+  it('get_skill returns isError when skill not found', async () => {
+    mockSkillRegistry.get.mockReturnValueOnce(null);
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_skill', arguments: { name: 'missing' } }, id: 11,
+    });
+    expect(res.result.isError).toBe(true);
+    expect(res.result.content[0].text).toContain("'missing' not found");
   });
 
   it('add_skill validates frontmatter before queuing', async () => {

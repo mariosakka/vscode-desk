@@ -52,19 +52,19 @@
   white-space: nowrap;
 }
 
-.removeBtn {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  line-height: 1;
-  padding: 5px;
-  border-radius: 4px;
-  opacity: 0;
-  pointer-events: none;
-  transition: color .15s, opacity .15s;
+.card:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
+.card:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
+.card:hover [data-hover-btn='accent']:hover { color: var(--accent2); }
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
 }
 
-.card:hover .removeBtn { opacity: 1; pointer-events: auto; }
-.removeBtn:hover { color: var(--vscode-errorForeground, #ef4444); }
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+}

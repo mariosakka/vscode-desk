@@ -1,17 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styles from './PagesPanel.module.css';
-import { PageIcon, ChevronIcon, PlusIcon, TrashIcon, CloseIcon } from '../shared/Icons';
+import sectionBtnStyles from '../shared/SectionBtn.module.css';
+import { PageIcon, PlusIcon, TrashIcon, CloseIcon, PencilIcon } from '../shared/Icons';
 import { ConfirmButtons } from '../shared/ConfirmButtons';
+import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { HoverIconButton } from '../shared/HoverIconButton';
 
 interface Props {
   pages: Array<{ filename: string; title: string }>;
   onOpen: (filename: string) => void;
   onNew: (title: string) => void;
   onDelete: (filename: string) => void;
+  onEdit: (filename: string) => void;
 }
 
-export function PagesPanel({ pages, onOpen, onNew, onDelete }: Props) {
-  const [open, setOpen] = useState(true);
+export function PagesPanel({ pages, onOpen, onNew, onDelete, onEdit }: Props) {
   const [adding, setAdding] = useState(false);
   const [pendingFilename, setPendingFilename] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
@@ -38,84 +41,68 @@ export function PagesPanel({ pages, onOpen, onNew, onDelete }: Props) {
   };
 
   return (
-    <div className={styles.section}>
-      <button
-        className={styles.header}
-        onClick={() => setOpen(o => !o)}
-        type="button"
-      >
-        <ChevronIcon size={10} down={open} />
-        <PageIcon size={13} />
-        Pages ({pages.length})
-      </button>
-      {open && (
-        <>
-          {pages.map(page => (
-            <div key={page.filename} className={styles.row}>
-              <PageIcon size={13} />
-              <span
-                className={styles.rowTitle}
-                onClick={() => onOpen(page.filename)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && onOpen(page.filename)}
-              >
-                {page.title}
-              </span>
-              {pendingFilename === page.filename ? (
-                <ConfirmButtons
-                  onConfirm={e => { e.stopPropagation(); onDelete(page.filename); setPendingFilename(null); }}
-                  onCancel={e => { e.stopPropagation(); setPendingFilename(null); }}
-                />
-              ) : (
-                <button
-                  className={styles.removeBtn}
-                  type="button"
-                  title="Delete page"
-                  onClick={e => { e.stopPropagation(); setPendingFilename(page.filename); }}
-                >
-                  <TrashIcon size={12} />
-                </button>
-              )}
-            </div>
-          ))}
-          <div className={styles.addRow}>
-            {adding ? (
-              <>
-                <form className={styles.inlineForm} onSubmit={handleNewSubmit}>
-                  <input
-                    ref={inputRef}
-                    className={styles.inlineInput}
-                    value={newTitle}
-                    onChange={e => { setNewTitle(e.target.value); setNewError(''); }}
-                    onKeyDown={e => e.key === 'Escape' && (setAdding(false), setNewTitle(''), setNewError(''))}
-                    placeholder="Page title…"
-                    maxLength={80}
-                  />
-                  <button
-                    type="button"
-                    className={styles.cancelInline}
-                    onClick={() => { setAdding(false); setNewTitle(''); setNewError(''); }}
-                    title="Cancel"
-                  >
-                    <CloseIcon size={10} />
-                  </button>
-                </form>
-                {newError && <span className={styles.error}>{newError}</span>}
-              </>
-            ) : (
+    <CollapsibleSection icon={<PageIcon size={13} />} title="Pages" badge={pages.length}>
+      {pages.map(page => (
+        <div key={page.filename} className={styles.row}>
+          <PageIcon size={13} />
+          <span
+            className={styles.rowTitle}
+            onClick={() => onOpen(page.filename)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => e.key === 'Enter' && onOpen(page.filename)}
+          >
+            {page.title}
+          </span>
+          {pendingFilename === page.filename ? (
+            <ConfirmButtons
+              onConfirm={e => { e.stopPropagation(); onDelete(page.filename); setPendingFilename(null); }}
+              onCancel={e => { e.stopPropagation(); setPendingFilename(null); }}
+            />
+          ) : (
+            <>
+              <HoverIconButton title="Edit page" hoverColor="accent" onClick={() => onEdit(page.filename)}>
+                <PencilIcon size={12} />
+              </HoverIconButton>
+              <HoverIconButton title="Delete page" hoverColor="danger" onClick={() => setPendingFilename(page.filename)}>
+                <TrashIcon size={12} />
+              </HoverIconButton>
+            </>
+          )}
+        </div>
+      ))}
+      <div className={styles.addRow}>
+        {adding ? (
+          <>
+            <form className={styles.inlineForm} onSubmit={handleNewSubmit}>
+              <input
+                ref={inputRef}
+                className={styles.inlineInput}
+                value={newTitle}
+                onChange={e => { setNewTitle(e.target.value); setNewError(''); }}
+                onKeyDown={e => e.key === 'Escape' && (setAdding(false), setNewTitle(''), setNewError(''))}
+                placeholder="Page title…"
+                maxLength={80}
+              />
               <button
-                className={styles.addBtn}
                 type="button"
-                onClick={() => setAdding(true)}
+                className={styles.cancelInline}
+                onClick={() => { setAdding(false); setNewTitle(''); setNewError(''); }}
+                title="Cancel"
               >
-                <PlusIcon size={11} />
-                New Page
+                <CloseIcon size={10} />
               </button>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+            </form>
+            {newError && <span className={styles.error}>{newError}</span>}
+          </>
+        ) : (
+          <button className={sectionBtnStyles.btn} type="button" onClick={() => setAdding(true)}>
+            <PlusIcon size={11} />
+            <PageIcon size={13} />
+            New Page
+          </button>
+        )}
+      </div>
+    </CollapsibleSection>
   );
 }

@@ -1,30 +1,3 @@
-.section {
-  border-top: 1px solid var(--border);
-  padding-top: 0;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 10px 12px 6px;
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: none;
-  border: none;
-  font-family: inherit;
-  text-align: left;
-}
-
-.header:hover {
-  color: var(--text);
-}
-
 .row {
   display: flex;
   align-items: center;
@@ -46,50 +19,12 @@
   white-space: nowrap;
 }
 
-.removeBtn {
-  background: none;
-  border: none;
-  padding: 3px 4px;
-  color: transparent;
-  cursor: pointer;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  outline: none;
-  border-radius: 3px;
-  transition: color 0.15s;
-  flex-shrink: 0;
-}
-
-.row:hover .removeBtn {
-  color: var(--muted);
-}
-
-.row:hover .removeBtn:hover {
-  color: var(--vscode-errorForeground, #ef4444);
-}
+.row:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
+.row:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
+.row:hover [data-hover-btn='accent']:hover { color: var(--accent2); }
 
 .addRow {
-  padding: 4px 12px;
-}
-
-.addBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--vscode-button-secondaryBackground, var(--surface2));
-  color: var(--vscode-button-secondaryForeground, var(--muted));
-  border: none;
-  border-radius: 4px;
-  font-size: 11px;
-  font-family: inherit;
-  padding: 4px 8px;
-  cursor: pointer;
-}
-
-.addBtn:hover {
-  background: var(--vscode-button-secondaryHoverBackground, var(--border));
-  color: var(--text);
+  padding: 0 12px 12px;
 }
 
 .inlineForm {
@@ -111,9 +46,7 @@
   min-width: 0;
 }
 
-.inlineInput::placeholder {
-  color: var(--muted);
-}
+.inlineInput::placeholder { color: var(--muted); }
 
 .cancelInline {
   background: none;
@@ -126,9 +59,7 @@
   flex-shrink: 0;
 }
 
-.cancelInline:hover {
-  color: var(--text);
-}
+.cancelInline:hover { color: var(--text); }
 
 .error {
   display: block;

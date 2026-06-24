@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styles from './InlineBookmarkForm.module.css';
+import inputStyles from '../shared/Inputs.module.css';
+import btnStyles from '../shared/FormButtons.module.css';
 import { useClickOutside } from '../../hooks/useClickOutside';
+
+const BLOCKED = /^(javascript|data|vbscript|file):/i;
 
 interface Props {
   existingTitles: string[];
@@ -20,17 +24,12 @@ export function InlineBookmarkForm({ existingTitles, onSubmit, onCancel }: Props
 
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
 
-  const BLOCKED = /^(javascript|data|vbscript|file):/i;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const t = title.trim();
     const u = url.trim();
     if (!t || !u) return;
-    if (BLOCKED.test(u)) {
-      setError('That URL scheme is not allowed.');
-      return;
-    }
+    if (BLOCKED.test(u)) { setError('That URL scheme is not allowed.'); return; }
     if (existingTitles.some(n => n.toLowerCase() === t.toLowerCase())) {
       setError(`A bookmark named "${t}" already exists in this tab.`);
       return;
@@ -40,29 +39,16 @@ export function InlineBookmarkForm({ existingTitles, onSubmit, onCancel }: Props
 
   return (
     <form ref={containerRef} className={styles.form} onSubmit={handleSubmit}>
-      <input
-        ref={titleRef}
-        className={styles.input}
-        value={title}
+      <input ref={titleRef} className={inputStyles.field} value={title}
         onChange={e => { setTitle(e.target.value); setError(''); }}
-        onKeyDown={handleKeyDown}
-        placeholder="Title"
-      />
-      <input
-        className={styles.input}
-        value={url}
+        onKeyDown={handleKeyDown} placeholder="Title" />
+      <input className={inputStyles.field} value={url}
         onChange={e => setUrl(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="URL (e.g. example.com)"
-      />
+        onKeyDown={handleKeyDown} placeholder="URL (e.g. example.com)" />
       {error && <span className={styles.error}>{error}</span>}
       <div className={styles.actions}>
-        <button type="submit" className={styles.btn} disabled={!title.trim() || !url.trim()}>
-          Add
-        </button>
-        <button type="button" className={styles.btnCancel} onClick={onCancel}>
-          Cancel
-        </button>
+        <button type="submit" className={btnStyles.primary} disabled={!title.trim() || !url.trim()}>Add</button>
+        <button type="button" className={btnStyles.secondary} onClick={onCancel}>Cancel</button>
       </div>
     </form>
   );

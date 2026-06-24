@@ -77,6 +77,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('astrolabe.newSkill',    () => cmdNewSkill()),
     vscode.commands.registerCommand('astrolabe.editSkill',   () => cmdEditSkill(skillRegistry)),
     vscode.commands.registerCommand('astrolabe.submitSkill', () => cmdSubmitSkill(skillRegistry, adapters, provider)),
+    vscode.commands.registerCommand('astrolabe.listTabs',      () => cmdListTabs(dataService, provider)),
+    vscode.commands.registerCommand('astrolabe.listBookmarks', () => cmdListBookmarks(dataService)),
+    vscode.commands.registerCommand('astrolabe.listSkills',    () => cmdListSkills(skillRegistry)),
+    vscode.commands.registerCommand('astrolabe.viewWorkflow',  () => cmdViewWorkflow(workflowConfigService)),
   );
 }
 
@@ -449,6 +453,59 @@ async function cmdSubmitSkill(
   skillRegistry.setPending(name, content);
   await showSkillConfirmPrompt(skillRegistry, adapters);
   provider.refresh();
+}
+
+async function cmdListTabs(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+  const data = dataService.get();
+  if (!data.tabs.length) { vscode.window.showInformationMessage('No tabs yet.'); return; }
+  const items = data.tabs.map(t => ({
+    label: t.name,
+    description: `${t.bookmarks.length} bookmark${t.bookmarks.length !== 1 ? 's' : ''}`,
+    id: t.id,
+  }));
+  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a tab to switch to' });
+  if (pick) provider.switchTab(pick.id);
+}
+
+async function cmdListBookmarks(dataService: DataService): Promise<void> {
+  const data = dataService.get();
+  const items = data.tabs.flatMap(t =>
+    t.bookmarks.map(b => ({ label: b.title, description: b.url, detail: `Tab: ${t.name}`, url: b.url }))
+  );
+  if (!items.length) { vscode.window.showInformationMessage('No bookmarks yet.'); return; }
+  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a bookmark to open' });
+  if (pick) vscode.commands.executeCommand('simpleBrowser.show', pick.url);
+}
+
+async function cmdListSkills(skillRegistry: SkillRegistry): Promise<void> {
+  const skills = skillRegistry.list();
+  if (!skills.length) { vscode.window.showInformationMessage('No skills installed.'); return; }
+  const items = skills.map(s => ({ label: s.name, description: s.description }));
+  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a skill to view' });
+  if (pick) {
+    const skill = skillRegistry.get(pick.label);
+    if (skill) {
+      const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: skill.content });
+      vscode.window.showTextDocument(doc);
+    }
+  }
+}
+
+async function cmdViewWorkflow(workflowConfigService: WorkflowConfigService): Promise<void> {
+  const config = workflowConfigService.get();
+  if (!config) { vscode.window.showInformationMessage('No workflow config saved yet.'); return; }
+  const lines: string[] = ['# Workflow Config', ''];
+  if (config.communication.length) {
+    lines.push('## Communication', '');
+    config.communication.forEach(e => lines.push(`- **${e.label}**: ${e.channel}`));
+    lines.push('');
+  }
+  if (config.general.length) {
+    lines.push('## General', '');
+    config.general.forEach(e => lines.push(`- **${e.label}**: ${e.value}`));
+  }
+  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: lines.join('\n') });
+  vscode.window.showTextDocument(doc);
 }
 
 function extractFrontmatterDescription(content: string): string | undefined {

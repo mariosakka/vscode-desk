@@ -12,7 +12,7 @@ import * as http from 'node:http';
 
 interface Tab { id: string; name: string; bookmarks: Bookmark[] }
 interface Bookmark { id: string; title: string; url: string; icon: string; description: string }
-interface Skill { name: string; description: string; agents: string[]; version: number; installedAt: number }
+interface Skill { name: string; description: string; content: string; agents: string[]; version: number; installedAt: number }
 
 function createTestMcpServer(): http.Server {
   let nextId = 1;
@@ -82,7 +82,7 @@ function dispatch(
       'create_tab','remove_tab','update_bookmark',
       'list_pages','create_page','update_page','delete_page',
       'get_workflow_config','submit_workflow_config',
-      'list_skills','add_skill','remove_skill',
+      'list_skills','get_skill','add_skill','remove_skill',
     ].map(name => ({ name }))};
   }
   if (method === 'resources/list') {
@@ -158,6 +158,11 @@ function dispatch(
       case 'list_skills':
         return text(skills.map(({ name: n, description, agents, version, installedAt }) =>
           ({ name: n, description, agents, version, installedAt })));
+      case 'get_skill': {
+        const found = skills.find(s => s.name === args.name);
+        if (!found) return { isError: true, content: [{ type: 'text', text: `Skill '${args.name}' not found` }] };
+        return text(found);
+      }
       case 'add_skill': {
         if (!args.content?.includes('name:') || !args.content?.includes('description:')) {
           throw new Error('Missing required frontmatter: name and description');
@@ -167,7 +172,7 @@ function dispatch(
           existing.version += 1;
           existing.content = args.content;
         } else {
-          skills.push({ name: args.name, description: args.description ?? '', agents: ['all'], version: 1, installedAt: Date.now() });
+          skills.push({ name: args.name, description: args.description ?? '', content: args.content, agents: ['all'], version: 1, installedAt: Date.now() });
         }
         return text({ status: 'submitted' });
       }
@@ -225,9 +230,9 @@ test('initialize returns capabilities with tools and resources', async ({ reques
   expect(res.result.serverInfo.name).toBe('vscode-astrolabe');
 });
 
-test('tools/list returns 16 tools', async ({ request }) => {
+test('tools/list returns 17 tools', async ({ request }) => {
   const res = await rpc(request, 'tools/list');
-  expect(res.result.tools).toHaveLength(16);
+  expect(res.result.tools).toHaveLength(17);
   const names = res.result.tools.map((t: any) => t.name);
   expect(names).toContain('list_tabs');
   expect(names).toContain('add_bookmark');

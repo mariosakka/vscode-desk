@@ -18,6 +18,10 @@ export class PageReader {
     return path.join(this.workspaceRoot, 'astrolabe-pages');
   }
 
+  filePath(filename: string): string {
+    return path.join(this.dir(), filename);
+  }
+
   private ensureDir(): void {
     const d = this.dir();
     if (!fs.existsSync(d)) {

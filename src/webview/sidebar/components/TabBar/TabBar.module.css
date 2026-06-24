@@ -47,23 +47,8 @@
   border-bottom: none;
 }
 
-.tabRemove {
-  background: none;
-  border: none;
-  padding: 3px 4px;
-  margin-bottom: 2px;
-  color: transparent;
-  cursor: pointer;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  outline: none;
-  border-radius: 3px;
-  transition: color .15s;
-}
-
-.tabWrap:hover .tabRemove { color: var(--muted); }
-.tabWrap:hover .tabRemove:hover { color: var(--vscode-errorForeground, #ef4444); }
+.tabWrap:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
+.tabWrap:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
 
 .confirmBar {
   display: flex;

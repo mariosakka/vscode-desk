@@ -4,7 +4,7 @@
   "description": "Your developer portal — tabbed bookmarks with an embedded MCP server",
   "version": "1.0.0",
   "publisher": "mmswflow",
-  "icon": "media/relay.png",
+  "icon": "media/astrolabe.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -103,6 +103,22 @@
       {
         "command": "astrolabe.submitSkill",
         "title": "Astrolabe: Submit Skill"
+      },
+      {
+        "command": "astrolabe.listTabs",
+        "title": "Astrolabe: List Tabs"
+      },
+      {
+        "command": "astrolabe.listBookmarks",
+        "title": "Astrolabe: List Bookmarks"
+      },
+      {
+        "command": "astrolabe.listSkills",
+        "title": "Astrolabe: List Skills"
+      },
+      {
+        "command": "astrolabe.viewWorkflow",
+        "title": "Astrolabe: View Workflow Config"
       }
     ],
     "configuration": {
@@ -147,5 +163,8 @@
     "typescript": "^5.3.0",
     "webpack": "^5.90.0",
     "webpack-cli": "^5.1.0"
+  },
+  "dependencies": {
+    "lucide-react": "^1.21.0"
   }
 }

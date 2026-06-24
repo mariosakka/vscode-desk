@@ -1,35 +1,3 @@
-.section {
-  border-top: 1px solid var(--border);
-  padding-top: 0;
-}
-
-.headerRow {
-  display: flex;
-  align-items: center;
-}
-
-.header {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 12px 6px;
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: none;
-  border: none;
-  font-family: inherit;
-  text-align: left;
-}
-
-.header:hover {
-  color: var(--text);
-}
-
 .newBtn {
   background: none;
   border: none;
@@ -41,9 +9,7 @@
   transition: color 0.15s;
 }
 
-.newBtn:hover {
-  color: var(--text);
-}
+.newBtn:hover { color: var(--text); }
 
 .row {
   display: flex;
@@ -54,9 +20,7 @@
   color: var(--text);
 }
 
-.row:hover {
-  background: var(--surface2);
-}
+.row:hover { background: var(--surface2); }
 
 .rowBody {
   flex: 1;
@@ -79,51 +43,9 @@
   white-space: nowrap;
 }
 
-.editBtn {
-  background: none;
-  border: none;
-  padding: 3px 4px;
-  color: transparent;
-  cursor: pointer;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  outline: none;
-  border-radius: 3px;
-  transition: color 0.15s;
-  flex-shrink: 0;
-}
-
-.row:hover .editBtn {
-  color: var(--muted);
-}
-
-.row:hover .editBtn:hover {
-  color: var(--accent2);
-}
-
-.removeBtn {
-  background: none;
-  border: none;
-  padding: 3px 4px;
-  color: transparent;
-  cursor: pointer;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  outline: none;
-  border-radius: 3px;
-  transition: color 0.15s;
-  flex-shrink: 0;
-}
-
-.row:hover .removeBtn {
-  color: var(--muted);
-}
-
-.row:hover .removeBtn:hover {
-  color: var(--vscode-errorForeground, #ef4444);
-}
+.row:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
+.row:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
+.row:hover [data-hover-btn='accent']:hover { color: var(--accent2); }
 
 .empty {
   padding: 8px 12px;
@@ -134,22 +56,4 @@
 
 .submitRow {
   padding: 6px 12px 10px;
-}
-
-.submitBtn {
-  width: 100%;
-  background: var(--vscode-button-secondaryBackground, var(--surface2));
-  color: var(--vscode-button-secondaryForeground, var(--muted));
-  border: none;
-  border-radius: 4px;
-  font-size: 11px;
-  font-family: inherit;
-  padding: 5px 0;
-  cursor: pointer;
-  text-align: center;
-}
-
-.submitBtn:hover {
-  background: var(--vscode-button-secondaryHoverBackground, var(--border));
-  color: var(--text);
 }

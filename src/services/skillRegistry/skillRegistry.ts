@@ -27,6 +27,10 @@ export class SkillRegistry {
     }));
   }
 
+  get(name: string): Skill | null {
+    return this.getAll().find(s => s.name === name) ?? null;
+  }
+
   validateFrontmatter(content: string): { valid: boolean; error?: string } {
     const fm = parseFrontmatter(content);
     if (!fm.name) return { valid: false, error: 'Missing required field: name' };

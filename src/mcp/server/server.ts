@@ -207,6 +207,13 @@ export class McpServer {
         return { content: [{ type: 'text', text: JSON.stringify(this.skillRegistry.list()) }] };
       }
 
+      case 'get_skill': {
+        if (!this.skillRegistry) throw new Error('SkillRegistry not available');
+        const skill = this.skillRegistry.get(args.name);
+        if (!skill) return { isError: true, content: [{ type: 'text', text: `Skill '${args.name}' not found` }] };
+        return { content: [{ type: 'text', text: JSON.stringify(skill) }] };
+      }
+
       case 'add_skill': {
         if (!this.skillRegistry) throw new Error('SkillRegistry not available');
         const validation = this.skillRegistry.validateFrontmatter(args.content);

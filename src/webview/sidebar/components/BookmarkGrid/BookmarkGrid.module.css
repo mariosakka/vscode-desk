@@ -5,10 +5,3 @@
   padding: 12px;
 }
 
-.empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: var(--muted);
-  padding: 32px 0;
-  font-size: 12px;
-}

@@ -6,6 +6,9 @@ import { BookmarkGrid } from './components/BookmarkGrid/BookmarkGrid';
 import { InlineTabForm } from './components/InlineTabForm/InlineTabForm';
 import { InlineBookmarkForm } from './components/InlineBookmarkForm/InlineBookmarkForm';
 import { QuickOpenForm } from './components/QuickOpenForm/QuickOpenForm';
+import { BookmarkIcon } from './components/shared/Icons';
+import { EmptyState } from './components/shared/EmptyState';
+import sectionBtnStyles from './components/shared/SectionBtn.module.css';
 import { PagesPanel } from './components/PagesPanel/PagesPanel';
 import { SkillsPanel } from './components/SkillsPanel/SkillsPanel';
 import { WorkflowPanel } from './components/WorkflowPanel/WorkflowPanel';
@@ -15,11 +18,14 @@ const vscode = acquireVsCodeApi();
 
 let _pendingData: SidebarData | null = null;
 let _onData: ((d: SidebarData) => void) | null = null;
+let _onSwitchTab: ((tabId: string) => void) | null = null;
 
 window.addEventListener('message', (e: MessageEvent) => {
-  if (e.data?.type !== 'update') return;
-  const d = e.data.data as SidebarData;
-  if (_onData) { _onData(d); } else { _pendingData = d; }
+  if (e.data?.type === 'update') {
+    const d = e.data.data as SidebarData;
+    if (_onData) { _onData(d); } else { _pendingData = d; }
+  }
+  if (e.data?.type === 'switchTab') { _onSwitchTab?.(e.data.tabId); }
 });
 
 type FormMode = 'idle' | 'addingTab' | 'addingBookmark' | 'quickOpen';
@@ -39,9 +45,10 @@ export function SidebarApp() {
       });
       setFormMode('idle');
     };
+    _onSwitchTab = (tabId: string) => setActiveTabId(tabId);
     if (_pendingData) { _onData(_pendingData); _pendingData = null; }
     vscode.postMessage({ type: 'ready' });
-    return () => { _onData = null; };
+    return () => { _onData = null; _onSwitchTab = null; };
   }, []);
 
   const send = (msg: unknown) => vscode.postMessage(msg);
@@ -53,10 +60,8 @@ export function SidebarApp() {
     <>
       <Header
         onAddTab={() => setFormMode('addingTab')}
-        onAddBookmark={() => setFormMode('addingBookmark')}
         onQuickOpen={() => setFormMode('quickOpen')}
         canAddTab={formMode === 'idle'}
-        canAddBookmark={hasTabs && formMode === 'idle'}
         canQuickOpen={formMode === 'idle'}
       />
       {formMode === 'quickOpen' && (
@@ -83,24 +88,31 @@ export function SidebarApp() {
         )}
       </div>
       <div id="bookmarks-grid">
-        {formMode === 'addingBookmark' && (
-          <InlineBookmarkForm
-            existingTitles={tabs.find(t => t.id === currentTabId)?.bookmarks.map(b => b.title) ?? []}
-            onSubmit={(title, url) => send({ type: 'addBookmark', tabId: currentTabId, title, url })}
-            onCancel={() => setFormMode('idle')}
-          />
-        )}
         {!hasTabs ? (
-          <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '32px 0', fontSize: '12px' }}>
-            No tabs yet. Click <strong>+ Tab</strong> above to create one.
-          </p>
+          <EmptyState message="No tabs yet. Click + Tab above to create one." />
         ) : (
-          <BookmarkGrid
-            bookmarks={tabs.find(t => t.id === currentTabId)?.bookmarks ?? []}
-            tabId={currentTabId}
-            onOpen={(url) => send({ type: 'openUrl', url })}
-            onRemove={(tabId, bookmarkId) => send({ type: 'removeBookmark', tabId, bookmarkId })}
-          />
+          <>
+            <BookmarkGrid
+              bookmarks={tabs.find(t => t.id === currentTabId)?.bookmarks ?? []}
+              tabId={currentTabId}
+              onOpen={(url) => send({ type: 'openUrl', url })}
+              onRemove={(tabId, bookmarkId) => send({ type: 'removeBookmark', tabId, bookmarkId })}
+              onEdit={(tabId, bookmarkId, title, url) => send({ type: 'updateBookmark', tabId, bookmarkId, fields: { title, url } })}
+            />
+            {formMode === 'addingBookmark' ? (
+              <InlineBookmarkForm
+                existingTitles={tabs.find(t => t.id === currentTabId)?.bookmarks.map(b => b.title) ?? []}
+                onSubmit={(title, url) => send({ type: 'addBookmark', tabId: currentTabId, title, url })}
+                onCancel={() => setFormMode('idle')}
+              />
+            ) : formMode === 'idle' && (
+              <div style={{ padding: '0 12px 12px' }}>
+                <button className={sectionBtnStyles.btn} onClick={() => setFormMode('addingBookmark')}>
+                  <BookmarkIcon size={11} /> Add Bookmark
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
       <PagesPanel
@@ -108,6 +120,7 @@ export function SidebarApp() {
         onOpen={(filename) => send({ type: 'openPage', filename })}
         onNew={(title) => send({ type: 'newPage', title })}
         onDelete={(filename) => send({ type: 'deletePage', filename })}
+        onEdit={(filename) => send({ type: 'editPage', filename })}
       />
       <SkillsPanel
         skills={data?.skills ?? []}

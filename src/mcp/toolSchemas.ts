@@ -194,6 +194,16 @@ export const TOOLS: McpTool[] = [
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
+    name: 'get_skill',
+    description: 'Returns the full markdown content of a stored skill by name.',
+    inputSchema: {
+      type: 'object',
+      required: ['name'],
+      properties: { name: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'add_skill',
     description: 'Submits a workflow skill for user review. Content must include YAML frontmatter with name (kebab-case) and description. Non-blocking — returns { status: "submitted" } immediately.',
     inputSchema: {

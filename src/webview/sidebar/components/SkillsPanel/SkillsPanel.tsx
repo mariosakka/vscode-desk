@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import styles from './SkillsPanel.module.css';
-import { SkillIcon, ChevronIcon, TrashIcon, PlusIcon, PencilIcon } from '../shared/Icons';
+import sectionBtnStyles from '../shared/SectionBtn.module.css';
+import { SkillIcon, TrashIcon, PlusIcon, PencilIcon } from '../shared/Icons';
 import { ConfirmButtons } from '../shared/ConfirmButtons';
+import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { HoverIconButton } from '../shared/HoverIconButton';
 
 interface Skill {
   name: string;
@@ -19,73 +22,51 @@ interface Props {
 }
 
 export function SkillsPanel({ skills, onRemove, onNew, onEdit, onSubmit }: Props) {
-  const [open, setOpen] = useState(true);
   const [pendingName, setPendingName] = useState<string | null>(null);
 
+  const newBtn = (
+    <button className={styles.newBtn} type="button" onClick={onNew} title="New skill">
+      <PlusIcon size={11} />
+    </button>
+  );
+
   return (
-    <div className={styles.section}>
-      <div className={styles.headerRow}>
-        <button
-          className={styles.header}
-          onClick={() => setOpen(o => !o)}
-          type="button"
-        >
-          <ChevronIcon size={10} down={open} />
+    <CollapsibleSection icon={<SkillIcon size={13} />} title="Skills" badge={skills.length} action={newBtn}>
+      {skills.length === 0 && (
+        <p className={styles.empty}>No skills installed.</p>
+      )}
+      {skills.map(skill => (
+        <div key={skill.name} className={styles.row}>
           <SkillIcon size={13} />
-          Skills ({skills.length})
-        </button>
-        <button className={styles.newBtn} type="button" onClick={onNew} title="New skill">
-          <PlusIcon size={11} />
+          <div className={styles.rowBody}>
+            <span className={styles.skillName}>{skill.name}</span>
+            {skill.description && (
+              <span className={styles.skillDesc}>{skill.description}</span>
+            )}
+          </div>
+          {pendingName === skill.name ? (
+            <ConfirmButtons
+              onConfirm={e => { e.stopPropagation(); onRemove(skill.name); setPendingName(null); }}
+              onCancel={e => { e.stopPropagation(); setPendingName(null); }}
+            />
+          ) : (
+            <>
+              <HoverIconButton title="Edit skill" hoverColor="accent" onClick={() => onEdit(skill.name)}>
+                <PencilIcon size={12} />
+              </HoverIconButton>
+              <HoverIconButton title="Remove skill" hoverColor="danger" onClick={() => setPendingName(skill.name)}>
+                <TrashIcon size={12} />
+              </HoverIconButton>
+            </>
+          )}
+        </div>
+      ))}
+      <div className={styles.submitRow}>
+        <button className={sectionBtnStyles.btn} type="button" onClick={onSubmit}>
+          <SkillIcon size={13} />
+          Submit open file as skill
         </button>
       </div>
-      {open && (
-        <>
-          {skills.length === 0 && (
-            <p className={styles.empty}>No skills installed.</p>
-          )}
-          {skills.map(skill => (
-            <div key={skill.name} className={styles.row}>
-              <SkillIcon size={13} />
-              <div className={styles.rowBody}>
-                <span className={styles.skillName}>{skill.name}</span>
-                {skill.description && (
-                  <span className={styles.skillDesc}>{skill.description}</span>
-                )}
-              </div>
-              {pendingName === skill.name ? (
-                <ConfirmButtons
-                  onConfirm={e => { e.stopPropagation(); onRemove(skill.name); setPendingName(null); }}
-                  onCancel={e => { e.stopPropagation(); setPendingName(null); }}
-                />
-              ) : (
-                <>
-                  <button
-                    className={styles.editBtn}
-                    type="button"
-                    title="Edit skill"
-                    onClick={e => { e.stopPropagation(); onEdit(skill.name); }}
-                  >
-                    <PencilIcon size={12} />
-                  </button>
-                  <button
-                    className={styles.removeBtn}
-                    type="button"
-                    title="Remove skill"
-                    onClick={e => { e.stopPropagation(); setPendingName(skill.name); }}
-                  >
-                    <TrashIcon size={12} />
-                  </button>
-                </>
-              )}
-            </div>
-          ))}
-          <div className={styles.submitRow}>
-            <button className={styles.submitBtn} type="button" onClick={onSubmit}>
-              Submit open file as skill
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+    </CollapsibleSection>
   );
 }
