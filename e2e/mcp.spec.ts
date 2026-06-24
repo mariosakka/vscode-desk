@@ -10,14 +10,14 @@ import * as http from 'node:http';
 
 // ── In-process test MCP server ────────────────────────────────────────────────
 
-interface Tab { id: string; name: string; bookmarks: Bookmark[] }
+interface Project { id: string; name: string; bookmarks: Bookmark[] }
 interface Bookmark { id: string; title: string; url: string; icon: string; description: string }
 interface Skill { name: string; description: string; content: string; agents: string[]; version: number; installedAt: number }
 
 function createTestMcpServer(): http.Server {
   let nextId = 1;
-  const wsTabs: Tab[] = [];
-  const globalTabs: Tab[] = [];
+  const wsProjects: Project[] = [];
+  const globalProjects: Project[] = [];
   let workflowConfig: Record<string, unknown> | null = null;
   const skills: Skill[] = [];
 
@@ -53,7 +53,7 @@ function createTestMcpServer(): http.Server {
       res.writeHead(200);
 
       try {
-        const result = dispatch(method, params, wsTabs, globalTabs, skills, () => `id_${nextId++}`,
+        const result = dispatch(method, params, wsProjects, globalProjects, skills, () => `id_${nextId++}`,
           () => workflowConfig, (c) => { workflowConfig = c; });
         res.end(JSON.stringify({ jsonrpc: '2.0', result, id }));
       } catch (err: any) {
@@ -64,7 +64,7 @@ function createTestMcpServer(): http.Server {
 }
 
 function dispatch(
-  method: string, params: any, wsTabs: Tab[], globalTabs: Tab[], skills: Skill[], nextId: () => string,
+  method: string, params: any, wsProjects: Project[], globalProjects: Project[], skills: Skill[], nextId: () => string,
   getConfig: () => Record<string, unknown> | null,
   setConfig: (c: Record<string, unknown>) => void,
 ): any {
@@ -79,8 +79,8 @@ function dispatch(
   }
   if (method === 'tools/list') {
     return { tools: [
-      'list_tabs','list_bookmarks','add_bookmark','remove_bookmark',
-      'create_tab','remove_tab','update_bookmark',
+      'list_projects','list_bookmarks','add_bookmark','remove_bookmark',
+      'create_project','remove_project','update_bookmark',
       'list_pages','create_page','update_page','delete_page',
       'get_workflow_config','submit_workflow_config',
       'list_skills','get_skill','add_skill','remove_skill',
@@ -95,7 +95,7 @@ function dispatch(
   }
   if (method === 'resources/read') {
     const content: Record<string, string> = {
-      'astrolabe://guide/quick-start': '# Astrolabe Agent Quick-Start\nlist_tabs to get started.',
+      'astrolabe://guide/quick-start': '# Astrolabe Agent Quick-Start\nlist_projects to get started.',
       'astrolabe://guide/astrolabe-page-format': '# Astrolabe Page Format (.astrolabe)\n<astrolabe-page title="...">...',
       'astrolabe://guide/skill-format': '# Astrolabe Skill Format\nname and description required.',
     };
@@ -105,54 +105,54 @@ function dispatch(
   if (method === 'tools/call') {
     const { name, arguments: args = {} } = params;
     switch (name) {
-      case 'list_tabs': {
+      case 'list_projects': {
         const scope = args.scope ?? 'workspace';
-        const tabs = scope === 'global' ? globalTabs : wsTabs;
-        return text(tabs.map(t => ({ id: t.id, name: t.name, bookmarkCount: t.bookmarks.length })));
+        const projects = scope === 'global' ? globalProjects : wsProjects;
+        return text(projects.map(p => ({ id: p.id, name: p.name, bookmarkCount: p.bookmarks.length })));
       }
-      case 'create_tab': {
+      case 'create_project': {
         const scope = args.scope ?? 'workspace';
-        const tabs = scope === 'global' ? globalTabs : wsTabs;
-        const tab: Tab = { id: nextId(), name: args.name, bookmarks: [] };
-        tabs.push(tab);
-        return text(tab);
+        const projects = scope === 'global' ? globalProjects : wsProjects;
+        const project: Project = { id: nextId(), name: args.name, bookmarks: [] };
+        projects.push(project);
+        return text(project);
       }
-      case 'remove_tab': {
+      case 'remove_project': {
         const scope = args.scope ?? 'workspace';
-        const tabs = scope === 'global' ? globalTabs : wsTabs;
-        const i = tabs.findIndex(t => t.id === args.tab_id);
-        if (i === -1) throw new Error(`Tab not found: ${args.tab_id}`);
-        tabs.splice(i, 1);
+        const projects = scope === 'global' ? globalProjects : wsProjects;
+        const i = projects.findIndex(p => p.id === args.project_id);
+        if (i === -1) throw new Error(`Project not found: ${args.project_id}`);
+        projects.splice(i, 1);
         return text('removed');
       }
       case 'list_bookmarks': {
         const scope = args.scope ?? 'workspace';
-        const tabs = scope === 'global' ? globalTabs : wsTabs;
-        if (args.tab_id) {
-          const tab = tabs.find(t => t.id === args.tab_id);
-          if (!tab) throw new Error(`Tab not found: ${args.tab_id}`);
-          return text(tab.bookmarks);
+        const projects = scope === 'global' ? globalProjects : wsProjects;
+        if (args.project_id) {
+          const project = projects.find(p => p.id === args.project_id);
+          if (!project) throw new Error(`Project not found: ${args.project_id}`);
+          return text(project.bookmarks);
         }
-        return text(tabs.flatMap(t => t.bookmarks.map(b => ({ ...b, tab_id: t.id }))));
+        return text(projects.flatMap(p => p.bookmarks.map(b => ({ ...b, project_id: p.id }))));
       }
       case 'add_bookmark': {
         const scope = args.scope ?? 'workspace';
-        const tabs = scope === 'global' ? globalTabs : wsTabs;
-        const tab = tabs.find(t => t.id === args.tab_id);
-        if (!tab) throw new Error(`Tab not found: ${args.tab_id}`);
+        const projects = scope === 'global' ? globalProjects : wsProjects;
+        const project = projects.find(p => p.id === args.project_id);
+        if (!project) throw new Error(`Project not found: ${args.project_id}`);
         const bm: Bookmark = {
           id: nextId(), title: args.title, url: args.url,
           icon: args.icon ?? '🌐', description: args.description ?? '',
         };
-        tab.bookmarks.push(bm);
+        project.bookmarks.push(bm);
         return text(bm);
       }
       case 'update_bookmark': {
         const scope = args.scope ?? 'workspace';
-        const tabs = scope === 'global' ? globalTabs : wsTabs;
-        const tab = tabs.find(t => t.id === args.tab_id);
-        if (!tab) throw new Error(`Tab not found: ${args.tab_id}`);
-        const bm = tab.bookmarks.find(b => b.id === args.bookmark_id);
+        const projects = scope === 'global' ? globalProjects : wsProjects;
+        const project = projects.find(p => p.id === args.project_id);
+        if (!project) throw new Error(`Project not found: ${args.project_id}`);
+        const bm = project.bookmarks.find(b => b.id === args.bookmark_id);
         if (!bm) throw new Error(`Bookmark not found: ${args.bookmark_id}`);
         Object.assign(bm, args.fields ?? {});
         return text(bm);
@@ -248,7 +248,7 @@ test('tools/list returns 17 tools', async ({ request }) => {
   const res = await rpc(request, 'tools/list');
   expect(res.result.tools).toHaveLength(17);
   const names = res.result.tools.map((t: any) => t.name);
-  expect(names).toContain('list_tabs');
+  expect(names).toContain('list_projects');
   expect(names).toContain('add_bookmark');
   expect(names).toContain('create_page');
   expect(names).toContain('get_workflow_config');
@@ -267,23 +267,23 @@ test('resources/list returns 3 resources including skill-format', async ({ reque
 test('resources/read returns markdown', async ({ request }) => {
   const res = await rpc(request, 'resources/read', { uri: 'astrolabe://guide/quick-start' });
   expect(res.result.contents[0].mimeType).toBe('text/markdown');
-  expect(res.result.contents[0].text).toContain('list_tabs');
+  expect(res.result.contents[0].text).toContain('list_projects');
 });
 
-test('create_tab → add_bookmark → list_bookmarks round-trip', async ({ request }) => {
-  const tabRes = await rpc(request, 'tools/call', { name: 'create_tab', arguments: { name: 'E2E Tab' } });
-  const tab = JSON.parse(tabRes.result.content[0].text);
-  expect(tab.name).toBe('E2E Tab');
+test('create_project → add_bookmark → list_bookmarks round-trip', async ({ request }) => {
+  const projectRes = await rpc(request, 'tools/call', { name: 'create_project', arguments: { name: 'E2E Project' } });
+  const project = JSON.parse(projectRes.result.content[0].text);
+  expect(project.name).toBe('E2E Project');
 
   const bmRes = await rpc(request, 'tools/call', {
     name: 'add_bookmark',
-    arguments: { tab_id: tab.id, title: 'GitHub', url: 'https://github.com' },
+    arguments: { project_id: project.id, title: 'GitHub', url: 'https://github.com' },
   });
   const bm = JSON.parse(bmRes.result.content[0].text);
   expect(bm.title).toBe('GitHub');
   expect(bm.icon).toBe('🌐');
 
-  const listRes = await rpc(request, 'tools/call', { name: 'list_bookmarks', arguments: { tab_id: tab.id } });
+  const listRes = await rpc(request, 'tools/call', { name: 'list_bookmarks', arguments: { project_id: project.id } });
   const bookmarks = JSON.parse(listRes.result.content[0].text);
   expect(bookmarks).toHaveLength(1);
   expect(bookmarks[0].url).toBe('https://github.com');
@@ -384,53 +384,53 @@ test('error for unknown tool arrives as JSON-RPC error (HTTP 200)', async ({ req
   expect(raw.status()).toBe(200);
 });
 
-test('create_tab with scope=global → list_tabs with scope=global returns it', async ({ request }) => {
-  const tabRes = await rpc(request, 'tools/call', {
-    name: 'create_tab',
-    arguments: { name: 'Global Tab', scope: 'global' },
+test('create_project with scope=global → list_projects with scope=global returns it', async ({ request }) => {
+  const projectRes = await rpc(request, 'tools/call', {
+    name: 'create_project',
+    arguments: { name: 'Global Project', scope: 'global' },
   });
-  const tab = JSON.parse(tabRes.result.content[0].text);
-  expect(tab.name).toBe('Global Tab');
+  const project = JSON.parse(projectRes.result.content[0].text);
+  expect(project.name).toBe('Global Project');
 
   const listRes = await rpc(request, 'tools/call', {
-    name: 'list_tabs',
+    name: 'list_projects',
     arguments: { scope: 'global' },
   });
-  const tabs = JSON.parse(listRes.result.content[0].text);
-  expect(tabs.some((t: any) => t.name === 'Global Tab')).toBe(true);
+  const projects = JSON.parse(listRes.result.content[0].text);
+  expect(projects.some((p: any) => p.name === 'Global Project')).toBe(true);
 });
 
-test('list_tabs with scope=workspace does not return global tabs', async ({ request }) => {
+test('list_projects with scope=workspace does not return global projects', async ({ request }) => {
   await rpc(request, 'tools/call', {
-    name: 'create_tab',
-    arguments: { name: 'Global Only Tab', scope: 'global' },
+    name: 'create_project',
+    arguments: { name: 'Global Only Project', scope: 'global' },
   });
 
   const listRes = await rpc(request, 'tools/call', {
-    name: 'list_tabs',
+    name: 'list_projects',
     arguments: { scope: 'workspace' },
   });
-  const tabs = JSON.parse(listRes.result.content[0].text);
-  expect(tabs.every((t: any) => t.name !== 'Global Only Tab')).toBe(true);
+  const projects = JSON.parse(listRes.result.content[0].text);
+  expect(projects.every((p: any) => p.name !== 'Global Only Project')).toBe(true);
 });
 
-test('workspace and global tabs are independent stores', async ({ request }) => {
+test('workspace and global projects are independent stores', async ({ request }) => {
   await rpc(request, 'tools/call', {
-    name: 'create_tab',
+    name: 'create_project',
     arguments: { name: 'WS Exclusive', scope: 'workspace' },
   });
   await rpc(request, 'tools/call', {
-    name: 'create_tab',
+    name: 'create_project',
     arguments: { name: 'Global Exclusive', scope: 'global' },
   });
 
-  const wsRes = await rpc(request, 'tools/call', { name: 'list_tabs', arguments: { scope: 'workspace' } });
-  const wsTabs = JSON.parse(wsRes.result.content[0].text);
-  expect(wsTabs.some((t: any) => t.name === 'WS Exclusive')).toBe(true);
-  expect(wsTabs.every((t: any) => t.name !== 'Global Exclusive')).toBe(true);
+  const wsRes = await rpc(request, 'tools/call', { name: 'list_projects', arguments: { scope: 'workspace' } });
+  const wsProjects = JSON.parse(wsRes.result.content[0].text);
+  expect(wsProjects.some((p: any) => p.name === 'WS Exclusive')).toBe(true);
+  expect(wsProjects.every((p: any) => p.name !== 'Global Exclusive')).toBe(true);
 
-  const globalRes = await rpc(request, 'tools/call', { name: 'list_tabs', arguments: { scope: 'global' } });
-  const globalTabs = JSON.parse(globalRes.result.content[0].text);
-  expect(globalTabs.some((t: any) => t.name === 'Global Exclusive')).toBe(true);
-  expect(globalTabs.every((t: any) => t.name !== 'WS Exclusive')).toBe(true);
+  const globalRes = await rpc(request, 'tools/call', { name: 'list_projects', arguments: { scope: 'global' } });
+  const globalProjects = JSON.parse(globalRes.result.content[0].text);
+  expect(globalProjects.some((p: any) => p.name === 'Global Exclusive')).toBe(true);
+  expect(globalProjects.every((p: any) => p.name !== 'WS Exclusive')).toBe(true);
 });

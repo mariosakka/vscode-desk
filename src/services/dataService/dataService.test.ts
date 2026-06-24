@@ -16,105 +16,105 @@ describe('DataService', () => {
   });
 
   describe('get()', () => {
-    it('returns empty tabs when storage is empty', () => {
+    it('returns empty projects when storage is empty', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
       const data = svc.get();
-      expect(data.tabs).toHaveLength(0);
+      expect(data.projects).toHaveLength(0);
     });
 
     it('returns stored data when present', () => {
-      mockState['astrolabe.data'] = { tabs: [{ id: 'tab_1', name: 'Custom', bookmarks: [] }] };
+      mockState['astrolabe.data'] = { projects: [{ id: 'project_1', name: 'Custom', bookmarks: [] }] };
       const svc = new DataService(mockStore, 'astrolabe.data');
-      expect(svc.get().tabs[0].name).toBe('Custom');
+      expect(svc.get().projects[0].name).toBe('Custom');
     });
 
     it('does not mutate default data across calls', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
       const a = svc.get();
-      a.tabs.push({ id: 'tab_injected', name: 'Injected', bookmarks: [] });
+      a.projects.push({ id: 'project_injected', name: 'Injected', bookmarks: [] });
       const b = svc.get();
-      expect(b.tabs).toHaveLength(0);
+      expect(b.projects).toHaveLength(0);
     });
   });
 
   describe('addBookmark()', () => {
-    it('adds a bookmark to the specified tab', () => {
+    it('adds a bookmark to the specified project', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
-      const tab = svc.createTab('Work');
-      const bm = svc.addBookmark(tab.id, { title: 'Test', url: 'https://example.com', icon: '🔗', description: 'A test bookmark' });
+      const project = svc.createProject('Work');
+      const bm = svc.addBookmark(project.id, { title: 'Test', url: 'https://example.com', icon: '🔗', description: 'A test bookmark' });
       expect(bm.id).toMatch(/^bm_/);
       expect(bm.title).toBe('Test');
-      expect(svc.get().tabs[0].bookmarks).toHaveLength(1);
+      expect(svc.get().projects[0].bookmarks).toHaveLength(1);
     });
 
-    it('throws when tab not found', () => {
+    it('throws when project not found', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
-      expect(() => svc.addBookmark('tab_nope', { title: 'T', url: 'https://example.com', icon: '🔗', description: '' }))
-        .toThrow('Tab not found: tab_nope');
+      expect(() => svc.addBookmark('project_nope', { title: 'T', url: 'https://example.com', icon: '🔗', description: '' }))
+        .toThrow('Project not found: project_nope');
     });
   });
 
   describe('removeBookmark()', () => {
-    it('removes the bookmark from the tab', () => {
+    it('removes the bookmark from the project', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
-      const tab = svc.createTab('Work');
-      const bm = svc.addBookmark(tab.id, { title: 'ToRemove', url: 'https://example.com', icon: '🔗', description: '' });
-      svc.removeBookmark(tab.id, bm.id);
-      expect(svc.get().tabs[0].bookmarks).toHaveLength(0);
+      const project = svc.createProject('Work');
+      const bm = svc.addBookmark(project.id, { title: 'ToRemove', url: 'https://example.com', icon: '🔗', description: '' });
+      svc.removeBookmark(project.id, bm.id);
+      expect(svc.get().projects[0].bookmarks).toHaveLength(0);
     });
 
-    it('throws when tab not found', () => {
+    it('throws when project not found', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
-      expect(() => svc.removeBookmark('tab_nope', 'bm_1')).toThrow('Tab not found: tab_nope');
-    });
-  });
-
-  describe('createTab()', () => {
-    it('creates a new empty tab', () => {
-      const svc = new DataService(mockStore, 'astrolabe.data');
-      const tab = svc.createTab('Tools');
-      expect(tab.id).toMatch(/^tab_/);
-      expect(tab.name).toBe('Tools');
-      expect(tab.bookmarks).toHaveLength(0);
-      expect(svc.get().tabs).toHaveLength(1);
-    });
-
-    it('creates multiple independent tabs', () => {
-      const svc = new DataService(mockStore, 'astrolabe.data');
-      svc.createTab('Work');
-      svc.createTab('Personal');
-      expect(svc.get().tabs).toHaveLength(2);
+      expect(() => svc.removeBookmark('project_nope', 'bm_1')).toThrow('Project not found: project_nope');
     });
   });
 
-  describe('removeTab()', () => {
-    it('removes the tab', () => {
+  describe('createProject()', () => {
+    it('creates a new empty project', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
-      const tab = svc.createTab('Temp');
-      svc.removeTab(tab.id);
-      expect(svc.get().tabs).toHaveLength(0);
+      const project = svc.createProject('Tools');
+      expect(project.id).toMatch(/^project_/);
+      expect(project.name).toBe('Tools');
+      expect(project.bookmarks).toHaveLength(0);
+      expect(svc.get().projects).toHaveLength(1);
+    });
+
+    it('creates multiple independent projects', () => {
+      const svc = new DataService(mockStore, 'astrolabe.data');
+      svc.createProject('Work');
+      svc.createProject('Personal');
+      expect(svc.get().projects).toHaveLength(2);
+    });
+  });
+
+  describe('removeProject()', () => {
+    it('removes the project', () => {
+      const svc = new DataService(mockStore, 'astrolabe.data');
+      const project = svc.createProject('Temp');
+      svc.removeProject(project.id);
+      expect(svc.get().projects).toHaveLength(0);
     });
   });
 
   describe('updateBookmark()', () => {
     it('updates only the specified fields', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
-      const tab = svc.createTab('Work');
-      const bm = svc.addBookmark(tab.id, { title: 'Original', url: 'https://original.com', icon: '🔗', description: 'desc' });
-      const updated = svc.updateBookmark(tab.id, bm.id, { title: 'Updated' });
+      const project = svc.createProject('Work');
+      const bm = svc.addBookmark(project.id, { title: 'Original', url: 'https://original.com', icon: '🔗', description: 'desc' });
+      const updated = svc.updateBookmark(project.id, bm.id, { title: 'Updated' });
       expect(updated.title).toBe('Updated');
       expect(updated.url).toBe('https://original.com');
     });
 
-    it('throws when tab not found', () => {
+    it('throws when project not found', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
-      expect(() => svc.updateBookmark('tab_nope', 'bm_1', {})).toThrow('Tab not found: tab_nope');
+      expect(() => svc.updateBookmark('project_nope', 'bm_1', {})).toThrow('Project not found: project_nope');
     });
 
     it('throws when bookmark not found', () => {
       const svc = new DataService(mockStore, 'astrolabe.data');
-      const tab = svc.createTab('Work');
-      expect(() => svc.updateBookmark(tab.id, 'bm_nope', {})).toThrow('Bookmark not found: bm_nope');
+      const project = svc.createProject('Work');
+      expect(() => svc.updateBookmark(project.id, 'bm_nope', {})).toThrow('Bookmark not found: bm_nope');
     });
   });
 });

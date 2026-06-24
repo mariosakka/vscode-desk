@@ -99,15 +99,15 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
         }
         case 'removeBookmark': {
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          resolved.dataService.removeBookmark(message.tabId, message.bookmarkId);
+          resolved.dataService.removeBookmark(message.projectId, message.bookmarkId);
           this.refresh();
           break;
         }
-        case 'addTab': {
+        case 'addProject': {
           const name: string = message.name;
           if (!name?.trim()) break;
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          resolved.dataService.createTab(name.trim());
+          resolved.dataService.createProject(name.trim());
           this.refresh();
           break;
         }
@@ -117,13 +117,13 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
           if (!title?.trim() || !url?.trim()) break;
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
           const icon = this._faviconService ? await this._faviconService.getIcon(url.trim()) : '🌐';
-          resolved.dataService.addBookmark(message.tabId, { title: title.trim(), url: url.trim(), icon, description: '' });
+          resolved.dataService.addBookmark(message.projectId, { title: title.trim(), url: url.trim(), icon, description: '' });
           this.refresh();
           break;
         }
-        case 'removeTab': {
+        case 'removeProject': {
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          resolved.dataService.removeTab(message.tabId);
+          resolved.dataService.removeProject(message.projectId);
           this.refresh();
           break;
         }
@@ -204,8 +204,8 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  switchTab(tabId: string): void {
-    this._view?.webview.postMessage({ type: 'switchTab', tabId });
+  switchTab(projectId: string): void {
+    this._view?.webview.postMessage({ type: 'switchTab', projectId });
   }
 
   refresh(): void {

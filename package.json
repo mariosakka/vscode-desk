@@ -45,16 +45,16 @@
         "title": "Astrolabe: Add Bookmark"
       },
       {
-        "command": "astrolabe.addTab",
-        "title": "Astrolabe: Add Tab"
+        "command": "astrolabe.addProject",
+        "title": "Astrolabe: Add Project"
       },
       {
         "command": "astrolabe.removeBookmark",
         "title": "Astrolabe: Remove Bookmark"
       },
       {
-        "command": "astrolabe.removeTab",
-        "title": "Astrolabe: Remove Tab"
+        "command": "astrolabe.removeProject",
+        "title": "Astrolabe: Remove Project"
       },
       {
         "command": "astrolabe.openPage",
@@ -105,8 +105,8 @@
         "title": "Astrolabe: Submit Skill"
       },
       {
-        "command": "astrolabe.listTabs",
-        "title": "Astrolabe: List Tabs"
+        "command": "astrolabe.listProjects",
+        "title": "Astrolabe: List Projects"
       },
       {
         "command": "astrolabe.listBookmarks",

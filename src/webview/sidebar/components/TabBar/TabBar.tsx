@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tab } from '../../types';
+import { Project } from '../../types';
 import styles from './TabBar.module.css';
 import { TrashIcon } from '../shared/Icons';
 import { ConfirmButtons } from '../shared/ConfirmButtons';
 import { HoverIconButton } from '../shared/HoverIconButton';
 
 interface Props {
-  tabs: Tab[];
+  tabs: Project[];
   activeTabId: string;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
@@ -14,7 +14,7 @@ interface Props {
 
 export function TabBar({ tabs, activeTabId, onSelect, onRemove }: Props) {
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const pendingTab = pendingId ? tabs.find(t => t.id === pendingId) : null;
+  const pendingProject = pendingId ? tabs.find(p => p.id === pendingId) : null;
   const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,32 +28,32 @@ export function TabBar({ tabs, activeTabId, onSelect, onRemove }: Props) {
   return (
     <div className={styles.container}>
       <div className={styles.tabsBar} ref={barRef}>
-        {tabs.map(tab => (
+        {tabs.map(project => (
           <span
-            key={tab.id}
+            key={project.id}
             className={styles.tabWrap}
-            data-active={tab.id === activeTabId ? 'true' : 'false'}
+            data-active={project.id === activeTabId ? 'true' : 'false'}
           >
             <button
               className={styles.tabBtn}
               data-testid="tab-button"
-              data-active={tab.id === activeTabId ? 'true' : 'false'}
-              onClick={() => { setPendingId(null); onSelect(tab.id); }}
+              data-active={project.id === activeTabId ? 'true' : 'false'}
+              onClick={() => { setPendingId(null); onSelect(project.id); }}
             >
-              {tab.name}
+              {project.name}
             </button>
-            <HoverIconButton title="Remove tab" hoverColor="danger" size="sm"
-              onClick={() => setPendingId(tab.id)}>
+            <HoverIconButton title="Remove project" hoverColor="danger" size="sm"
+              onClick={() => setPendingId(project.id)}>
               <TrashIcon size={14} />
             </HoverIconButton>
           </span>
         ))}
       </div>
-      {pendingTab && (
+      {pendingProject && (
         <div className={styles.confirmBar}>
-          <span className={styles.confirmLabel}>Delete "{pendingTab.name}"?</span>
+          <span className={styles.confirmLabel}>Delete "{pendingProject.name}"?</span>
           <ConfirmButtons
-            onConfirm={() => { setPendingId(null); onRemove(pendingTab.id); }}
+            onConfirm={() => { setPendingId(null); onRemove(pendingProject.id); }}
             onCancel={() => setPendingId(null)}
           />
         </div>

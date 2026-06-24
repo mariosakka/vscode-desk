@@ -32,7 +32,7 @@ export function BookmarkIcon({ size = 11 }: IconProps) {
   return <Bookmark size={size} strokeWidth={1.75} />;
 }
 
-export function TabIcon({ size = 13 }: IconProps) {
+export function ProjectIcon({ size = 13 }: IconProps) {
   return <FolderOpen size={size} strokeWidth={1.75} />;
 }
 

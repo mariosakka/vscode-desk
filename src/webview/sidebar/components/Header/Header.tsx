@@ -1,20 +1,20 @@
 import React from 'react';
 import styles from './Header.module.css';
-import { TabIcon, GlobeIcon } from '../shared/Icons';
+import { ProjectIcon, GlobeIcon } from '../shared/Icons';
 
 interface Props {
-  onAddTab: () => void;
+  onAddProject: () => void;
   onQuickOpen: () => void;
-  canAddTab: boolean;
+  canAddProject: boolean;
   canQuickOpen: boolean;
 }
 
-export function Header({ onAddTab, onQuickOpen, canAddTab, canQuickOpen }: Props) {
+export function Header({ onAddProject, onQuickOpen, canAddProject, canQuickOpen }: Props) {
   return (
     <div className={styles.header}>
       <div className={styles.actions}>
-        <button className={styles.actionBtn} onClick={onAddTab} title="New tab" disabled={!canAddTab}>
-          <TabIcon size={13} /> Tab
+        <button className={styles.actionBtn} onClick={onAddProject} title="New project" disabled={!canAddProject}>
+          <ProjectIcon size={13} /> Project
         </button>
         <button className={`${styles.actionBtn} ${styles.actionBtnIcon}`} onClick={onQuickOpen} title="Open URL" disabled={!canQuickOpen}>
           <GlobeIcon size={13} />

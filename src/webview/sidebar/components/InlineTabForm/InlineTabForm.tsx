@@ -10,12 +10,12 @@ interface Props {
 export function InlineTabForm({ existingNames, onSubmit, onCancel }: Props) {
   const validate = (name: string) =>
     existingNames.some(n => n.toLowerCase() === name.toLowerCase())
-      ? `A tab named "${name}" already exists.`
+      ? `A project named "${name}" already exists.`
       : null;
 
   return (
     <InlineBarForm
-      placeholder="Tab name…"
+      placeholder="Project name…"
       maxLength={40}
       validate={validate}
       onSubmit={onSubmit}

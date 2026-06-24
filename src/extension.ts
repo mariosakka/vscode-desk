@@ -114,11 +114,11 @@ export function activate(context: vscode.ExtensionContext): void {
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdAddBookmark(ds, faviconService, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.addTab', async () => {
+    vscode.commands.registerCommand('astrolabe.addProject', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdAddTab(ds, provider);
+      await cmdAddProject(ds, provider);
     }),
     vscode.commands.registerCommand('astrolabe.removeBookmark', async () => {
       const scope = await pickScope();
@@ -126,11 +126,11 @@ export function activate(context: vscode.ExtensionContext): void {
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdRemoveBookmark(ds, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.removeTab', async () => {
+    vscode.commands.registerCommand('astrolabe.removeProject', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdRemoveTab(ds, provider);
+      await cmdRemoveProject(ds, provider);
     }),
     vscode.commands.registerCommand('astrolabe.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageStore)),
     vscode.commands.registerCommand('astrolabe.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageStore)),
@@ -174,11 +174,11 @@ export function activate(context: vscode.ExtensionContext): void {
       const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
       await cmdSubmitSkill(registry, adapters, provider);
     }),
-    vscode.commands.registerCommand('astrolabe.listTabs', async () => {
+    vscode.commands.registerCommand('astrolabe.listProjects', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdListTabs(ds, provider);
+      await cmdListProjects(ds, provider);
     }),
     vscode.commands.registerCommand('astrolabe.listBookmarks', async () => {
       const scope = await pickScope();
@@ -217,15 +217,15 @@ async function cmdAddBookmark(
   faviconService: FaviconService,
   provider: PortalViewProvider,
 ): Promise<void> {
-  const tabId = await pickTab(dataService);
-  if (!tabId) return;
+  const projectId = await pickProject(dataService);
+  if (!projectId) return;
 
   const title = await vscode.window.showInputBox({ prompt: 'Bookmark title', ignoreFocusOut: true });
   if (!title) return;
 
-  const tab = dataService.get().tabs.find(t => t.id === tabId);
-  if (tab?.bookmarks.some(b => b.title.toLowerCase() === title.toLowerCase())) {
-    vscode.window.showWarningMessage(`A bookmark named "${title}" already exists in this tab.`);
+  const project = dataService.get().projects.find(p => p.id === projectId);
+  if (project?.bookmarks.some(b => b.title.toLowerCase() === title.toLowerCase())) {
+    vscode.window.showWarningMessage(`A bookmark named "${title}" already exists in this project.`);
     return;
   }
 
@@ -243,70 +243,70 @@ async function cmdAddBookmark(
     ? iconInput.trim()
     : await faviconService.getIcon(url);
 
-  dataService.addBookmark(tabId, { title, url, icon, description });
+  dataService.addBookmark(projectId, { title, url, icon, description });
   provider.refresh();
 }
 
-async function cmdAddTab(dataService: DataService, provider: PortalViewProvider): Promise<void> {
-  const name = await vscode.window.showInputBox({ prompt: 'Tab name', ignoreFocusOut: true });
+async function cmdAddProject(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+  const name = await vscode.window.showInputBox({ prompt: 'Project name', ignoreFocusOut: true });
   if (!name) return;
-  if (dataService.get().tabs.some(t => t.name.toLowerCase() === name.toLowerCase())) {
-    vscode.window.showWarningMessage(`A tab named "${name}" already exists.`);
+  if (dataService.get().projects.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    vscode.window.showWarningMessage(`A project named "${name}" already exists.`);
     return;
   }
-  dataService.createTab(name);
+  dataService.createProject(name);
   provider.refresh();
 }
 
 async function cmdRemoveBookmark(dataService: DataService, provider: PortalViewProvider): Promise<void> {
   const data = dataService.get();
-  if (data.tabs.length === 0) {
-    vscode.window.showErrorMessage('No tabs yet.');
+  if (data.projects.length === 0) {
+    vscode.window.showErrorMessage('No projects yet.');
     return;
   }
-  const tabPick = await vscode.window.showQuickPick(
-    data.tabs.map(t => ({ label: t.name, id: t.id })),
-    { placeHolder: 'Select tab' },
+  const projectPick = await vscode.window.showQuickPick(
+    data.projects.map(p => ({ label: p.name, id: p.id })),
+    { placeHolder: 'Select project' },
   );
-  if (!tabPick) return;
-  const tab = data.tabs.find(t => t.id === tabPick.id);
-  if (!tab || tab.bookmarks.length === 0) {
-    vscode.window.showErrorMessage('No bookmarks in this tab.');
+  if (!projectPick) return;
+  const project = data.projects.find(p => p.id === projectPick.id);
+  if (!project || project.bookmarks.length === 0) {
+    vscode.window.showErrorMessage('No bookmarks in this project.');
     return;
   }
   const bmPick = await vscode.window.showQuickPick(
-    tab.bookmarks.map(b => ({ label: b.title, description: b.url, id: b.id })),
+    project.bookmarks.map(b => ({ label: b.title, description: b.url, id: b.id })),
     { placeHolder: 'Select bookmark to remove' },
   );
   if (!bmPick) return;
-  dataService.removeBookmark(tabPick.id, bmPick.id);
+  dataService.removeBookmark(projectPick.id, bmPick.id);
   provider.refresh();
 }
 
-async function cmdRemoveTab(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+async function cmdRemoveProject(dataService: DataService, provider: PortalViewProvider): Promise<void> {
   const data = dataService.get();
-  if (data.tabs.length === 0) {
-    vscode.window.showErrorMessage('No tabs yet.');
+  if (data.projects.length === 0) {
+    vscode.window.showErrorMessage('No projects yet.');
     return;
   }
   const pick = await vscode.window.showQuickPick(
-    data.tabs.map(t => ({ label: t.name, description: `${t.bookmarks.length} bookmark(s)`, id: t.id })),
-    { placeHolder: 'Select tab to remove' },
+    data.projects.map(p => ({ label: p.name, description: `${p.bookmarks.length} bookmark(s)`, id: p.id })),
+    { placeHolder: 'Select project to remove' },
   );
   if (!pick) return;
-  dataService.removeTab(pick.id);
+  dataService.removeProject(pick.id);
   provider.refresh();
 }
 
-async function pickTab(dataService: DataService): Promise<string | undefined> {
+async function pickProject(dataService: DataService): Promise<string | undefined> {
   const data = dataService.get();
-  if (data.tabs.length === 0) {
-    vscode.window.showErrorMessage('No tabs yet. Run "Astrolabe: Add Tab" first.');
+  if (data.projects.length === 0) {
+    vscode.window.showErrorMessage('No projects yet. Run "Astrolabe: Add Project" first.');
     return undefined;
   }
   const pick = await vscode.window.showQuickPick(
-    data.tabs.map(t => ({ label: t.name, id: t.id })),
-    { placeHolder: 'Select tab' },
+    data.projects.map(p => ({ label: p.name, id: p.id })),
+    { placeHolder: 'Select project' },
   );
   return pick?.id;
 }
@@ -480,10 +480,10 @@ async function cmdUpdateBookmark(
   provider: PortalViewProvider,
 ): Promise<void> {
   const data = dataService.get();
-  const allBookmarks = data.tabs.flatMap(t => t.bookmarks.map(b => ({ ...b, tabId: t.id, tabName: t.name })));
+  const allBookmarks = data.projects.flatMap(p => p.bookmarks.map(b => ({ ...b, projectId: p.id, projectName: p.name })));
   if (allBookmarks.length === 0) { vscode.window.showErrorMessage('No bookmarks yet.'); return; }
   const pick = await vscode.window.showQuickPick(
-    allBookmarks.map(b => ({ label: b.title, description: `${b.tabName} — ${b.url}`, id: b.id, tabId: b.tabId, b })),
+    allBookmarks.map(b => ({ label: b.title, description: `${b.projectName} — ${b.url}`, id: b.id, projectId: b.projectId, b })),
     { placeHolder: 'Select bookmark to edit' },
   );
   if (!pick) return;
@@ -492,7 +492,7 @@ async function cmdUpdateBookmark(
   const url = await vscode.window.showInputBox({ prompt: 'New URL', value: pick.b.url, ignoreFocusOut: true });
   if (url === undefined) return;
   const icon = await faviconService.getIcon(url || pick.b.url);
-  dataService.updateBookmark(pick.tabId, pick.id, { title: title || pick.b.title, url: url || pick.b.url, icon });
+  dataService.updateBookmark(pick.projectId, pick.id, { title: title || pick.b.title, url: url || pick.b.url, icon });
   provider.refresh();
 }
 
@@ -587,22 +587,22 @@ async function cmdSubmitSkill(
   provider.refresh();
 }
 
-async function cmdListTabs(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+async function cmdListProjects(dataService: DataService, provider: PortalViewProvider): Promise<void> {
   const data = dataService.get();
-  if (!data.tabs.length) { vscode.window.showInformationMessage('No tabs yet.'); return; }
-  const items = data.tabs.map(t => ({
-    label: t.name,
-    description: `${t.bookmarks.length} bookmark${t.bookmarks.length !== 1 ? 's' : ''}`,
-    id: t.id,
+  if (!data.projects.length) { vscode.window.showInformationMessage('No projects yet.'); return; }
+  const items = data.projects.map(p => ({
+    label: p.name,
+    description: `${p.bookmarks.length} bookmark${p.bookmarks.length !== 1 ? 's' : ''}`,
+    id: p.id,
   }));
-  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a tab to switch to' });
+  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a project to switch to' });
   if (pick) provider.switchTab(pick.id);
 }
 
 async function cmdListBookmarks(dataService: DataService): Promise<void> {
   const data = dataService.get();
-  const items = data.tabs.flatMap(t =>
-    t.bookmarks.map(b => ({ label: b.title, description: b.url, detail: `Tab: ${t.name}`, url: b.url }))
+  const items = data.projects.flatMap(p =>
+    p.bookmarks.map(b => ({ label: b.title, description: b.url, detail: `Project: ${p.name}`, url: b.url }))
   );
   if (!items.length) { vscode.window.showInformationMessage('No bookmarks yet.'); return; }
   const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a bookmark to open' });

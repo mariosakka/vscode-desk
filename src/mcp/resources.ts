@@ -36,8 +36,8 @@ It runs a local JSON-RPC 2.0 MCP server at **http://localhost:3333/mcp**.
 
 \`\`\`
 PortalData
-└── tabs[]
-    ├── id          string   ("tab_abc123")
+└── projects[]
+    ├── id          string   ("project_abc123")
     ├── name        string
     └── bookmarks[]
         ├── id          string   ("bm_xyz789")
@@ -52,7 +52,7 @@ Pages are \`.astrolabe\` files in \`<workspace>/astrolabe-pages/\` — separate 
 ## Typical loop — bookmarks
 
 \`\`\`
-list_tabs           → find the right tab (IDs are opaque — always fetch fresh)
+list_projects       → find the right project (IDs are opaque — always fetch fresh)
 list_bookmarks      → check what already exists to avoid duplicates
 add_bookmark        → add (omit icon to auto-fetch favicon)
 update_bookmark     → patch any fields
@@ -77,7 +77,7 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 
 ## Key rules
 
-- **IDs are opaque** — always call list_tabs / list_bookmarks to get current IDs; never cache across sessions.
+- **IDs are opaque** — always call list_projects / list_bookmarks to get current IDs; never cache across sessions.
 - **Favicon is free** — omit \`icon\` in add_bookmark and Astrolabe fetches it automatically (30-day cache).
 - **astrolabe-page: links** — set a bookmark's \`url\` to \`astrolabe-page:filename.astrolabe\` and clicking it opens the page viewer directly from the sidebar.
 - **update_page is partial** — only fields you include are overwritten; omit \`content\` to change just the title, etc.
@@ -88,13 +88,13 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 
 | Tool | R | W | Required args |
 |------|---|---|---------------|
-| list_tabs | ✓ | | — |
-| list_bookmarks | ✓ | | — (tab_id optional) |
-| add_bookmark | | ✓ | tab_id, title, url |
-| remove_bookmark | | ✓ | tab_id, bookmark_id |
-| create_tab | | ✓ | name |
-| remove_tab | | ✓ | tab_id |
-| update_bookmark | | ✓ | tab_id, bookmark_id, fields |
+| list_projects | ✓ | | — |
+| list_bookmarks | ✓ | | — (project_id optional) |
+| add_bookmark | | ✓ | project_id, title, url |
+| remove_bookmark | | ✓ | project_id, bookmark_id |
+| create_project | | ✓ | name |
+| remove_project | | ✓ | project_id |
+| update_bookmark | | ✓ | project_id, bookmark_id, fields |
 | list_pages | ✓ | | — |
 | create_page | | ✓ | filename, title, content |
 | update_page | | ✓ | filename (+ any fields) |

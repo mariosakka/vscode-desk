@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ScopedData, SidebarData, Tab } from './types';
+import { ScopedData, SidebarData, Project } from './types';
 import { TabBar } from './components/TabBar/TabBar';
 import { BookmarkGrid } from './components/BookmarkGrid/BookmarkGrid';
 import { InlineTabForm } from './components/InlineTabForm/InlineTabForm';
 import { InlineBookmarkForm } from './components/InlineBookmarkForm/InlineBookmarkForm';
 import { QuickOpenForm } from './components/QuickOpenForm/QuickOpenForm';
-import { BookmarkIcon, TabIcon, GlobeIcon } from './components/shared/Icons';
+import { BookmarkIcon, ProjectIcon, GlobeIcon } from './components/shared/Icons';
 import { EmptyState } from './components/shared/EmptyState';
 import sectionBtnStyles from './components/shared/SectionBtn.module.css';
 import { PagesPanel } from './components/PagesPanel/PagesPanel';
@@ -25,7 +25,7 @@ window.addEventListener('message', (e: MessageEvent) => {
   }
 });
 
-type FormMode = 'idle' | 'addingTab' | 'addingBookmark' | 'quickOpen';
+type FormMode = 'idle' | 'addingProject' | 'addingBookmark' | 'quickOpen';
 type Scope = 'workspace' | 'global';
 
 interface ScopedPaneProps {
@@ -39,9 +39,9 @@ interface ScopedPaneProps {
 }
 
 function ScopedPane({ scopedData, scope, activeTabId, setActiveTabId, formMode, setFormMode, send }: ScopedPaneProps) {
-  const tabs = scopedData.portal.tabs ?? [];
-  const hasTabs = tabs.length > 0;
-  const currentTabId = activeTabId ?? tabs[0]?.id ?? '';
+  const projects = scopedData.portal.projects ?? [];
+  const hasProjects = projects.length > 0;
+  const currentProjectId = activeTabId ?? projects[0]?.id ?? '';
 
   return (
     <>
@@ -55,11 +55,11 @@ function ScopedPane({ scopedData, scope, activeTabId, setActiveTabId, formMode, 
         <div style={{ display: 'flex', gap: '6px', padding: '4px 12px 0' }}>
           <button
             className={sectionBtnStyles.btn}
-            onClick={() => setFormMode('addingTab')}
+            onClick={() => setFormMode('addingProject')}
             disabled={formMode !== 'idle'}
-            title="New tab"
+            title="New project"
           >
-            <TabIcon size={11} /> Tab
+            <ProjectIcon size={11} /> Project
           </button>
           <button
             className={sectionBtnStyles.btn}
@@ -71,38 +71,38 @@ function ScopedPane({ scopedData, scope, activeTabId, setActiveTabId, formMode, 
           </button>
         </div>
         <div id={`tabs-bar-${scope}`}>
-          {hasTabs && (
+          {hasProjects && (
             <TabBar
-              tabs={tabs}
-              activeTabId={currentTabId}
+              tabs={projects}
+              activeTabId={currentProjectId}
               onSelect={setActiveTabId}
-              onRemove={(tabId) => send({ type: 'removeTab', tabId, scope })}
+              onRemove={(projectId) => send({ type: 'removeProject', projectId, scope })}
             />
           )}
-          {formMode === 'addingTab' && (
+          {formMode === 'addingProject' && (
             <InlineTabForm
-              existingNames={tabs.map((t: Tab) => t.name)}
-              onSubmit={(name) => { send({ type: 'addTab', name, scope }); setFormMode('idle'); }}
+              existingNames={projects.map((p: Project) => p.name)}
+              onSubmit={(name) => { send({ type: 'addProject', name, scope }); setFormMode('idle'); }}
               onCancel={() => setFormMode('idle')}
             />
           )}
         </div>
         <div id={`bookmarks-grid-${scope}`}>
-          {!hasTabs ? (
-            <EmptyState message="No tabs yet. Click + Tab above to create one." />
+          {!hasProjects ? (
+            <EmptyState message="No projects yet. Click + Project above to create one." />
           ) : (
             <>
               <BookmarkGrid
-                bookmarks={tabs.find((t: Tab) => t.id === currentTabId)?.bookmarks ?? []}
-                tabId={currentTabId}
+                bookmarks={projects.find((p: Project) => p.id === currentProjectId)?.bookmarks ?? []}
+                tabId={currentProjectId}
                 onOpen={(url) => send({ type: 'openUrl', url, scope })}
-                onRemove={(tabId, bookmarkId) => send({ type: 'removeBookmark', tabId, bookmarkId, scope })}
-                onEdit={(tabId, bookmarkId, title, url) => send({ type: 'updateBookmark', tabId, bookmarkId, fields: { title, url }, scope })}
+                onRemove={(projectId, bookmarkId) => send({ type: 'removeBookmark', projectId, bookmarkId, scope })}
+                onEdit={(projectId, bookmarkId, title, url) => send({ type: 'updateBookmark', projectId, bookmarkId, fields: { title, url }, scope })}
               />
               {formMode === 'addingBookmark' ? (
                 <InlineBookmarkForm
-                  existingTitles={tabs.find((t: Tab) => t.id === currentTabId)?.bookmarks.map(b => b.title) ?? []}
-                  onSubmit={(title, url) => { send({ type: 'addBookmark', tabId: currentTabId, title, url, scope }); setFormMode('idle'); }}
+                  existingTitles={projects.find((p: Project) => p.id === currentProjectId)?.bookmarks.map(b => b.title) ?? []}
+                  onSubmit={(title, url) => { send({ type: 'addBookmark', projectId: currentProjectId, title, url, scope }); setFormMode('idle'); }}
                   onCancel={() => setFormMode('idle')}
                 />
               ) : formMode === 'idle' && (
@@ -150,10 +150,10 @@ export function SidebarApp() {
     _onData = (incoming) => {
       setData(incoming);
       if (!incoming.workspace) setActiveScope('global');
-      const wsTabs = incoming.workspace?.portal.tabs ?? [];
-      setWsActiveTabId(prev => wsTabs.find((t: Tab) => t.id === prev) ? prev : wsTabs[0]?.id ?? null);
-      const gTabs = incoming.global.portal.tabs ?? [];
-      setGlobalActiveTabId(prev => gTabs.find((t: Tab) => t.id === prev) ? prev : gTabs[0]?.id ?? null);
+      const wsProjects = incoming.workspace?.portal.projects ?? [];
+      setWsActiveTabId(prev => wsProjects.find((p: Project) => p.id === prev) ? prev : wsProjects[0]?.id ?? null);
+      const gProjects = incoming.global.portal.projects ?? [];
+      setGlobalActiveTabId(prev => gProjects.find((p: Project) => p.id === prev) ? prev : gProjects[0]?.id ?? null);
     };
     if (_pendingData) { _onData(_pendingData); _pendingData = null; }
     vscode.postMessage({ type: 'ready' });
@@ -162,7 +162,7 @@ export function SidebarApp() {
 
   const send = (msg: unknown) => vscode.postMessage(msg);
 
-  const emptyScoped: ScopedData = { portal: { tabs: [] }, pages: [], workflow: null, skills: [] };
+  const emptyScoped: ScopedData = { portal: { projects: [] }, pages: [], workflow: null, skills: [] };
   const hasWorkspace = !!data?.workspace;
 
   return (

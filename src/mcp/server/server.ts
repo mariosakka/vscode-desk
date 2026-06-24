@@ -141,27 +141,27 @@ export class McpServer {
 
   private async callTool(name: string, args: any): Promise<any> {
     switch (name) {
-      case 'list_tabs': {
+      case 'list_projects': {
         const { dataService } = this._resolveScope(args);
         const data = dataService.get();
-        const tabs = data.tabs.map(t => ({ id: t.id, name: t.name, bookmarkCount: t.bookmarks.length }));
-        return { content: [{ type: 'text', text: JSON.stringify(tabs) }] };
+        const projects = data.projects.map(p => ({ id: p.id, name: p.name, bookmarkCount: p.bookmarks.length }));
+        return { content: [{ type: 'text', text: JSON.stringify(projects) }] };
       }
       case 'list_bookmarks': {
         const { dataService } = this._resolveScope(args);
         const data = dataService.get();
-        if (args.tab_id) {
-          const tab = data.tabs.find(t => t.id === args.tab_id);
-          if (!tab) throw new Error(`Tab not found: ${args.tab_id}`);
-          return { content: [{ type: 'text', text: JSON.stringify(tab.bookmarks) }] };
+        if (args.project_id) {
+          const project = data.projects.find(p => p.id === args.project_id);
+          if (!project) throw new Error(`Project not found: ${args.project_id}`);
+          return { content: [{ type: 'text', text: JSON.stringify(project.bookmarks) }] };
         }
-        const all = data.tabs.flatMap(t => t.bookmarks.map(b => ({ ...b, tab_id: t.id })));
+        const all = data.projects.flatMap(p => p.bookmarks.map(b => ({ ...b, project_id: p.id })));
         return { content: [{ type: 'text', text: JSON.stringify(all) }] };
       }
       case 'add_bookmark': {
         const { dataService } = this._resolveScope(args);
         const icon = args.icon ?? await this.faviconService.getIcon(args.url);
-        const bm = dataService.addBookmark(args.tab_id, {
+        const bm = dataService.addBookmark(args.project_id, {
           title: args.title,
           url: args.url,
           icon,
@@ -172,25 +172,25 @@ export class McpServer {
       }
       case 'remove_bookmark': {
         const { dataService } = this._resolveScope(args);
-        dataService.removeBookmark(args.tab_id, args.bookmark_id);
+        dataService.removeBookmark(args.project_id, args.bookmark_id);
         this.provider.refresh();
         return { content: [{ type: 'text', text: 'removed' }] };
       }
-      case 'create_tab': {
+      case 'create_project': {
         const { dataService } = this._resolveScope(args);
-        const tab = dataService.createTab(args.name);
+        const project = dataService.createProject(args.name);
         this.provider.refresh();
-        return { content: [{ type: 'text', text: JSON.stringify(tab) }] };
+        return { content: [{ type: 'text', text: JSON.stringify(project) }] };
       }
-      case 'remove_tab': {
+      case 'remove_project': {
         const { dataService } = this._resolveScope(args);
-        dataService.removeTab(args.tab_id);
+        dataService.removeProject(args.project_id);
         this.provider.refresh();
         return { content: [{ type: 'text', text: 'removed' }] };
       }
       case 'update_bookmark': {
         const { dataService } = this._resolveScope(args);
-        const bm = dataService.updateBookmark(args.tab_id, args.bookmark_id, args.fields ?? {});
+        const bm = dataService.updateBookmark(args.project_id, args.bookmark_id, args.fields ?? {});
         this.provider.refresh();
         return { content: [{ type: 'text', text: JSON.stringify(bm) }] };
       }

@@ -8,8 +8,8 @@ interface Props {
   bookmarks: Bookmark[];
   tabId: string;
   onOpen: (url: string) => void;
-  onRemove: (tabId: string, bookmarkId: string) => void;
-  onEdit: (tabId: string, bookmarkId: string, title: string, url: string) => void;
+  onRemove: (projectId: string, bookmarkId: string) => void;
+  onEdit: (projectId: string, bookmarkId: string, title: string, url: string) => void;
 }
 
 export function BookmarkGrid({ bookmarks, tabId, onOpen, onRemove, onEdit }: Props) {

@@ -226,7 +226,7 @@ Always go through `PageReader`. It enforces the `relay-pages/` directory, parses
 
 | `globalState` key | Type | Contents |
 |---|---|---|
-| `relay.data` | `PortalData` | All tabs and bookmarks |
+| `relay.data` | `PortalData` | All projects and bookmarks |
 | `relay.favicon-cache` | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
 | `relay.workflowConfig` | `WorkflowConfig` | Team workflow config submitted by agent and confirmed by user |
 | `relay.skills` | `Skill[]` | Workflow skills submitted by agent and confirmed by user |
@@ -241,9 +241,9 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 | Command ID | Title | Description |
 |---|---|---|
 | `relay.addBookmark` | Relay: Add Bookmark | Interactive prompt to add a bookmark |
-| `relay.addTab` | Relay: Add Tab | Interactive prompt to create a tab |
+| `relay.addProject` | Relay: Add Project | Interactive prompt to create a project |
 | `relay.removeBookmark` | Relay: Remove Bookmark | QuickPick to remove a bookmark |
-| `relay.removeTab` | Relay: Remove Tab | QuickPick to remove a tab |
+| `relay.removeProject` | Relay: Remove Project | QuickPick to remove a project |
 | `relay.openPage` | Relay: Open Page | QuickPick to open a `.relay` page |
 | `relay.newPage` | Relay: New Page | Interactive prompt to create a new page |
 | `relay.setupAgents` | Relay: Setup Agents | Force-shows MCP setup prompt for all agents |
@@ -261,10 +261,10 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 | Host → Webview | `update` | `data: PortalData` |
 | Webview → Host | `ready` | — |
 | Webview → Host | `openUrl` | `url: string` — opens in VS Code Simple Browser |
-| Webview → Host | `addBookmark` | `tabId, title, url` — favicon fetched by host |
-| Webview → Host | `removeBookmark` | `tabId, bookmarkId` |
-| Webview → Host | `addTab` | `name: string` |
-| Webview → Host | `removeTab` | `tabId: string` |
+| Webview → Host | `addBookmark` | `projectId, title, url` — favicon fetched by host |
+| Webview → Host | `removeBookmark` | `projectId, bookmarkId` |
+| Webview → Host | `addProject` | `name: string` |
+| Webview → Host | `removeProject` | `projectId: string` |
 
 **Page viewer (PageViewPanel ↔ `src/webview/page/index.js`)**
 
@@ -288,13 +288,13 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 
 | Tool | R/W | Required args |
 |------|-----|---------------|
-| `list_tabs` | R | — |
-| `list_bookmarks` | R | — (`tab_id` optional) |
-| `add_bookmark` | W | `tab_id`, `title`, `url` |
-| `remove_bookmark` | W | `tab_id`, `bookmark_id` |
-| `create_tab` | W | `name` |
-| `remove_tab` | W | `tab_id` |
-| `update_bookmark` | W | `tab_id`, `bookmark_id`, `fields` |
+| `list_projects` | R | — |
+| `list_bookmarks` | R | — (`project_id` optional) |
+| `add_bookmark` | W | `project_id`, `title`, `url` |
+| `remove_bookmark` | W | `project_id`, `bookmark_id` |
+| `create_project` | W | `name` |
+| `remove_project` | W | `project_id` |
+| `update_bookmark` | W | `project_id`, `bookmark_id`, `fields` |
 | `list_pages` | R | — |
 | `create_page` | W | `filename`, `title`, `content` |
 | `update_page` | W | `filename` (+ any fields) |

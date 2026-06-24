@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 import { buildSidebarHtml } from './helpers/webview';
 import { dispatchToWebview, findSentMessage } from './helpers/vscode-mock';
 
-const TAB_1 = { id: 'tab_1', name: 'Work', bookmarks: [] };
-const TAB_2 = { id: 'tab_2', name: 'Research', bookmarks: [] };
+const TAB_1 = { id: 'project_1', name: 'Work', bookmarks: [] };
+const TAB_2 = { id: 'project_2', name: 'Research', bookmarks: [] };
 const BM_EMOJI = {
   id: 'bm_1', title: 'GitHub', url: 'https://github.com',
   icon: '🐙', description: 'Code hosting',
@@ -15,17 +15,17 @@ const BM_IMG = {
 
 const TAB_DATA = [TAB_1];
 
-function makeData(tabs: typeof TAB_DATA = TAB_DATA) {
+function makeData(projects: typeof TAB_DATA = TAB_DATA) {
   return {
     workspaceName: 'test-workspace',
     workspace: {
-      portal: { tabs },
+      portal: { projects },
       pages: [],
       workflow: null,
       skills: [],
     },
     global: {
-      portal: { tabs: [] },
+      portal: { projects: [] },
       pages: [],
       workflow: null,
       skills: [],
@@ -37,9 +37,9 @@ test.beforeEach(async ({ page }) => {
   await page.setContent(buildSidebarHtml());
 });
 
-test('empty state — shows "No tabs yet" prompt', async ({ page }) => {
+test('empty state — shows "No projects yet" prompt', async ({ page }) => {
   await dispatchToWebview(page, { type: 'update', data: makeData([]) });
-  await expect(page.locator('#bookmarks-grid')).toContainText('No tabs yet');
+  await expect(page.locator('#bookmarks-grid')).toContainText('No projects yet');
   await expect(page.locator('#tabs-bar')).toBeEmpty();
 });
 
@@ -90,7 +90,7 @@ test('clicking × button posts removeBookmark', async ({ page }) => {
 
   const msg = await findSentMessage(page, 'removeBookmark');
   expect(msg).not.toBeNull();
-  expect(msg.tabId).toBe('tab_1');
+  expect(msg.projectId).toBe('project_1');
   expect(msg.bookmarkId).toBe('bm_1');
 });
 
@@ -128,7 +128,7 @@ test('workspace section is hidden when workspace is null', async ({ page }) => {
       workspaceName: null,
       workspace: null,
       global: {
-        portal: { tabs: [] },
+        portal: { projects: [] },
         pages: [],
         workflow: null,
         skills: [],
