@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCP API Reference — Relay</title>
+  <title>MCP API Reference — Desk</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -118,20 +118,20 @@
 <body>
   <div class="container">
 
-    <div class="breadcrumb"><a href="index.html">Relay Docs</a> / MCP API Reference</div>
+    <div class="breadcrumb"><a href="index.html">Desk Docs</a> / MCP API Reference</div>
 
     <h1>MCP API Reference</h1>
-    <p class="subtitle">How AI agents connect to Relay and the full tool catalogue.</p>
+    <p class="subtitle">How AI agents connect to Desk and the full tool catalogue.</p>
 
     <!-- CONNECTING -->
     <h2>Connecting an AI Agent</h2>
 
-    <p>Relay starts a local HTTP server (default port <code>3333</code>) when VS Code loads. It speaks <strong>JSON-RPC 2.0</strong> over HTTP POST at <code>/mcp</code>, following the <a href="https://spec.modelcontextprotocol.io" style="color:var(--accent2)">Model Context Protocol</a> (Streamable HTTP transport).</p>
+    <p>Desk starts a local HTTP server (default port <code>3333</code>) when VS Code loads. It speaks <strong>JSON-RPC 2.0</strong> over HTTP POST at <code>/mcp</code>, following the <a href="https://spec.modelcontextprotocol.io" style="color:var(--accent2)">Model Context Protocol</a> (Streamable HTTP transport).</p>
 
     <h3>Claude Code (<code>~/.claude/settings.json</code>)</h3>
     <pre><code>{
   <span class="str">"mcpServers"</span>: {
-    <span class="str">"vscode-relay"</span>: {
+    <span class="str">"vscode-desk"</span>: {
       <span class="str">"type"</span>: <span class="str">"http"</span>,
       <span class="str">"url"</span>: <span class="str">"http://localhost:3333/mcp"</span>
     }
@@ -144,34 +144,37 @@
   -d '{
     "jsonrpc": "2.0",
     "method": "tools/call",
-    "params": { "name": "list_tabs", "arguments": {} },
+    "params": { "name": "list_projects", "arguments": {} },
     "id": 1
   }'</code></pre>
 
     <h3>Initialization handshake</h3>
-    <p>MCP clients send an <code>initialize</code> request first. Relay responds with:</p>
+    <p>MCP clients send an <code>initialize</code> request first. Desk responds with:</p>
     <pre><code>{
   <span class="str">"protocolVersion"</span>: <span class="str">"2024-11-05"</span>,
   <span class="str">"capabilities"</span>: { <span class="str">"tools"</span>: {}, <span class="str">"resources"</span>: {} },
-  <span class="str">"serverInfo"</span>: { <span class="str">"name"</span>: <span class="str">"vscode-relay"</span>, <span class="str">"version"</span>: <span class="str">"0.0.1"</span> }
+  <span class="str">"serverInfo"</span>: { <span class="str">"name"</span>: <span class="str">"vscode-desk"</span>, <span class="str">"version"</span>: <span class="str">"0.0.1"</span> }
 }</code></pre>
 
     <!-- TOOLS -->
     <h2>Tools</h2>
 
-    <!-- list_tabs -->
+    <!-- list_projects -->
     <div class="tool-card">
       <div class="tool-header">
-        <span class="tool-name">list_tabs</span>
+        <span class="tool-name">list_projects</span>
         <span class="tool-badge badge-read">read</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Returns all tabs with their IDs, names, and bookmark counts.</p>
-        <p><strong>Parameters:</strong> none</p>
+        <p class="tool-desc">Returns all projects with their IDs, names, and bookmark counts.</p>
+        <table>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
+        </table>
         <h3>Example response</h3>
         <pre><code>[
-  { <span class="str">"id"</span>: <span class="str">"tab_abc123"</span>, <span class="str">"name"</span>: <span class="str">"Work"</span>, <span class="str">"bookmarkCount"</span>: <span class="num">4</span> },
-  { <span class="str">"id"</span>: <span class="str">"tab_def456"</span>, <span class="str">"name"</span>: <span class="str">"Research"</span>, <span class="str">"bookmarkCount"</span>: <span class="num">2</span> }
+  { <span class="str">"id"</span>: <span class="str">"proj_abc123"</span>, <span class="str">"name"</span>: <span class="str">"Work"</span>, <span class="str">"bookmarkCount"</span>: <span class="num">4</span> },
+  { <span class="str">"id"</span>: <span class="str">"proj_def456"</span>, <span class="str">"name"</span>: <span class="str">"Research"</span>, <span class="str">"bookmarkCount"</span>: <span class="num">2</span> }
 ]</code></pre>
       </div>
     </div>
@@ -183,10 +186,11 @@
         <span class="tool-badge badge-read">read</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Returns bookmarks. Optionally scoped to a single tab.</p>
+        <p class="tool-desc">Returns bookmarks. Optionally scoped to a single project.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>tab_id</code></td><td>string</td><td><span class="opt">optional</span></td><td>If provided, returns only bookmarks in that tab. If omitted, returns all bookmarks with an added <code>tab_id</code> field.</td></tr>
+          <tr><td><code>project_id</code></td><td>string</td><td><span class="opt">optional</span></td><td>If provided, returns only bookmarks in that project. If omitted, returns all bookmarks with an added <code>project_id</code> field.</td></tr>
+          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
         </table>
         <h3>Example response (single tab)</h3>
         <pre><code>[
@@ -208,18 +212,19 @@
         <span class="tool-badge badge-write">write</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Adds a new bookmark to a tab. If <code>icon</code> is omitted, Relay auto-fetches and caches the site's favicon.</p>
+        <p class="tool-desc">Adds a new bookmark to a project. If <code>icon</code> is omitted, Desk auto-fetches and caches the site's favicon.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>tab_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the target tab.</td></tr>
+          <tr><td><code>project_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the target project.</td></tr>
           <tr><td><code>title</code></td><td>string</td><td><span class="req">required</span></td><td>Display name shown on the bookmark card.</td></tr>
           <tr><td><code>url</code></td><td>string</td><td><span class="req">required</span></td><td>Full URL including scheme (<code>https://…</code>).</td></tr>
           <tr><td><code>icon</code></td><td>string</td><td><span class="opt">optional</span></td><td>Emoji or base64 data URL. Omit to auto-fetch favicon.</td></tr>
           <tr><td><code>description</code></td><td>string</td><td><span class="opt">optional</span></td><td>Short description shown below the title.</td></tr>
+          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
         </table>
         <h3>Example</h3>
         <pre><code>{
-  <span class="str">"tab_id"</span>: <span class="str">"tab_abc123"</span>,
+  <span class="str">"project_id"</span>: <span class="str">"proj_abc123"</span>,
   <span class="str">"title"</span>: <span class="str">"GitHub"</span>,
   <span class="str">"url"</span>: <span class="str">"https://github.com"</span>
   <span class="cm">// icon omitted → favicon auto-fetched</span>
@@ -234,43 +239,46 @@
         <span class="tool-badge badge-write">write</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Permanently removes a bookmark from a tab.</p>
+        <p class="tool-desc">Permanently removes a bookmark from a project.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>tab_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the tab that contains the bookmark.</td></tr>
+          <tr><td><code>project_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the project that contains the bookmark.</td></tr>
           <tr><td><code>bookmark_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the bookmark to remove.</td></tr>
+          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
         </table>
       </div>
     </div>
 
-    <!-- create_tab -->
+    <!-- create_project -->
     <div class="tool-card">
       <div class="tool-header">
-        <span class="tool-name">create_tab</span>
+        <span class="tool-name">create_project</span>
         <span class="tool-badge badge-write">write</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Creates a new empty tab group.</p>
+        <p class="tool-desc">Creates a new empty project.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>name</code></td><td>string</td><td><span class="req">required</span></td><td>Human-readable label shown in the tab bar.</td></tr>
+          <tr><td><code>name</code></td><td>string</td><td><span class="req">required</span></td><td>Human-readable label shown in the sidebar.</td></tr>
+          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
         </table>
         <h3>Example response</h3>
-        <pre><code>{ <span class="str">"id"</span>: <span class="str">"tab_new111"</span>, <span class="str">"name"</span>: <span class="str">"AI Tools"</span>, <span class="str">"bookmarks"</span>: [] }</code></pre>
+        <pre><code>{ <span class="str">"id"</span>: <span class="str">"proj_new111"</span>, <span class="str">"name"</span>: <span class="str">"AI Tools"</span>, <span class="str">"bookmarks"</span>: [] }</code></pre>
       </div>
     </div>
 
-    <!-- remove_tab -->
+    <!-- remove_project -->
     <div class="tool-card">
       <div class="tool-header">
-        <span class="tool-name">remove_tab</span>
+        <span class="tool-name">remove_project</span>
         <span class="tool-badge badge-write">write</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Removes a tab and all its bookmarks. This cannot be undone.</p>
+        <p class="tool-desc">Removes a project and all its bookmarks. This cannot be undone.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>tab_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the tab to remove.</td></tr>
+          <tr><td><code>project_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the project to remove.</td></tr>
+          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
         </table>
       </div>
     </div>
@@ -285,13 +293,14 @@
         <p class="tool-desc">Partially updates a bookmark's fields. Only the fields present in <code>fields</code> are changed.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>tab_id</code></td><td>string</td><td><span class="req">required</span></td><td>Tab containing the bookmark.</td></tr>
+          <tr><td><code>project_id</code></td><td>string</td><td><span class="req">required</span></td><td>Project containing the bookmark.</td></tr>
           <tr><td><code>bookmark_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the bookmark to update.</td></tr>
           <tr><td><code>fields</code></td><td>object</td><td><span class="req">required</span></td><td>Any subset of <code>title</code>, <code>url</code>, <code>icon</code>, <code>description</code>.</td></tr>
+          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
         </table>
         <h3>Example — rename a bookmark</h3>
         <pre><code>{
-  <span class="str">"tab_id"</span>: <span class="str">"tab_abc123"</span>,
+  <span class="str">"project_id"</span>: <span class="str">"proj_abc123"</span>,
   <span class="str">"bookmark_id"</span>: <span class="str">"bm_xyz789"</span>,
   <span class="str">"fields"</span>: { <span class="str">"title"</span>: <span class="str">"MDN — HTML"</span>, <span class="str">"url"</span>: <span class="str">"https://developer.mozilla.org/en-US/docs/Web/HTML"</span> }
 }</code></pre>
@@ -301,7 +310,7 @@
     <!-- PAGE TOOLS -->
     <h2>Page Tools</h2>
 
-    <p>Pages are <code>.relay</code> files in <code>&lt;workspace&gt;/relay-pages/</code>. All page tools return an error if VS Code has no workspace folder open. See the <a href="developer-guide.html" style="color:var(--accent2)">Developer Guide</a> for the <code>.relay</code> file format.</p>
+    <p>Pages are <code>.desk</code> files in <code>&lt;workspace&gt;/desk-pages/</code>. All page tools return an error if VS Code has no workspace folder open. See the <a href="developer-guide.html" style="color:var(--accent2)">Developer Guide</a> for the <code>.desk</code> file format.</p>
 
     <!-- list_pages -->
     <div class="tool-card">
@@ -310,12 +319,12 @@
         <span class="tool-badge badge-read">read</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Returns all <code>.relay</code> files in <code>relay-pages/</code>.</p>
+        <p class="tool-desc">Returns all <code>.desk</code> files in <code>desk-pages/</code>.</p>
         <p><strong>Parameters:</strong> none</p>
         <h3>Example response</h3>
         <pre><code>[
-  { <span class="str">"filename"</span>: <span class="str">"auth-flow.relay"</span>, <span class="str">"title"</span>: <span class="str">"Auth Flow"</span> },
-  { <span class="str">"filename"</span>: <span class="str">"api-spec.relay"</span>, <span class="str">"title"</span>: <span class="str">"API Specification"</span> }
+  { <span class="str">"filename"</span>: <span class="str">"auth-flow.desk"</span>, <span class="str">"title"</span>: <span class="str">"Auth Flow"</span> },
+  { <span class="str">"filename"</span>: <span class="str">"api-spec.desk"</span>, <span class="str">"title"</span>: <span class="str">"API Specification"</span> }
 ]</code></pre>
       </div>
     </div>
@@ -327,18 +336,18 @@
         <span class="tool-badge badge-write">write</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Creates a new <code>.relay</code> file. The file must not already exist — use <code>update_page</code> to modify it.</p>
+        <p class="tool-desc">Creates a new <code>.desk</code> file. The file must not already exist — use <code>update_page</code> to modify it.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>filename</code></td><td>string</td><td><span class="req">required</span></td><td>Must end in <code>.relay</code>, e.g. <code>"auth-flow.relay"</code></td></tr>
+          <tr><td><code>filename</code></td><td>string</td><td><span class="req">required</span></td><td>Must end in <code>.desk</code>, e.g. <code>"auth-flow.desk"</code></td></tr>
           <tr><td><code>title</code></td><td>string</td><td><span class="req">required</span></td><td>Shown in the page header and panel tab.</td></tr>
           <tr><td><code>content</code></td><td>string</td><td><span class="req">required</span></td><td>HTML body (no <code>&lt;script&gt;</code> tags).</td></tr>
           <tr><td><code>customStyles</code></td><td>string</td><td><span class="opt">optional</span></td><td>CSS scoped to this page only. Use <code>var(--accent)</code>, <code>var(--text)</code> etc. to stay on-theme.</td></tr>
         </table>
         <h3>Returns</h3>
-        <pre><code><span class="str">"created auth-flow.relay"</span></code></pre>
+        <pre><code><span class="str">"created auth-flow.desk"</span></code></pre>
         <div class="callout tip">
-          To add a sidebar link to this page, create a bookmark with <code>"url": "relay-page:auth-flow.relay"</code>. Clicking the card opens the viewer.
+          To add a sidebar link to this page, create a bookmark with <code>"url": "desk-page:auth-flow.desk"</code>. Clicking the card opens the viewer.
         </div>
       </div>
     </div>
@@ -350,7 +359,7 @@
         <span class="tool-badge badge-rw">read/write</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Partially updates a <code>.relay</code> file. Only the fields you include are overwritten; everything else is preserved.</p>
+        <p class="tool-desc">Partially updates a <code>.desk</code> file. Only the fields you include are overwritten; everything else is preserved.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
           <tr><td><code>filename</code></td><td>string</td><td><span class="req">required</span></td><td>Must already exist.</td></tr>
@@ -359,7 +368,7 @@
           <tr><td><code>customStyles</code></td><td>string</td><td><span class="opt">optional</span></td><td>New CSS block (replaces the entire style block).</td></tr>
         </table>
         <h3>Example — rename only</h3>
-        <pre><code>{ <span class="str">"filename"</span>: <span class="str">"api-auth.relay"</span>, <span class="str">"title"</span>: <span class="str">"Auth API v2"</span> }</code></pre>
+        <pre><code>{ <span class="str">"filename"</span>: <span class="str">"api-auth.desk"</span>, <span class="str">"title"</span>: <span class="str">"Auth API v2"</span> }</code></pre>
       </div>
     </div>
 
@@ -370,7 +379,7 @@
         <span class="tool-badge badge-write">write</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Permanently deletes a <code>.relay</code> file. Cannot be undone.</p>
+        <p class="tool-desc">Permanently deletes a <code>.desk</code> file. Cannot be undone.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
           <tr><td><code>filename</code></td><td>string</td><td><span class="req">required</span></td><td>Must already exist.</td></tr>
@@ -381,7 +390,7 @@
     <!-- RESOURCES -->
     <h2>Resources (Agent Self-Documentation)</h2>
 
-    <p>Relay exposes two MCP resources that describe itself. Well-behaved MCP clients read these automatically after <code>initialize</code>. You can also fetch them manually.</p>
+    <p>Desk exposes three MCP resources that describe itself. Well-behaved MCP clients read these automatically after <code>initialize</code>. You can also fetch them manually.</p>
 
     <h3>List resources</h3>
     <pre><code>{ <span class="str">"jsonrpc"</span>: <span class="str">"2.0"</span>, <span class="str">"method"</span>: <span class="str">"resources/list"</span>, <span class="str">"params"</span>: {}, <span class="str">"id"</span>: <span class="num">1</span> }
@@ -389,18 +398,19 @@
 <span class="cm">// response</span>
 {
   <span class="str">"resources"</span>: [
-    { <span class="str">"uri"</span>: <span class="str">"relay://guide/quick-start"</span>,      <span class="str">"name"</span>: <span class="str">"Relay Agent Quick-Start"</span>,        <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span> },
-    { <span class="str">"uri"</span>: <span class="str">"relay://guide/relay-page-format"</span>, <span class="str">"name"</span>: <span class="str">"Relay Page Format (.relay)"</span>, <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span> }
+    { <span class="str">"uri"</span>: <span class="str">"desk://guide/quick-start"</span>,       <span class="str">"name"</span>: <span class="str">"Desk Agent Quick-Start"</span>,       <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span> },
+    { <span class="str">"uri"</span>: <span class="str">"desk://guide/desk-page-format"</span>,   <span class="str">"name"</span>: <span class="str">"Desk Page Format (.desk)"</span>,     <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span> },
+    { <span class="str">"uri"</span>: <span class="str">"desk://guide/skill-format"</span>,       <span class="str">"name"</span>: <span class="str">"Skill Format"</span>,                <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span> }
   ]
 }</code></pre>
 
     <h3>Read a resource</h3>
     <pre><code>{ <span class="str">"jsonrpc"</span>: <span class="str">"2.0"</span>, <span class="str">"method"</span>: <span class="str">"resources/read"</span>,
-  <span class="str">"params"</span>: { <span class="str">"uri"</span>: <span class="str">"relay://guide/quick-start"</span> }, <span class="str">"id"</span>: <span class="num">2</span> }
+  <span class="str">"params"</span>: { <span class="str">"uri"</span>: <span class="str">"desk://guide/quick-start"</span> }, <span class="str">"id"</span>: <span class="num">2</span> }
 
 <span class="cm">// response</span>
 {
-  <span class="str">"contents"</span>: [{ <span class="str">"uri"</span>: <span class="str">"relay://guide/quick-start"</span>, <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span>, <span class="str">"text"</span>: <span class="str">"# Relay Agent Quick-Start\n..."</span> }]
+  <span class="str">"contents"</span>: [{ <span class="str">"uri"</span>: <span class="str">"desk://guide/quick-start"</span>, <span class="str">"mimeType"</span>: <span class="str">"text/markdown"</span>, <span class="str">"text"</span>: <span class="str">"# Desk Agent Quick-Start\n..."</span> }]
 }</code></pre>
 
     <!-- ERROR HANDLING -->
@@ -411,7 +421,7 @@
   <span class="str">"jsonrpc"</span>: <span class="str">"2.0"</span>,
   <span class="str">"error"</span>: {
     <span class="str">"code"</span>: <span class="num">-32603</span>,
-    <span class="str">"message"</span>: <span class="str">"Tab not found: tab_abc123"</span>
+    <span class="str">"message"</span>: <span class="str">"Project not found: proj_abc123"</span>
   },
   <span class="str">"id"</span>: <span class="num">1</span>
 }</code></pre>
@@ -422,12 +432,12 @@
 
     <!-- FAVICON -->
     <h2>Favicon Auto-fetch Behaviour</h2>
-    <p>When <code>add_bookmark</code> is called without an <code>icon</code>, Relay:</p>
+    <p>When <code>add_bookmark</code> is called without an <code>icon</code>, Desk:</p>
     <ol style="padding-left: 20px; margin-bottom: 14px;">
       <li>Checks an in-memory cache keyed by hostname (TTL: 30 days).</li>
       <li>If not cached, fetches <code>/favicon.ico</code> from the host.</li>
       <li>If that fails, parses the homepage HTML for a <code>&lt;link rel="icon"&gt;</code> tag and fetches that URL.</li>
-      <li>Stores the result as a base64 <code>data:</code> URL in VS Code <code>globalState</code>.</li>
+      <li>Stores the result as a base64 <code>data:</code> URL in <code>~/.desk/global/</code>.</li>
       <li>Falls back to <code>🌐</code> if all attempts fail.</li>
     </ol>
     <div class="callout tip">

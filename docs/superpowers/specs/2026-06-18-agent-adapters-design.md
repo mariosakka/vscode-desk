@@ -7,7 +7,7 @@
 
 ## Overview
 
-When Relay activates it detects which AI agents are installed, filters to those that don't already have Relay in their MCP config, and offers a single QuickPick prompt to register itself in all of them at once. A dedicated VS Code command lets the user re-run setup at any time.
+When Desk activates it detects which AI agents are installed, filters to those that don't already have Desk in their MCP config, and offers a single QuickPick prompt to register Desk's MCP server in all of them at once. A dedicated VS Code command lets the user re-run setup at any time.
 
 ---
 
@@ -111,7 +111,7 @@ export abstract class JsonFileAdapter implements AgentAdapter {
   // Variable step 2: the MCP entry object written under mcpServers[serverKey]
   protected abstract buildEntry(port: number): Record<string, unknown>;
 
-  protected readonly serverKey = 'vscode-relay';
+  protected readonly serverKey = 'desk';
 
   // Fixed algorithm — subclasses must not override
   async configure(port: number): Promise<void> {
@@ -143,26 +143,26 @@ export abstract class JsonFileAdapter implements AgentAdapter {
 ### Claude Code
 
 - **Detection:** `~/.claude/` directory exists  
-- **CLI:** `claude mcp add vscode-relay -t http <url>` (falls back to file if `claude` not on PATH)  
-- **Config:** `~/.claude/settings.json` → `mcpServers.vscode-relay: { type: 'http', url }`
+- **CLI:** `claude mcp add desk -t http <url>` (falls back to file if `claude` not on PATH)  
+- **Config:** `~/.claude/settings.json` → `mcpServers.desk: { type: 'http', url }`
 
 ### Cursor
 
 - **Detection:** `~/.cursor/` directory exists  
 - **CLI:** none — always uses file patch  
-- **Config:** `~/.cursor/mcp.json` → `mcpServers.vscode-relay: { url }`
+- **Config:** `~/.cursor/mcp.json` → `mcpServers.desk: { url }`
 
 ### Codex
 
 - **Detection:** `~/.codex/` directory exists  
 - **CLI:** none confirmed — uses file patch; will be updated to CLI if Codex adds one  
-- **Config:** `~/.codex/config.json` → `mcpServers.vscode-relay: { type: 'http', url }` *(format to be verified against Codex docs during implementation)*
+- **Config:** `~/.codex/config.json` → `mcpServers.desk: { type: 'http', url }` *(format to be verified against Codex docs during implementation)*
 
 ### Gemini CLI
 
 - **Detection:** `~/.gemini/` directory exists  
 - **CLI:** `gemini mcp add` *(to be verified during implementation)*  
-- **Config:** `~/.gemini/settings.json` → `mcpServers.vscode-relay: { type: 'http', url }` *(format to be verified)*
+- **Config:** `~/.gemini/settings.json` → `mcpServers.desk: { type: 'http', url }` *(format to be verified)*
 
 ---
 
@@ -175,11 +175,11 @@ export class AgentRegistry {
 
   // Called on activation — respects dismissed flag
   async showSetupPrompt(context: vscode.ExtensionContext, port: number): Promise<void> {
-    if (context.globalState.get('relay.agentSetupDismissed')) return;
+    if (context.globalState.get('desk.agentSetupDismissed')) return;
     await this.runPrompt(port);
   }
 
-  // Called by relay.setupAgents command — ignores dismissed flag
+  // Called by desk.setupAgents command — ignores dismissed flag
   async showSetupPromptForced(port: number): Promise<void> {
     await this.runPrompt(port);
   }
@@ -192,7 +192,7 @@ export class AgentRegistry {
     }
 
     const action = await vscode.window.showInformationMessage(
-      `Relay detected ${candidates.length} AI agent(s). Set up MCP integration?`,
+      `Desk detected ${candidates.length} AI agent(s). Set up MCP integration?`,
       'Set up', 'Not now', "Don't ask again",
     );
     if (action === "Don't ask again") {
@@ -210,8 +210,8 @@ export class AgentRegistry {
     const failed = results.filter(r => r.status === 'rejected');
     const ok = results.length - failed.length;
 
-    if (ok > 0) vscode.window.showInformationMessage(`Relay: configured ${ok} agent(s).`);
-    if (failed.length > 0) vscode.window.showErrorMessage(`Relay: failed to configure ${failed.length} agent(s).`);
+    if (ok > 0) vscode.window.showInformationMessage(`Desk: configured ${ok} agent(s).`);
+    if (failed.length > 0) vscode.window.showErrorMessage(`Desk: failed to configure ${failed.length} agent(s).`);
   }
 
   private async findUnconfigured(port: number): Promise<AgentAdapter[]> {
@@ -244,13 +244,13 @@ const agentRegistry = new AgentRegistry([
 agentRegistry.showSetupPrompt(context, port); // async, non-blocking
 
 context.subscriptions.push(
-  vscode.commands.registerCommand('relay.setupAgents', () =>
+  vscode.commands.registerCommand('desk.setupAgents', () =>
     agentRegistry.showSetupPromptForced(port)
   ),
 );
 ```
 
-Register `relay.setupAgents` in `package.json` under `contributes.commands`.
+Register `desk.setupAgents` in `package.json` under `contributes.commands`.
 
 ---
 
