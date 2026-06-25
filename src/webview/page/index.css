@@ -19,17 +19,21 @@ body {
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.75;
+  padding-top: 44px;
 }
 
-/* ── Nav bar ── */
+/* ── Nav bar — fixed so body flex/grid in custom pages cannot displace it ── */
 .page-nav {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 10;
+  left: 0;
+  right: 0;
+  z-index: 9999;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 32px;
+  height: 44px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
@@ -57,44 +61,33 @@ body {
   color: var(--muted);
 }
 
-/* ── Page layout ── */
-.page-main {
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 48px 32px 80px;
-}
+/* ── Default typography for simple pages ── */
+h1 { font-size: 1.7rem; font-weight: 700; margin: 36px 0 16px; }
+h2 { font-size: 1.3rem; font-weight: 600; margin: 32px 0 12px; color: var(--accent); }
+h3 { font-size: 1.05rem; font-weight: 600; margin: 24px 0 10px; color: var(--accent2); }
+h4, h5, h6 { font-size: 0.95rem; font-weight: 600; margin: 18px 0 8px; }
 
-/* ── Page header ── */
-.page-header { margin-bottom: 36px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
-.page-title { font-size: 2rem; font-weight: 700; letter-spacing: -.5px; color: var(--text); }
+p { margin-bottom: 16px; }
 
-/* ── Body typography ── */
-.page-body h1 { font-size: 1.7rem; font-weight: 700; margin: 36px 0 16px; }
-.page-body h2 { font-size: 1.3rem; font-weight: 600; margin: 32px 0 12px; color: var(--accent); }
-.page-body h3 { font-size: 1.05rem; font-weight: 600; margin: 24px 0 10px; color: var(--accent2); }
-.page-body h4, .page-body h5, .page-body h6 { font-size: 0.95rem; font-weight: 600; margin: 18px 0 8px; }
-
-.page-body p { margin-bottom: 16px; }
-
-.page-body a {
+a {
   color: var(--accent2);
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: border-color .15s;
 }
-.page-body a:hover { border-bottom-color: var(--accent2); }
+a:hover { border-bottom-color: var(--accent2); }
 
-.page-body ul, .page-body ol {
+ul, ol {
   padding-left: 24px;
   margin-bottom: 16px;
 }
-.page-body li { margin-bottom: 6px; }
+li { margin-bottom: 6px; }
 
-.page-body strong { font-weight: 600; color: var(--text); }
-.page-body em { font-style: italic; color: var(--muted); }
+strong { font-weight: 600; color: var(--text); }
+em { font-style: italic; color: var(--muted); }
 
 /* ── Code ── */
-.page-body code {
+code {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -103,7 +96,7 @@ body {
   font-family: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
   color: var(--accent2);
 }
-.page-body pre {
+pre {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -111,7 +104,7 @@ body {
   overflow-x: auto;
   margin: 20px 0;
 }
-.page-body pre code {
+pre code {
   background: none;
   border: none;
   padding: 0;
@@ -121,7 +114,7 @@ body {
 }
 
 /* ── Blockquote ── */
-.page-body blockquote {
+blockquote {
   border-left: 3px solid var(--accent);
   padding: 12px 20px;
   margin: 20px 0;
@@ -130,16 +123,16 @@ body {
   color: var(--muted);
   font-style: italic;
 }
-.page-body blockquote p { margin: 0; }
+blockquote p { margin: 0; }
 
 /* ── Table ── */
-.page-body table {
+table {
   width: 100%;
   border-collapse: collapse;
   margin: 20px 0;
   font-size: 0.93rem;
 }
-.page-body th {
+th {
   text-align: left;
   padding: 10px 14px;
   background: var(--surface2);
@@ -147,22 +140,22 @@ body {
   font-weight: 600;
   border-bottom: 1px solid var(--border);
 }
-.page-body td {
+td {
   padding: 10px 14px;
   border-top: 1px solid var(--border);
   vertical-align: top;
 }
-.page-body tr:hover td { background: var(--surface2); }
+tr:hover td { background: var(--surface2); }
 
 /* ── Horizontal rule ── */
-.page-body hr {
+hr {
   border: none;
   border-top: 1px solid var(--border);
   margin: 32px 0;
 }
 
 /* ── Image ── */
-.page-body img {
+img {
   max-width: 100%;
   border-radius: var(--radius);
   border: 1px solid var(--border);
