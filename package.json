@@ -4,7 +4,7 @@
   "description": "Your developer portal — tabbed bookmarks with an embedded MCP server",
   "version": "0.1.0",
   "publisher": "mariosakka",
-  "icon": "media/astrolabe.png",
+  "icon": "media/lamp.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -26,7 +26,7 @@
         {
           "id": "desk",
           "title": "Desk",
-          "icon": "media/icon.svg"
+          "icon": "media/lamp.svg"
         }
       ]
     },
