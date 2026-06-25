@@ -120,12 +120,15 @@ describe('AgentRegistry', () => {
       expect(vscode.window.showInformationMessage).toHaveBeenCalled();
     });
 
-    it('shows "all configured" message when nothing to configure', async () => {
+    it('shows setup prompt even when all agents are already configured', async () => {
       (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
       const registry = new AgentRegistry([makeAdapter(true, true)], mockContext);
       await registry.showSetupPromptForced(3333);
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Desk: all detected agents are already configured.',
+        expect.stringContaining('Desk detected'),
+        'Set up',
+        'Not now',
+        "Don't ask again",
       );
     });
   });
