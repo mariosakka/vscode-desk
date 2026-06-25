@@ -1,17 +1,13 @@
-name: CI / Publish
+name: CI
 
 on:
   # Tests run on every PR push to master
   pull_request:
     branches: [master]
-  # Tests + publish run when release-please publishes a release
-  release:
-    types: [published]
-  # Manual dispatch runs tests only (not publish — use release-please to publish)
+  # Manual trigger for ad-hoc test runs
   workflow_dispatch:
 
 jobs:
-  # ── Tests ─────────────────────────────────────────────────────────────────
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -36,35 +32,3 @@ jobs:
 
       - name: Run e2e tests (Playwright)
         run: npm run test:e2e
-
-  # ── Publish — only when release-please creates a GitHub Release ───────────
-  publish:
-    name: Publish to VS Code Marketplace
-    needs: test
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4.2.2
-
-      - uses: actions/setup-node@v4.4.0
-        with:
-          node-version: '24'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run compile
-
-      - name: Package extension
-        run: npx @vscode/vsce package
-
-      - name: Attach .vsix to GitHub Release
-        uses: softprops/action-gh-release@v2.3.2
-        with:
-          files: '*.vsix'
-
-      - name: Publish to VS Code Marketplace
-        run: npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }}
