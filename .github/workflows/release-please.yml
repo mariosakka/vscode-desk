@@ -12,8 +12,53 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@v5.0.0
+        id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
+
+  # Runs in the same workflow so GITHUB_TOKEN cascade is not an issue
+  test-and-publish:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit tests (Jest)
+        run: npm test
+
+      - name: Build
+        run: npm run compile
+
+      - name: Install Playwright browser
+        run: npm run test:e2e:install
+
+      - name: Run e2e tests (Playwright)
+        run: npm run test:e2e
+
+      - name: Package extension
+        run: npx @vscode/vsce package
+
+      - name: Attach .vsix to GitHub Release
+        uses: softprops/action-gh-release@v2.3.2
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: '*.vsix'
+
+      - name: Publish to VS Code Marketplace
+        run: npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }}
