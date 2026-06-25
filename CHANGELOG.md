@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/mariosakka/vscode-desk/compare/v0.3.4...v0.3.5) (2026-06-25)
+
+
+### Bug Fixes
+
+* allow inline event handlers in page viewer by using unsafe-inline CSP ([#30](https://github.com/mariosakka/vscode-desk/issues/30)) ([a34e576](https://github.com/mariosakka/vscode-desk/commit/a34e5769d89da539e46b20618d6fe755ae0977e9))
+
 ## [0.3.4](https://github.com/mariosakka/vscode-desk/compare/v0.3.3...v0.3.4) (2026-06-25)
 
 
