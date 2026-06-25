@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/mariosakka/vscode-desk/compare/v0.3.1...v0.3.2) (2026-06-25)
+
+
+### Bug Fixes
+
+* page viewer renders full-page layouts without wrapper constraints ([#23](https://github.com/mariosakka/vscode-desk/issues/23)) ([d3293c9](https://github.com/mariosakka/vscode-desk/commit/d3293c9a20a3d2ef1959ca293e274088fe31cdf6))
+
 ## [0.2.0](https://github.com/mariosakka/vscode-desk/compare/v0.1.0...v0.2.0) (2026-06-25)
 
 
