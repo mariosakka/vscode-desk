@@ -51,6 +51,7 @@ export class AgentRegistry {
       return;
     }
     await this.skillRegistry?.installAll(installed);
+    await this.context.globalState.update('desk.workflowSkillDismissed', true);
     vscode.window.showInformationMessage(`Desk: installed ${count} skill(s) on ${installed.length} agent(s).`);
   }
 
