@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/mariosakka/vscode-desk/compare/v0.3.3...v0.3.4) (2026-06-25)
+
+
+### Bug Fixes
+
+* anchor links scroll in-page; page scripts run via nonce re-injection ([#28](https://github.com/mariosakka/vscode-desk/issues/28)) ([d434a07](https://github.com/mariosakka/vscode-desk/commit/d434a07ecdbb26b2f83104b8d7984a5125bb1106))
+
 ## [0.3.3](https://github.com/mariosakka/vscode-desk/compare/v0.3.2...v0.3.3) (2026-06-25)
 
 
