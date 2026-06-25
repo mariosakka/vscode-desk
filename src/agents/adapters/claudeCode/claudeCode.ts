@@ -17,9 +17,21 @@ export class ClaudeCodeAdapter extends JsonFileAdapter {
   }
 
   protected async configureViaCli(port: number): Promise<void | false> {
+    const url = `http://127.0.0.1:${port}/mcp`;
+
+    try {
+      const config = JSON.parse(fs.readFileSync(this.configPath, 'utf-8'));
+      const servers = (config?.mcpServers ?? {}) as Record<string, Record<string, unknown>>;
+      for (const [name, entry] of Object.entries(servers)) {
+        if (entry.url === url && name !== this.serverKey) {
+          childProcess.execSync(`${CliBinary.ClaudeCode} mcp remove ${name} -s user`, { stdio: 'pipe' });
+        }
+      }
+    } catch { /* config unreadable or remove failed — proceed anyway */ }
+
     try {
       childProcess.execSync(
-        `${CliBinary.ClaudeCode} mcp add vscode-desk -t ${McpTransport.Http} http://127.0.0.1:${port}/mcp --scope user`,
+        `${CliBinary.ClaudeCode} mcp add ${this.serverKey} -t ${McpTransport.Http} ${url} --scope user`,
         { stdio: 'pipe' },
       );
     } catch {

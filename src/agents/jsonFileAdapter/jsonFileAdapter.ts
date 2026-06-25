@@ -45,7 +45,17 @@ export abstract class JsonFileAdapter implements AgentAdapter {
     if (!config.mcpServers) {
       config.mcpServers = {};
     }
-    (config.mcpServers as Record<string, unknown>)[this.serverKey] = this.buildEntry(port);
+    const servers = config.mcpServers as Record<string, Record<string, unknown>>;
+    const entry = this.buildEntry(port);
+    const url = entry.url as string | undefined;
+    if (url) {
+      for (const name of Object.keys(servers)) {
+        if (servers[name].url === url && name !== this.serverKey) {
+          delete servers[name];
+        }
+      }
+    }
+    servers[this.serverKey] = entry;
     fs.mkdirSync(path.dirname(this.configPath), { recursive: true });
     fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
   }

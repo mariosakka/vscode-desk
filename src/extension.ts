@@ -74,14 +74,16 @@ export function activate(context: vscode.ExtensionContext): void {
     provider,
     faviconService,
     adapters,
-    (scope: string) => {
+    async (scope: string) => {
       const svc = scope === 'workspace' ? (workspaceWorkflowService ?? globalWorkflowService) : globalWorkflowService;
       const reader = scope === 'workspace' ? workspacePageReader : null;
-      return showConfigConfirmPrompt(context.extensionUri, svc, reader);
+      await showConfigConfirmPrompt(context.extensionUri, svc, reader);
+      provider.refresh();
     },
-    (scope: string) => {
+    async (scope: string) => {
       const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
-      return showSkillConfirmPrompt(registry, adapters);
+      await showSkillConfirmPrompt(registry, adapters);
+      provider.refresh();
     },
   );
 

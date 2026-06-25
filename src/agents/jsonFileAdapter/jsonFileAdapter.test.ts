@@ -105,6 +105,23 @@ describe('JsonFileAdapter', () => {
       expect(written.mcpServers['vscode-desk']).toEqual({ type: 'http', url: 'http://127.0.0.1:3333/mcp' });
     });
 
+    it('removes stale entries pointing to the same URL before writing', async () => {
+      const existing = {
+        mcpServers: {
+          'vscode-fezzan': { url: 'http://127.0.0.1:3333/mcp' },
+          'other-server': { url: 'http://127.0.0.1:9999/mcp' },
+        },
+      };
+      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(existing));
+      (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
+      (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
+      await new TestAdapter().configure(3333);
+      const written = JSON.parse((fs.writeFileSync as jest.Mock).mock.calls[0][1] as string);
+      expect(written.mcpServers['vscode-fezzan']).toBeUndefined();
+      expect(written.mcpServers['other-server']).toBeDefined();
+      expect(written.mcpServers['vscode-desk']).toBeDefined();
+    });
+
     it('creates parent directory before writing', async () => {
       (fs.readFileSync as jest.Mock).mockImplementation(() => { throw new Error('ENOENT'); });
       (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);

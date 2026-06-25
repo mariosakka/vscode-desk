@@ -39,6 +39,26 @@ describe('ClaudeCodeAdapter', () => {
     );
   });
 
+  it('removes stale MCP entries pointing to the same URL before registering', async () => {
+    const staleConfig = {
+      mcpServers: {
+        'vscode-fezzan': { url: 'http://127.0.0.1:3333/mcp' },
+        'other-server': { url: 'http://127.0.0.1:9999/mcp' },
+      },
+    };
+    (childProcess.execSync as jest.Mock).mockReturnValue('');
+    (fs.readFileSync as jest.Mock).mockImplementation((p: string) => {
+      if (p === mcpConfigPath) { return JSON.stringify(staleConfig); }
+      throw new Error('ENOENT');
+    });
+    (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
+    (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
+    await new ClaudeCodeAdapter().configure(3333);
+    const calls = (childProcess.execSync as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+    expect(calls).toContain('claude mcp remove vscode-fezzan -s user');
+    expect(calls.some((c: unknown) => (c as string).includes('mcp remove other-server'))).toBe(false);
+  });
+
   it('falls back to file patch when CLI throws', async () => {
     (childProcess.execSync as jest.Mock).mockImplementation(() => { throw new Error('not found'); });
     (fs.readFileSync as jest.Mock).mockImplementation(() => { throw new Error('ENOENT'); });
