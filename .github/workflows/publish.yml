@@ -7,12 +7,13 @@ on:
   # Tests + publish run when release-please publishes a release
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   # ── Runs on PR approval or release publish ────────────────────────────────
   test:
     name: Test
-    if: github.event_name == 'release' || github.event.review.state == 'approved'
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch' || github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,11 +37,11 @@ jobs:
       - name: Run e2e tests (Playwright)
         run: npm run test:e2e
 
-  # ── Runs only when a release is published ─────────────────────────────────
+  # ── Runs only when a release is published or manually dispatched ──────────
   publish:
     name: Publish to VS Code Marketplace
     needs: test
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
