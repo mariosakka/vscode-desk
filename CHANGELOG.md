@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/mariosakka/vscode-desk/compare/v0.3.2...v0.3.3) (2026-06-25)
+
+
+### Bug Fixes
+
+* correct CLAUDE.md — CI trigger, test counts, page viewer behaviour ([#26](https://github.com/mariosakka/vscode-desk/issues/26)) ([58103a1](https://github.com/mariosakka/vscode-desk/commit/58103a1e051ab7b1f476f0615a87562e7bc8ddac))
+
 ## [0.3.2](https://github.com/mariosakka/vscode-desk/compare/v0.3.1...v0.3.2) (2026-06-25)
 
 
