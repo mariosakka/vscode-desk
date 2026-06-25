@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { JsonFileAdapter } from '../../jsonFileAdapter/jsonFileAdapter';
 import { AgentId, ConfigDir, ConfigFile } from '../../constants';
+import { TOOLS } from '../../../mcp/toolSchemas';
 
 export class CursorAdapter extends JsonFileAdapter {
   readonly id = AgentId.Cursor;
@@ -37,6 +38,6 @@ export class CursorAdapter extends JsonFileAdapter {
   }
 
   protected buildEntry(port: number): Record<string, unknown> {
-    return { url: `http://127.0.0.1:${port}/mcp` };
+    return { url: `http://127.0.0.1:${port}/mcp`, alwaysAllow: TOOLS.map(t => t.name) };
   }
 }

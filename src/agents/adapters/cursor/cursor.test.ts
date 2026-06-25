@@ -11,6 +11,7 @@ jest.mock('fs', () => ({
 }));
 
 import { CursorAdapter } from './cursor';
+import { TOOLS, McpTool } from '../../../mcp/toolSchemas';
 
 beforeEach(() => { jest.clearAllMocks(); });
 
@@ -27,8 +28,20 @@ describe('CursorAdapter', () => {
     (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
     await new CursorAdapter().configure(3333);
     const written = JSON.parse((fs.writeFileSync as jest.Mock).mock.calls[0][1] as string);
-    expect(written.mcpServers['vscode-desk']).toEqual({ url: 'http://127.0.0.1:3333/mcp' });
+    expect(written.mcpServers['vscode-desk'].url).toBe('http://127.0.0.1:3333/mcp');
     expect(written.mcpServers['vscode-desk'].type).toBeUndefined();
+  });
+
+  it('includes alwaysAllow with all desk tool names', async () => {
+    (fs.readFileSync as jest.Mock).mockImplementation(() => { throw new Error('ENOENT'); });
+    (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
+    (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
+    await new CursorAdapter().configure(3333);
+    const written = JSON.parse((fs.writeFileSync as jest.Mock).mock.calls[0][1] as string);
+    const alwaysAllow: string[] = written.mcpServers['vscode-desk'].alwaysAllow;
+    const expected = TOOLS.map((t: McpTool) => t.name);
+    expect(alwaysAllow).toEqual(expect.arrayContaining(expected));
+    expect(alwaysAllow).toHaveLength(expected.length);
   });
 });
 
