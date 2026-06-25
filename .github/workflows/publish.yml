@@ -1,19 +1,19 @@
 name: CI / Publish
 
 on:
-  # Tests run when a PR is approved (not on every push or PR open)
-  pull_request_review:
-    types: [submitted]
+  # Tests run on every PR push to master
+  pull_request:
+    branches: [master]
   # Tests + publish run when release-please publishes a release
   release:
     types: [published]
+  # Manual dispatch runs tests only (not publish — use release-please to publish)
   workflow_dispatch:
 
 jobs:
-  # ── Runs on PR approval or release publish ────────────────────────────────
+  # ── Tests ─────────────────────────────────────────────────────────────────
   test:
     name: Test
-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch' || github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.2.2
@@ -37,11 +37,11 @@ jobs:
       - name: Run e2e tests (Playwright)
         run: npm run test:e2e
 
-  # ── Runs only when a release is published or manually dispatched ──────────
+  # ── Publish — only when release-please creates a GitHub Release ───────────
   publish:
     name: Publish to VS Code Marketplace
     needs: test
-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -62,7 +62,6 @@ jobs:
         run: npx @vscode/vsce package
 
       - name: Attach .vsix to GitHub Release
-        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2.3.2
         with:
           files: '*.vsix'
