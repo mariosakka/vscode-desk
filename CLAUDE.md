@@ -206,17 +206,23 @@ Three steps:
 Always go through `FaviconService.getIcon(url)`. Never fetch favicon URLs directly. The service handles cache lookup, TTL (30 days), redirect following, fallback to `🌐`, and base64 encoding.
 
 ### Page files
-Always go through `PageReader`. It enforces the `desk-pages/` directory, parses the XML format, and strips `<script>` tags. Never read or write `.desk` files with raw `fs` calls.
+Always go through `PageReader`. It enforces the `desk-pages/` directory, parses the XML format, and extracts `<script>` tags for nonce re-injection. Never read or write `.desk` files with raw `fs` calls.
 
 ### .desk format
 ```xml
 <desk-page title="Page Title">
   <style>/* optional per-page CSS */</style>
-  <!-- HTML body — no <script> tags -->
+  <!-- HTML body -->
+  <script>
+    /* JS runs — re-injected with CSP nonce. Use addEventListener, not inline onclick. */
+    document.getElementById('my-btn').addEventListener('click', () => { ... });
+  </script>
 </desk-page>
 ```
 - Content is injected directly into `<body>` — full viewport available, custom `body` layout (flex, grid) works as intended.
 - The back button is a `position: fixed` overlay and is never displaced by page CSS.
+- `#hash` links scroll to the named anchor (native browser behaviour — no postMessage).
+- `<script>` blocks are extracted by `pageFormat.parse()` and re-injected with the CSP nonce by `PageViewPanel`. Inline event handlers (`onclick`) are blocked by CSP — use `addEventListener` inside a `<script>` block.
 - `.desk` links in content → `navigate` message → page viewer stays open
 - `https://` links in content → `openUrl` message → opens in browser
 - `desk-page:<filename>` as a bookmark URL → opens page viewer from sidebar click
@@ -361,7 +367,7 @@ Unit test rules:
 
 ### E2e tests (Playwright)
 
-**32 tests** across 3 spec files in `e2e/`:
+**38 tests** across 3 spec files in `e2e/`:
 
 | File | What it tests |
 |------|---------------|

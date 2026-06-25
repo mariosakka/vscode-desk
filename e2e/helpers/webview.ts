@@ -44,6 +44,7 @@ export interface PageViewerOpts {
   content: string;
   hasBack?: boolean;
   customStyles?: string;
+  pageScripts?: string;
 }
 
 export function buildPageViewerHtml(opts: PageViewerOpts): string {
@@ -56,6 +57,7 @@ export function buildPageViewerHtml(opts: PageViewerOpts): string {
     .replace('<style>${customStyles}</style>', () => `<style>${opts.customStyles ?? ''}</style>`)
     .replace(/<title>\$\{title\}<\/title>/, () => `<title>${opts.title}</title>`)
     .replace('data-has-back="${hasBack}"', () => `data-has-back="${opts.hasBack ?? false}"`)
+    .replace('${pageScripts}', () => opts.pageScripts ?? '')
     .replace('${content}', () => opts.content)
     .replace(
       '<script nonce="${nonce}" src="${scriptUri}"></script>',
