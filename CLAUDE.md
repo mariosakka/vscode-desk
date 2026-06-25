@@ -55,6 +55,7 @@ src/
   models.ts                     Bookmark, Tab, PortalData interfaces
   portalViewProvider.ts         WebviewViewProvider for the sidebar
   pages/
+    pageFormat.ts               Parse/serialize .desk XML; extract scripts for nonce re-injection
     pageReader.ts               Read/write .desk files in desk-pages/
     pageViewPanel.ts            Full-width WebviewPanel for the page viewer
   services/
@@ -106,17 +107,34 @@ src/
     sidebar/
       index.html                Sidebar webview template (mounts #app)
       index.tsx                 React entry point — createRoot('#app')
-      SidebarApp.tsx            Root component — state, postMessage bridge
-      types.ts                  Bookmark, Tab, PortalData interfaces (webview-side)
+      SidebarApp.tsx            Root component — workspace/global scope switch, postMessage bridge
+      types.ts                  Bookmark, Tab, PortalData, WorkflowConfig interfaces (webview-side)
       hooks/
         useClickOutside.ts      Click-outside detection hook
       components/
         shared/
-          Icons.tsx             All SVG icon components (TrashIcon, CheckIcon, CloseIcon, BookmarkIcon, TabIcon)
+          Icons.tsx             All SVG icons (TrashIcon, CheckIcon, CloseIcon, BookmarkIcon,
+                                ProjectIcon, GlobeIcon, PageIcon, ChevronIcon, PlusIcon,
+                                SkillIcon, WorkflowIcon, PencilIcon)
           ConfirmButtons.tsx    Inline delete-confirmation pattern (Delete? ✓ ✗)
           ConfirmButtons.module.css
+          CollapsibleSection.tsx  Animated expand/collapse panel with header button and action slot
+          CollapsibleSection.module.css
+          EmptyState.tsx        Centered placeholder text
+          EmptyState.module.css
+          HoverIconButton.tsx   Icon button that appears on row hover; calls e.stopPropagation()
+          HoverIconButton.module.css
+          InlineBarForm.tsx     Single-input inline form (shared by forms that need a bar layout)
+          InlineBarForm.module.css
+          EditActions.tsx       Save/cancel button pair used inside edit forms
+          EditActions.module.css
+          DismissButton.tsx     Small × button for dismissing banners/notices
+          DismissButton.module.css
+          SectionBtn.module.css Shared CSS for section-level action buttons (+ Project, + Bookmark, etc.)
+          Inputs.module.css     Shared CSS for text inputs inside bookmark/page edit forms
+          FormButtons.module.css  Shared CSS for form submit/cancel button pairs
         Header/
-          Header.tsx            + Tab / + Bookmark buttons
+          Header.tsx            Legacy header component (unused in current layout)
           Header.module.css
         TabBar/
           TabBar.tsx            Tab strip with active state, remove, and confirm
@@ -125,7 +143,7 @@ src/
           BookmarkGrid.tsx      Grid wrapper — maps bookmarks to BookmarkCard
           BookmarkGrid.module.css
         BookmarkCard/
-          BookmarkCard.tsx      Individual bookmark card with hover delete and confirm
+          BookmarkCard.tsx      Individual bookmark card with inline edit and hover delete
           BookmarkCard.module.css
         InlineTabForm/
           InlineTabForm.tsx     Inline tab name input with duplicate check
@@ -133,10 +151,22 @@ src/
         InlineBookmarkForm/
           InlineBookmarkForm.tsx  Inline title + URL form with duplicate check
           InlineBookmarkForm.module.css
+        QuickOpenForm/
+          QuickOpenForm.tsx     Single-field URL input for opening arbitrary URLs
+          QuickOpenForm.module.css
+        PagesPanel/
+          PagesPanel.tsx        CollapsibleSection listing .desk pages with open/edit/delete/new actions
+          PagesPanel.module.css
+        SkillsPanel/
+          SkillsPanel.tsx       CollapsibleSection listing skills with edit/remove/submit actions
+          SkillsPanel.module.css
+        WorkflowPanel/
+          WorkflowPanel.tsx     CollapsibleSection for viewing and editing WorkflowConfig inline
+          WorkflowPanel.module.css
     page/
       index.html                Page viewer template
       index.css                 VS Code theme token mapping + doc layout
-      index.js                  .desk link navigation, external link handling
+      index.js                  Anchor/desk/https link routing; #hash links pass through natively
 ```
 
 ---
@@ -206,17 +236,23 @@ Three steps:
 Always go through `FaviconService.getIcon(url)`. Never fetch favicon URLs directly. The service handles cache lookup, TTL (30 days), redirect following, fallback to `🌐`, and base64 encoding.
 
 ### Page files
-Always go through `PageReader`. It enforces the `desk-pages/` directory, parses the XML format, and strips `<script>` tags. Never read or write `.desk` files with raw `fs` calls.
+Always go through `PageReader`. It enforces the `desk-pages/` directory, parses the XML format, and extracts `<script>` tags for nonce re-injection. Never read or write `.desk` files with raw `fs` calls.
 
 ### .desk format
 ```xml
 <desk-page title="Page Title">
   <style>/* optional per-page CSS */</style>
-  <!-- HTML body — no <script> tags -->
+  <!-- HTML body -->
+  <script>
+    /* JS runs — re-injected with CSP nonce. Use addEventListener, not inline onclick. */
+    document.getElementById('my-btn').addEventListener('click', () => { ... });
+  </script>
 </desk-page>
 ```
 - Content is injected directly into `<body>` — full viewport available, custom `body` layout (flex, grid) works as intended.
 - The back button is a `position: fixed` overlay and is never displaced by page CSS.
+- `#hash` links scroll to the named anchor (native browser behaviour — no postMessage).
+- `<script>` blocks are extracted by `pageFormat.parse()` and re-injected with the CSP nonce by `PageViewPanel`. Inline event handlers (`onclick`) are blocked by CSP — use `addEventListener` inside a `<script>` block.
 - `.desk` links in content → `navigate` message → page viewer stays open
 - `https://` links in content → `openUrl` message → opens in browser
 - `desk-page:<filename>` as a bookmark URL → opens page viewer from sidebar click
@@ -245,11 +281,22 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 | `desk.addProject` | Desk: Add Project | Interactive prompt to create a project |
 | `desk.removeBookmark` | Desk: Remove Bookmark | QuickPick to remove a bookmark |
 | `desk.removeProject` | Desk: Remove Project | QuickPick to remove a project |
+| `desk.updateBookmark` | Desk: Edit Bookmark | QuickPick to edit a bookmark's title, URL, or icon |
 | `desk.openPage` | Desk: Open Page | QuickPick to open a `.desk` page |
 | `desk.newPage` | Desk: New Page | Interactive prompt to create a new page |
-| `desk.setupAgents` | Desk: Setup Agents | Re-runs MCP setup on all installed agents, including already-configured ones |
+| `desk.deletePage` | Desk: Delete Page | QuickPick to delete a `.desk` page |
+| `desk.setupAgents` | Desk: Set Up Agent MCP Integration | Re-runs MCP setup on all installed agents, including already-configured ones |
 | `desk.configureWorkflow` | Desk: Configure Workflow | Series of input boxes to set `WorkflowConfig` fields manually |
 | `desk.installWorkflowSkills` | Desk: Install Workflow Skills | Shows skill install picker for all stored skills × detected agents |
+| `desk.openUrl` | Desk: Open URL | Prompt for a URL and open it in VS Code Simple Browser |
+| `desk.newSkill` | Desk: New Skill | Opens an untitled markdown document pre-filled with the skill frontmatter template |
+| `desk.editSkill` | Desk: Edit Skill | QuickPick to open an existing skill for editing |
+| `desk.submitSkill` | Desk: Submit Skill | Reads the active editor and stores/updates the skill in the registry |
+| `desk.removeSkill` | Desk: Remove Skill | QuickPick to remove a skill |
+| `desk.listProjects` | Desk: List Projects | QuickPick showing all projects |
+| `desk.listBookmarks` | Desk: List Bookmarks | QuickPick showing all bookmarks |
+| `desk.listSkills` | Desk: List Skills | QuickPick showing all installed skills |
+| `desk.viewWorkflow` | Desk: View Workflow Config | Shows current `WorkflowConfig` in a QuickPick |
 
 ---
 
@@ -257,24 +304,38 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 
 **Sidebar (PortalViewProvider ↔ `src/webview/sidebar/SidebarApp.tsx`)**
 
+All Webview → Host messages include a `scope: 'workspace' | 'global'` field.
+
 | Direction | `type` | Extra fields |
 |-----------|--------|--------------|
-| Host → Webview | `update` | `data: PortalData` |
+| Host → Webview | `update` | `data: SidebarData` |
+| Host → Webview | `switchTab` | `projectId: string` |
 | Webview → Host | `ready` | — |
-| Webview → Host | `openUrl` | `url: string` — opens in VS Code Simple Browser |
+| Webview → Host | `openUrl` | `url: string` — opens in VS Code Simple Browser (or PageViewPanel for `desk-page:` URLs) |
 | Webview → Host | `addBookmark` | `projectId, title, url` — favicon fetched by host |
 | Webview → Host | `removeBookmark` | `projectId, bookmarkId` |
+| Webview → Host | `updateBookmark` | `projectId, bookmarkId, fields: { title?, url? }` |
 | Webview → Host | `addProject` | `name: string` |
 | Webview → Host | `removeProject` | `projectId: string` |
+| Webview → Host | `openPage` | `filename: string` |
+| Webview → Host | `newPage` | `title: string` |
+| Webview → Host | `deletePage` | `filename: string` |
+| Webview → Host | `editPage` | `filename: string` — opens the `.desk` file in VS Code text editor |
+| Webview → Host | `newSkill` | — — runs `desk.newSkill` command |
+| Webview → Host | `editSkill` | `name: string` — opens skill content in an untitled editor |
+| Webview → Host | `submitSkill` | — — runs `desk.submitSkill` command |
+| Webview → Host | `removeSkill` | `name: string` |
+| Webview → Host | `saveWorkflow` | `config: WorkflowConfig` |
 
 **Page viewer (PageViewPanel ↔ `src/webview/page/index.js`)**
 
+The page viewer has no host→webview messages — navigation replaces the entire webview HTML.
+
 | Direction | `type` | Extra fields |
 |-----------|--------|--------------|
-| Host → Webview | `load` | `title, html, hasBack: boolean` |
-| Webview → Host | `navigate` | `filename: string` |
-| Webview → Host | `back` | — |
-| Webview → Host | `openUrl` | `url: string` |
+| Webview → Host | `navigate` | `filename: string` — load another `.desk` page |
+| Webview → Host | `back` | — — go to previous page in history |
+| Webview → Host | `openUrl` | `url: string` — open external URL |
 
 ---
 
@@ -361,7 +422,7 @@ Unit test rules:
 
 ### E2e tests (Playwright)
 
-**32 tests** across 3 spec files in `e2e/`:
+**38 tests** across 3 spec files in `e2e/`:
 
 | File | What it tests |
 |------|---------------|

@@ -6,6 +6,7 @@ export interface PageMeta {
 export interface PageContent extends PageMeta {
   customStyles: string;
   bodyHtml: string;
+  pageScripts: string[];
 }
 
 // ── Parsing ────────────────────────────────────────────────────────────────
@@ -24,13 +25,13 @@ export function parse(filename: string, raw: string): PageContent {
   const bodyMatch = raw.match(/<desk-page[^>]*>([\s\S]*)<\/desk-page>/i);
   let body = bodyMatch ? bodyMatch[1] : raw;
 
-  // Remove <style> and any stray <script> blocks from body
+  const pageScripts: string[] = [];
   body = body
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, (_, content) => { pageScripts.push(content); return ''; })
     .trim();
 
-  return { filename, title, customStyles, bodyHtml: body };
+  return { filename, title, customStyles, bodyHtml: body, pageScripts };
 }
 
 // ── Serialisation ──────────────────────────────────────────────────────────

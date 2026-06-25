@@ -11,7 +11,7 @@
     const a = e.target.closest('a[href]');
     if (!a) return;
     const href = a.getAttribute('href');
-    if (!href) return;
+    if (!href || href.startsWith('#')) return;
     e.preventDefault();
 
     if (href.endsWith('.desk')) {

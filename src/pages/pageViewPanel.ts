@@ -87,6 +87,9 @@ export class PageViewPanel {
       vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'page', 'index.js'),
     );
     const nonce = getNonce();
+    const pageScripts = page.pageScripts
+      .map(s => `<script nonce="${nonce}">${s}</script>`)
+      .join('\n');
 
     const templatePath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'page', 'index.html');
     const template = fs.readFileSync(templatePath, 'utf-8');
@@ -100,6 +103,7 @@ export class PageViewPanel {
       .replace(/\$\{scriptUri\}/g, scriptUri.toString())
       .replace(/\$\{title\}/g, escHtml(page.title))
       .replace(/\$\{customStyles\}/g, page.customStyles)
+      .replace(/\$\{pageScripts\}/g, pageScripts)
       .replace(/\$\{content\}/g, page.bodyHtml)
       .replace(/\$\{hasBack\}/g, hasBack ? 'true' : 'false');
   }

@@ -65,6 +65,28 @@ test('clicking an https:// link posts openUrl message', async ({ page }) => {
   expect(msg.url).toBe('https://example.com');
 });
 
+test('clicking a #hash link does not post a message', async ({ page }) => {
+  await page.setContent(buildPageViewerHtml({
+    title: 'Nav',
+    content: '<p><a href="#section1">Jump</a></p><h2 id="section1">Section</h2>',
+  }));
+
+  await page.locator('a[href="#section1"]').click();
+
+  const msgs = await page.evaluate(() => (window as any).__sentMessages);
+  expect(msgs.length).toBe(0);
+});
+
+test('page scripts are injected and executed', async ({ page }) => {
+  await page.setContent(buildPageViewerHtml({
+    title: 'Scripts',
+    content: '<div id="script-target"></div>',
+    pageScripts: '<script>document.getElementById("script-target").textContent = "injected";</script>',
+  }));
+
+  await expect(page.locator('#script-target')).toHaveText('injected');
+});
+
 test('custom styles are injected into the page', async ({ page }) => {
   await page.setContent(buildPageViewerHtml({
     ...DEFAULT_OPTS,
