@@ -62,10 +62,12 @@ export class AgentRegistry {
   }
 
   private async runPrompt(port: number, fromCommand: boolean): Promise<void> {
-    const candidates = await this.findUnconfigured(port);
+    const candidates = fromCommand
+      ? await this.findInstalled()
+      : await this.findUnconfigured(port);
     if (candidates.length === 0) {
       if (fromCommand) {
-        vscode.window.showInformationMessage('Desk: all detected agents are already configured.');
+        vscode.window.showInformationMessage('Desk: no installed agents found.');
       }
       return;
     }

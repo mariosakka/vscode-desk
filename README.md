@@ -41,7 +41,7 @@ All data lives in `~/.desk/` — plain JSON files, human-readable, and easy to b
 | `Desk: Remove Project` | Remove a project and all its bookmarks |
 | `Desk: New Page` | Create a new `.desk` page file |
 | `Desk: Open Page` | Open an existing `.desk` page in the viewer |
-| `Desk: Setup Agents` | Force-show the MCP setup prompt for all detected AI agents |
+| `Desk: Setup Agents` | Re-run MCP setup on all installed agents, including already-configured ones |
 | `Desk: Configure Workflow` | Manually set team workflow config fields |
 | `Desk: Install Workflow Skills` | Install stored workflow skills on all detected agents |
 

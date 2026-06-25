@@ -246,7 +246,7 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 | `desk.removeProject` | Desk: Remove Project | QuickPick to remove a project |
 | `desk.openPage` | Desk: Open Page | QuickPick to open a `.desk` page |
 | `desk.newPage` | Desk: New Page | Interactive prompt to create a new page |
-| `desk.setupAgents` | Desk: Setup Agents | Force-shows MCP setup prompt for all agents |
+| `desk.setupAgents` | Desk: Setup Agents | Re-runs MCP setup on all installed agents, including already-configured ones |
 | `desk.configureWorkflow` | Desk: Configure Workflow | Series of input boxes to set `WorkflowConfig` fields manually |
 | `desk.installWorkflowSkills` | Desk: Install Workflow Skills | Shows skill install picker for all stored skills × detected agents |
 
