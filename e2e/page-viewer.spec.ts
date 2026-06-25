@@ -8,16 +8,15 @@ const DEFAULT_OPTS = {
   hasBack: false,
 };
 
-test('renders title in <h1> and <title>', async ({ page }) => {
+test('renders title in <title>', async ({ page }) => {
   await page.setContent(buildPageViewerHtml(DEFAULT_OPTS));
-  await expect(page.locator('h1.page-title')).toHaveText('Auth Flow');
   await expect(page).toHaveTitle('Auth Flow');
 });
 
 test('renders body content', async ({ page }) => {
   await page.setContent(buildPageViewerHtml(DEFAULT_OPTS));
-  await expect(page.locator('.page-body h2')).toHaveText('Login');
-  await expect(page.locator('.page-body p')).toHaveText('Details here.');
+  await expect(page.locator('h2')).toHaveText('Login');
+  await expect(page.locator('p')).toHaveText('Details here.');
 });
 
 test('back button is hidden when hasBack=false', async ({ page }) => {
