@@ -4,15 +4,15 @@ on:
   # Tests run when a PR is approved (not on every push or PR open)
   pull_request_review:
     types: [submitted]
-  # Tests + publish run when a version tag is pushed
-  push:
-    tags: ['v*.*.*']
+  # Tests + publish run when release-please publishes a release
+  release:
+    types: [published]
 
 jobs:
-  # ── Runs on PR approval or version tag push ────────────────────────────────
+  # ── Runs on PR approval or release publish ────────────────────────────────
   test:
     name: Test
-    if: github.event_name == 'push' || github.event.review.state == 'approved'
+    if: github.event_name == 'release' || github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,11 +36,11 @@ jobs:
       - name: Run e2e tests (Playwright)
         run: npm run test:e2e
 
-  # ── Runs only when a version tag is pushed (e.g. v0.1.0) ──────────────────
+  # ── Runs only when a release is published ─────────────────────────────────
   publish:
     name: Publish to VS Code Marketplace
     needs: test
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: write
