@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/mariosakka/vscode-desk/compare/v0.1.0...v0.2.0) (2026-06-25)
+
+
+### Features
+
+* MCP auto-registration and agent permission patching ([#9](https://github.com/mariosakka/vscode-desk/issues/9)) ([2cc1b16](https://github.com/mariosakka/vscode-desk/commit/2cc1b161ee515d29d32938e55f3a89ddb8631558))
+
 ## [Unreleased]
 
 ### Features
