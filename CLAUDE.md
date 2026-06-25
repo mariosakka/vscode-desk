@@ -252,7 +252,7 @@ Always go through `PageReader`. It enforces the `desk-pages/` directory, parses 
 - Content is injected directly into `<body>` — full viewport available, custom `body` layout (flex, grid) works as intended.
 - The back button is a `position: fixed` overlay and is never displaced by page CSS.
 - `#hash` links scroll to the named anchor (native browser behaviour — no postMessage).
-- `<script>` blocks are extracted by `pageFormat.parse()` and re-injected with the CSP nonce by `PageViewPanel`. Inline event handlers (`onclick`) are blocked by CSP — use `addEventListener` inside a `<script>` block.
+- `<script>` blocks are extracted by `pageFormat.parse()` and re-injected at the bottom of `<body>` by `PageViewPanel`. Inline event handlers (`onclick`, etc.) also work — the page viewer CSP uses `'unsafe-inline'` (`.desk` pages are local user-controlled content).
 - `.desk` links in content → `navigate` message → page viewer stays open
 - `https://` links in content → `openUrl` message → opens in browser
 - `desk-page:<filename>` as a bookmark URL → opens page viewer from sidebar click
