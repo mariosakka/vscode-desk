@@ -127,18 +127,19 @@ Pages are XML files stored in \`<workspace>/desk-pages/\`.
   <p>External link: <a href="https://example.com">opens in browser</a></p>
 
   <script>
-    /* JS is re-injected with the CSP nonce — use addEventListener, not inline onclick */
+    /* JS is extracted and re-injected at bottom of <body> — runs after DOM is ready */
     document.getElementById('my-btn').addEventListener('click', function () {
       document.documentElement.dataset.theme =
         document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
     });
+    /* onclick="..." attributes also work */
   </script>
 </desk-page>
 \`\`\`
 
 - \`#hash\` links scroll to the named anchor — native browser behaviour, no postMessage.
-- \`<script>\` blocks are extracted and re-injected with the CSP nonce — they run normally.
-- Inline event handlers (\`onclick="..."\`) are blocked by CSP; use \`addEventListener\` inside a \`<script>\` block instead.
+- \`<script>\` blocks are extracted and re-injected at the bottom of \`<body>\` — they run normally.
+- Inline event handlers (\`onclick="..."\`) also work — the page viewer CSP uses \`'unsafe-inline'\`.
 - \`.desk\` links navigate inside the viewer (back button maintained).
 - \`https://\` links open in the browser.
 
