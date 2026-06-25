@@ -144,11 +144,10 @@ src/
 ## Development workflow
 
 1. **Branch** off `master` for every change — never commit directly to `master`.
-2. **Open a PR** when the change is ready.
-3. **Get approval** — tests run only after a reviewer approves. The CI trigger is `pull_request_review` with `types: [submitted]`, not `pull_request`.
-4. **Merge** once tests pass.
-5. **release-please** watches `master` and opens a "chore(release): vX.Y.Z" PR automatically when conventional commits accumulate.
-6. **Merge the release PR** — release-please creates a git tag and GitHub Release; the `publish` job then runs and pushes the extension to the VS Code Marketplace.
+2. **Open a PR** when the change is ready — CI (`pull_request` trigger) runs tests automatically on every push.
+3. **Merge** once tests pass — no external reviewer required (0 approvals required by the branch ruleset).
+4. **release-please** watches `master` and opens a `chore(release): vX.Y.Z` PR automatically when `feat:` or `fix:` commits accumulate.
+5. **Merge the release PR** — release-please creates a git tag and GitHub Release, then immediately runs tests and publishes to the VS Code Marketplace in the same workflow job (`release-please.yml` → `test-and-publish`).
 
 ---
 
@@ -216,6 +215,8 @@ Always go through `PageReader`. It enforces the `desk-pages/` directory, parses 
   <!-- HTML body — no <script> tags -->
 </desk-page>
 ```
+- Content is injected directly into `<body>` — full viewport available, custom `body` layout (flex, grid) works as intended.
+- The back button is a `position: fixed` overlay and is never displaced by page CSS.
 - `.desk` links in content → `navigate` message → page viewer stays open
 - `https://` links in content → `openUrl` message → opens in browser
 - `desk-page:<filename>` as a bookmark URL → opens page viewer from sidebar click
@@ -335,7 +336,7 @@ Tests run in Node via Jest. The `vscode` module is mocked at `src/__mocks__/vsco
 
 ### Unit tests
 
-Current test count: **127 total**
+Current test count: **135 total**
 
 | File | Count |
 |------|-------|
@@ -343,10 +344,10 @@ Current test count: **127 total**
 | `services/faviconService/faviconService.test.ts` | 7 |
 | `services/workflowConfigService/workflowConfigService.test.ts` | 6 |
 | `services/skillRegistry/skillRegistry.test.ts` | 15 |
-| `mcp/server/server.test.ts` | 19 |
-| `agents/jsonFileAdapter/jsonFileAdapter.test.ts` | 14 |
-| `agents/adapters/claudeCode/claudeCode.test.ts` | 10 |
-| `agents/adapters/cursor/cursor.test.ts` | 9 |
+| `mcp/server/server.test.ts` | 21 |
+| `agents/jsonFileAdapter/jsonFileAdapter.test.ts` | 15 |
+| `agents/adapters/claudeCode/claudeCode.test.ts` | 14 |
+| `agents/adapters/cursor/cursor.test.ts` | 10 |
 | `agents/adapters/codex/codex.test.ts` | 11 |
 | `agents/adapters/gemini/gemini.test.ts` | 8 |
 | `agents/registry/registry.test.ts` | 15 |
@@ -373,7 +374,7 @@ Unit test rules:
 E2e rules:
 - `e2e/helpers/webview.ts` builds testable HTML from compiled output; `e2e/helpers/vscode-mock.ts` injects `acquireVsCodeApi()`.
 - The MCP spec's in-process stub must stay in sync with `src/mcp/toolSchemas.ts` tool count and `src/mcp/resources.ts` resource count.
-- CI runs both `npm test` and `npm run test:e2e` on every approved PR.
+- CI runs both `npm test` and `npm run test:e2e` on every PR push (`pull_request` trigger).
 
 ---
 
