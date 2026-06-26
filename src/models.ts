@@ -12,7 +12,7 @@ export interface Project {
   bookmarks: Bookmark[];
 }
 
-export interface PortalData {
+export interface DeskData {
   projects: Project[];
 }
 

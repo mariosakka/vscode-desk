@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Bookmark, Project, PortalData } from '../../models';
+import { Bookmark, Project, DeskData } from '../../models';
 
-const DEFAULT_DATA: PortalData = { projects: [] };
+const DEFAULT_DATA: DeskData = { projects: [] };
 
 function generateId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).substring(2, 9)}`;
@@ -11,7 +11,7 @@ function generateId(prefix: string): string {
 export class DataService {
   constructor(private readonly dir: string) {}
 
-  get(): PortalData {
+  get(): DeskData {
     try {
       return JSON.parse(fs.readFileSync(path.join(this.dir, 'data.json'), 'utf-8'));
     } catch {
@@ -19,7 +19,7 @@ export class DataService {
     }
   }
 
-  save(data: PortalData): void {
+  save(data: DeskData): void {
     fs.mkdirSync(this.dir, { recursive: true });
     fs.writeFileSync(path.join(this.dir, 'data.json'), JSON.stringify(data, null, 2), 'utf-8');
   }

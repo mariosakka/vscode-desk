@@ -25,7 +25,7 @@ A VS Code extension with four features:
 │         ↕ postMessage                                        │
 ├──────────────────────────────────────────────────────────────┤
 │  Extension Host (Node.js)                                    │
-│  PortalViewProvider  PageViewPanel                           │
+│  SidebarViewProvider  PageViewPanel                           │
 │         ↕ method calls                                       │
 ├──────────────────────────────────────────────────────────────┤
 │  Services                                                    │
@@ -52,8 +52,8 @@ A VS Code extension with four features:
 ```
 src/
   extension.ts                  activate() + command registration
-  models.ts                     Bookmark, Tab, PortalData interfaces
-  portalViewProvider.ts         WebviewViewProvider for the sidebar
+  models.ts                     Bookmark, Tab, DeskData interfaces
+  sidebarViewProvider.ts        WebviewViewProvider for the sidebar
   pages/
     pageFormat.ts               Parse/serialize .desk XML; extract scripts for nonce re-injection
     pageReader.ts               Read/write .desk files in desk-pages/
@@ -108,7 +108,7 @@ src/
       index.html                Sidebar webview template (mounts #app)
       index.tsx                 React entry point — createRoot('#app')
       SidebarApp.tsx            Root component — workspace/global scope switch, postMessage bridge
-      types.ts                  Bookmark, Tab, PortalData, WorkflowConfig interfaces (webview-side)
+      types.ts                  Bookmark, Tab, DeskData, WorkflowConfig interfaces (webview-side)
       hooks/
         useClickOutside.ts      Click-outside detection hook
       components/
@@ -265,8 +265,8 @@ All data lives in plain JSON files under `~/.desk/`, written by the service laye
 
 | Path | Type | Contents |
 |---|---|---|
-| `~/.desk/global/data.json` | `PortalData` | Global projects and bookmarks |
-| `~/.desk/workspaces/<slug>/data.json` | `PortalData` | Workspace-scoped projects and bookmarks |
+| `~/.desk/global/data.json` | `DeskData` | Global projects and bookmarks |
+| `~/.desk/workspaces/<slug>/data.json` | `DeskData` | Workspace-scoped projects and bookmarks |
 | `~/.desk/global/workflow.json` | `WorkflowConfig` | Global team workflow config |
 | `~/.desk/workspaces/<slug>/workflow.json` | `WorkflowConfig` | Workspace-scoped workflow config |
 | `~/.desk/global/skills.json` | `Skill[]` | Global workflow skills |
@@ -309,7 +309,7 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 
 ## Webview message protocol
 
-**Sidebar (PortalViewProvider ↔ `src/webview/sidebar/SidebarApp.tsx`)**
+**Sidebar (SidebarViewProvider ↔ `src/webview/sidebar/SidebarApp.tsx`)**
 
 All Webview → Host messages include a `scope: 'workspace' | 'global'` field.
 

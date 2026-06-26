@@ -35,7 +35,7 @@ It runs a local JSON-RPC 2.0 MCP server at **http://127.0.0.1:3333/mcp** by defa
 ## Data model
 
 \`\`\`
-PortalData
+DeskData
 └── projects[]
     ├── id          string   ("project_abc123")
     ├── name        string

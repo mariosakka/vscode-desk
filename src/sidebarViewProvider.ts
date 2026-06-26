@@ -10,7 +10,7 @@ import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { AgentAdapter } from './agents/agentAdapter';
 
 interface ScopedData {
-  portal: import('./models').PortalData;
+  data: import('./models').DeskData;
   pages: import('./pages/pageFormat').PageMeta[];
   workflow: import('./services/workflowConfigService/workflowConfigService').WorkflowConfig | null;
   skills: Omit<import('./services/skillRegistry/skillRegistry').Skill, 'content'>[];
@@ -22,7 +22,7 @@ interface SidebarData {
   global: ScopedData;
 }
 
-export class PortalViewProvider implements vscode.WebviewViewProvider {
+export class SidebarViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'desk.sidebar';
   private _view?: vscode.WebviewView;
 
@@ -216,7 +216,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
       wf: WorkflowConfigService | null,
       sr: SkillRegistry | null,
     ): ScopedData => ({
-      portal: ds.get(),
+      data: ds.get(),
       pages: ps ? ps.list() : [],
       workflow: wf?.get() ?? null,
       skills: sr ? sr.list() : [],

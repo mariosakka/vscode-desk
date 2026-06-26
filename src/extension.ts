@@ -5,7 +5,7 @@ import { FaviconService } from './services/faviconService/faviconService';
 import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { McpServer } from './mcp/server/server';
-import { PortalViewProvider } from './portalViewProvider';
+import { SidebarViewProvider } from './sidebarViewProvider';
 import { PageReader } from './pages/pageReader';
 import { PageViewPanel } from './pages/pageViewPanel';
 import { AgentAdapter } from './agents/agentAdapter';
@@ -45,7 +45,7 @@ export function activate(context: vscode.ExtensionContext): void {
     new GeminiAdapter(),
   ];
 
-  const provider = new PortalViewProvider(
+  const provider = new SidebarViewProvider(
     context.extensionUri,
     globalDataService,
     globalPageReader,
@@ -88,11 +88,13 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
+    vscode.window.registerWebviewViewProvider(SidebarViewProvider.viewType, provider),
   );
 
   const preferredPort = vscode.workspace.getConfiguration('desk').get<number>('mcpPort', 3333);
+  let resolvedPort = preferredPort;
   mcpServer.start(preferredPort).then(actualPort => {
+    resolvedPort = actualPort;
     context.subscriptions.push({ dispose: () => mcpServer.stop() });
     agentRegistry.showSetupPrompt(actualPort).then(() => agentRegistry.showSkillInstallPrompt()).catch(() => {});
   }).catch(() => {});
@@ -136,7 +138,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand('desk.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageReader)),
     vscode.commands.registerCommand('desk.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageReader)),
-    vscode.commands.registerCommand('desk.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
+    vscode.commands.registerCommand('desk.setupAgents',           () => agentRegistry.showSetupPromptForced(resolvedPort)),
     vscode.commands.registerCommand('desk.configureWorkflow', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
@@ -217,7 +219,7 @@ export function deactivate(): void {}
 async function cmdAddBookmark(
   dataService: DataService,
   faviconService: FaviconService,
-  provider: PortalViewProvider,
+  provider: SidebarViewProvider,
 ): Promise<void> {
   const projectId = await pickProject(dataService);
   if (!projectId) return;
@@ -249,7 +251,7 @@ async function cmdAddBookmark(
   provider.refresh();
 }
 
-async function cmdAddProject(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+async function cmdAddProject(dataService: DataService, provider: SidebarViewProvider): Promise<void> {
   const name = await vscode.window.showInputBox({ prompt: 'Project name', ignoreFocusOut: true });
   if (!name) return;
   if (dataService.get().projects.some(p => p.name.toLowerCase() === name.toLowerCase())) {
@@ -260,7 +262,7 @@ async function cmdAddProject(dataService: DataService, provider: PortalViewProvi
   provider.refresh();
 }
 
-async function cmdRemoveBookmark(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+async function cmdRemoveBookmark(dataService: DataService, provider: SidebarViewProvider): Promise<void> {
   const data = dataService.get();
   if (data.projects.length === 0) {
     vscode.window.showErrorMessage('No projects yet.');
@@ -285,7 +287,7 @@ async function cmdRemoveBookmark(dataService: DataService, provider: PortalViewP
   provider.refresh();
 }
 
-async function cmdRemoveProject(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+async function cmdRemoveProject(dataService: DataService, provider: SidebarViewProvider): Promise<void> {
   const data = dataService.get();
   if (data.projects.length === 0) {
     vscode.window.showErrorMessage('No projects yet.');
@@ -471,7 +473,7 @@ async function cmdOpenUrl(): Promise<void> {
 async function cmdUpdateBookmark(
   dataService: DataService,
   faviconService: FaviconService,
-  provider: PortalViewProvider,
+  provider: SidebarViewProvider,
 ): Promise<void> {
   const data = dataService.get();
   const allBookmarks = data.projects.flatMap(p => p.bookmarks.map(b => ({ ...b, projectId: p.id, projectName: p.name })));
@@ -490,7 +492,7 @@ async function cmdUpdateBookmark(
   provider.refresh();
 }
 
-async function cmdDeletePage(pageStore: PageReader | null, provider: PortalViewProvider): Promise<void> {
+async function cmdDeletePage(pageStore: PageReader | null, provider: SidebarViewProvider): Promise<void> {
   if (!pageStore) { vscode.window.showErrorMessage('Desk: No page store available.'); return; }
   const pages = pageStore.list();
   if (pages.length === 0) { vscode.window.showErrorMessage('No pages yet.'); return; }
@@ -508,7 +510,7 @@ async function cmdDeletePage(pageStore: PageReader | null, provider: PortalViewP
 async function cmdRemoveSkill(
   skillRegistry: SkillRegistry,
   adapters: AgentAdapter[],
-  provider: PortalViewProvider,
+  provider: SidebarViewProvider,
 ): Promise<void> {
   const skills = skillRegistry.list();
   if (skills.length === 0) { vscode.window.showErrorMessage('No skills installed.'); return; }
@@ -560,7 +562,7 @@ async function cmdEditSkill(skillRegistry: SkillRegistry): Promise<void> {
 async function cmdSubmitSkill(
   skillRegistry: SkillRegistry,
   adapters: AgentAdapter[],
-  provider: PortalViewProvider,
+  provider: SidebarViewProvider,
 ): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor) { vscode.window.showErrorMessage('Desk: no active editor — open a skill file first.'); return; }
@@ -581,7 +583,7 @@ async function cmdSubmitSkill(
   provider.refresh();
 }
 
-async function cmdListProjects(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+async function cmdListProjects(dataService: DataService, provider: SidebarViewProvider): Promise<void> {
   const data = dataService.get();
   if (!data.projects.length) { vscode.window.showInformationMessage('No projects yet.'); return; }
   const items = data.projects.map(p => ({

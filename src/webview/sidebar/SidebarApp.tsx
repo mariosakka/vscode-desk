@@ -39,7 +39,7 @@ interface ScopedPaneProps {
 }
 
 function ScopedPane({ scopedData, scope, activeTabId, setActiveTabId, formMode, setFormMode, send }: ScopedPaneProps) {
-  const projects = scopedData.portal.projects ?? [];
+  const projects = scopedData.data.projects ?? [];
   const hasProjects = projects.length > 0;
   const currentProjectId = activeTabId ?? projects[0]?.id ?? '';
 
@@ -150,9 +150,9 @@ export function SidebarApp() {
     _onData = (incoming) => {
       setData(incoming);
       if (!incoming.workspace) setActiveScope('global');
-      const wsProjects = incoming.workspace?.portal.projects ?? [];
+      const wsProjects = incoming.workspace?.data.projects ?? [];
       setWsActiveTabId(prev => wsProjects.find((p: Project) => p.id === prev) ? prev : wsProjects[0]?.id ?? null);
-      const gProjects = incoming.global.portal.projects ?? [];
+      const gProjects = incoming.global.data.projects ?? [];
       setGlobalActiveTabId(prev => gProjects.find((p: Project) => p.id === prev) ? prev : gProjects[0]?.id ?? null);
     };
     if (_pendingData) { _onData(_pendingData); _pendingData = null; }
@@ -162,7 +162,7 @@ export function SidebarApp() {
 
   const send = (msg: unknown) => vscode.postMessage(msg);
 
-  const emptyScoped: ScopedData = { portal: { projects: [] }, pages: [], workflow: null, skills: [] };
+  const emptyScoped: ScopedData = { data: { projects: [] }, pages: [], workflow: null, skills: [] };
   const hasWorkspace = !!data?.workspace;
 
   return (

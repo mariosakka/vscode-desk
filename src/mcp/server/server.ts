@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
-import { PortalViewProvider } from '../../portalViewProvider';
+import { SidebarViewProvider } from '../../sidebarViewProvider';
 import { PageReader } from '../../pages/pageReader';
 import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from '../../services/skillRegistry/skillRegistry';
@@ -21,7 +21,7 @@ export class McpServer {
     private readonly workspacePageReader: PageReader | null,
     private readonly workspaceWorkflowService: WorkflowConfigService | null,
     private readonly workspaceSkillRegistry: SkillRegistry | null,
-    private readonly provider: PortalViewProvider,
+    private readonly provider: SidebarViewProvider,
     private readonly faviconService: FaviconService,
     private readonly adapters: AgentAdapter[] = [],
     private readonly onConfigSubmitted: ((scope: string) => void) | null = null,

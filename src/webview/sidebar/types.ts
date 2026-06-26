@@ -12,7 +12,7 @@ export interface Project {
   bookmarks: Bookmark[];
 }
 
-export interface PortalData {
+export interface DeskData {
   projects: Project[];
 }
 
@@ -47,7 +47,7 @@ export interface SkillSummary {
 export type Scope = 'workspace' | 'global';
 
 export interface ScopedData {
-  portal: PortalData;
+  data: DeskData;
   pages: PageMeta[];
   workflow: WorkflowConfig | null;
   skills: SkillSummary[];

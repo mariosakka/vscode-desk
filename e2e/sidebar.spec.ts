@@ -19,13 +19,13 @@ function makeData(projects: typeof TAB_DATA = TAB_DATA) {
   return {
     workspaceName: 'test-workspace',
     workspace: {
-      portal: { projects },
+      data: { projects },
       pages: [],
       workflow: null,
       skills: [],
     },
     global: {
-      portal: { projects: [] },
+      data: { projects: [] },
       pages: [],
       workflow: null,
       skills: [],
@@ -129,7 +129,7 @@ test('workspace section is hidden when workspace is null', async ({ page }) => {
       workspaceName: null,
       workspace: null,
       global: {
-        portal: { projects: [] },
+        data: { projects: [] },
         pages: [],
         workflow: null,
         skills: [],
