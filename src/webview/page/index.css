@@ -19,16 +19,16 @@ body {
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.75;
-  padding-top: 44px;
+  padding-top: 44px !important;
 }
 
 /* ── Nav bar — fixed so body flex/grid in custom pages cannot displace it ── */
 .page-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 9999;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 2147483647 !important;
   display: flex;
   align-items: center;
   gap: 12px;
