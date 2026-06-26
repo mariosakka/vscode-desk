@@ -1,6 +1,6 @@
 # Desk MCP — Full Agent Reference
 
-**Endpoint:** `POST http://127.0.0.1:3333/mcp`  
+**Endpoint:** `POST http://127.0.0.1:<port>/mcp` (default port `3333`; auto-increments if in use — check the setup notification in VS Code for the actual port)  
 **Protocol:** JSON-RPC 2.0 (MCP Streamable HTTP transport, version `2024-11-05`)  
 **Server identity:** `{ "name": "vscode-desk", "version": "0.0.1" }`
 
@@ -239,14 +239,20 @@ Pages are `.desk` files stored in `<workspace>/desk-pages/`. All page tools retu
     .my-class { color: var(--accent2); }
   </style>
 
-  <!-- HTML body goes here — any standard HTML except <script> tags -->
+  <!-- HTML body -->
   <h2>Section heading</h2>
   <p>Paragraph with a <a href="other-page.desk">page link</a> or an
      <a href="https://example.com">external link</a>.</p>
+
+  <script>
+    /* JS runs — extracted and re-injected at bottom of <body> after DOM is ready */
+    document.getElementById('my-btn').addEventListener('click', function () { ... });
+    /* onclick="..." inline handlers also work */
+  </script>
 </desk-page>
 ```
 
-`<script>` tags are stripped before rendering. Everything else — tables, code blocks, images (`data:` URLs only), divs — is allowed.
+`<script>` blocks and inline event handlers (`onclick`, etc.) both work — the page viewer uses `'unsafe-inline'` CSP. `.desk` pages are local user-controlled content so this is acceptable. Everything else — tables, code blocks, images (`data:` URLs only), divs — is allowed.
 
 **Built-in CSS classes you can use in content:**
 
@@ -285,7 +291,7 @@ Creates a new `.desk` file. Fails silently if the file already exists (use `upda
 |-------|------|----------|-------------|
 | `filename` | string | **yes** | Must end in `.desk`, e.g. `"auth-flow.desk"` |
 | `title` | string | **yes** | Shown in the page header and panel tab |
-| `content` | string | **yes** | HTML body content (no `<script>` tags) |
+| `content` | string | **yes** | HTML body content (`<script>` blocks and inline handlers work) |
 | `customStyles` | string | no | CSS injected only for this page |
 
 **Returns:** `"created auth-flow.desk"`

@@ -126,7 +126,7 @@
     <!-- CONNECTING -->
     <h2>Connecting an AI Agent</h2>
 
-    <p>Desk starts a local HTTP server (default port <code>3333</code>) when VS Code loads. It speaks <strong>JSON-RPC 2.0</strong> over HTTP POST at <code>/mcp</code>, following the <a href="https://spec.modelcontextprotocol.io" style="color:var(--accent2)">Model Context Protocol</a> (Streamable HTTP transport).</p>
+    <p>Desk starts a local HTTP server (default port <code>3333</code>) when VS Code loads. It speaks <strong>JSON-RPC 2.0</strong> over HTTP POST at <code>/mcp</code>, following the <a href="https://spec.modelcontextprotocol.io" style="color:var(--accent2)">Model Context Protocol</a> (Streamable HTTP transport). If port 3333 is already in use (e.g. a second VS Code window), Desk automatically picks the next free port — the exact URL is shown in the MCP setup notification inside VS Code.</p>
 
     <h3>Claude Code (<code>~/.claude/settings.json</code>)</h3>
     <pre><code>{
@@ -341,7 +341,7 @@
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
           <tr><td><code>filename</code></td><td>string</td><td><span class="req">required</span></td><td>Must end in <code>.desk</code>, e.g. <code>"auth-flow.desk"</code></td></tr>
           <tr><td><code>title</code></td><td>string</td><td><span class="req">required</span></td><td>Shown in the page header and panel tab.</td></tr>
-          <tr><td><code>content</code></td><td>string</td><td><span class="req">required</span></td><td>HTML body (no <code>&lt;script&gt;</code> tags).</td></tr>
+          <tr><td><code>content</code></td><td>string</td><td><span class="req">required</span></td><td>HTML body. <code>&lt;script&gt;</code> blocks and inline event handlers (<code>onclick</code>, etc.) work — the page viewer uses <code>'unsafe-inline'</code> CSP.</td></tr>
           <tr><td><code>customStyles</code></td><td>string</td><td><span class="opt">optional</span></td><td>CSS scoped to this page only. Use <code>var(--accent)</code>, <code>var(--text)</code> etc. to stay on-theme.</td></tr>
         </table>
         <h3>Returns</h3>

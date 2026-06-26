@@ -5,7 +5,7 @@ It exposes a local JSON-RPC 2.0 server so you can read and write its data progra
 
 ## Connect
 
-The server runs on `http://127.0.0.1:3333/mcp` while VS Code is open with Desk installed.
+The server runs on `http://127.0.0.1:3333/mcp` by default while VS Code is open with Desk installed. If port 3333 is already in use (e.g. a second VS Code window), Desk auto-selects the next free port — check the MCP setup notification in VS Code to see the actual URL.
 
 Add it to your MCP client config (Claude Code example):
 

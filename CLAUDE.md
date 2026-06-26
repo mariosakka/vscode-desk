@@ -244,7 +244,7 @@ Always go through `PageReader`. It enforces the `desk-pages/` directory, parses 
   <style>/* optional per-page CSS */</style>
   <!-- HTML body -->
   <script>
-    /* JS runs — re-injected with CSP nonce. Use addEventListener, not inline onclick. */
+    /* JS runs after DOM is ready — re-injected at bottom of <body>. */
     document.getElementById('my-btn').addEventListener('click', () => { ... });
   </script>
 </desk-page>
@@ -261,13 +261,20 @@ Always go through `PageReader`. It enforces the `desk-pages/` directory, parses 
 
 ## Storage
 
-| `globalState` key | Type | Contents |
+All data lives in plain JSON files under `~/.desk/`, written by the service layer. The only exception is the favicon cache, which stays in VS Code `globalState` because it is keyed by hostname and accessed frequently across sessions.
+
+| Path | Type | Contents |
 |---|---|---|
-| `desk.data` | `PortalData` | All projects and bookmarks |
-| `desk.favicon-cache` | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
-| `desk.workflowConfig` | `WorkflowConfig` | Team workflow config submitted by agent and confirmed by user |
-| `desk.skills` | `Skill[]` | Workflow skills submitted by agent and confirmed by user |
-| `desk.workflowSkillDismissed` | `boolean` | Dismissed flag for the skill install activation prompt |
+| `~/.desk/global/data.json` | `PortalData` | Global projects and bookmarks |
+| `~/.desk/workspaces/<slug>/data.json` | `PortalData` | Workspace-scoped projects and bookmarks |
+| `~/.desk/global/workflow.json` | `WorkflowConfig` | Global team workflow config |
+| `~/.desk/workspaces/<slug>/workflow.json` | `WorkflowConfig` | Workspace-scoped workflow config |
+| `~/.desk/global/skills.json` | `Skill[]` | Global workflow skills |
+| `~/.desk/workspaces/<slug>/skills.json` | `Skill[]` | Workspace-scoped skills |
+| `desk.favicon-cache` (globalState) | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
+| `<workspace>/desk-pages/*.desk` | XML | Page files managed by `PageReader` |
+
+`<slug>` is derived from the VS Code workspace name: lowercased, non-alphanumeric runs replaced with `-`.
 
 ---
 
@@ -346,7 +353,7 @@ The page viewer has no host→webview messages — navigation replaces the entir
 - **Capabilities:** `{ tools: {}, resources: {} }`
 - **HTTP status:** always `200` for valid JSON-RPC. Errors arrive as `{ error: { code, message } }` in the response body.
 
-**16 tools:**
+**17 tools:**
 
 | Tool | R/W | Required args |
 |------|-----|---------------|
@@ -363,8 +370,9 @@ The page viewer has no host→webview messages — navigation replaces the entir
 | `delete_page` | W | `filename` |
 | `get_workflow_config` | R | — |
 | `submit_workflow_config` | W | `config` (partial WorkflowConfig) |
-| `add_skill` | W | `name`, `content` (`description` optional) |
 | `list_skills` | R | — |
+| `get_skill` | R | `name` |
+| `add_skill` | W | `name`, `content` (`description` optional) |
 | `remove_skill` | W | `name` |
 
 **3 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
@@ -426,7 +434,7 @@ Unit test rules:
 
 | File | What it tests |
 |------|---------------|
-| `e2e/mcp.spec.ts` | JSON-RPC protocol, all 16 tools, 3 resources — uses a self-contained in-process HTTP stub (no VS Code dep) |
+| `e2e/mcp.spec.ts` | JSON-RPC protocol, all 17 tools, 3 resources — uses a self-contained in-process HTTP stub (no VS Code dep) |
 | `e2e/sidebar.spec.ts` | Sidebar webview HTML — tabs, bookmarks, icon rendering, postMessage bridge |
 | `e2e/page-viewer.spec.ts` | Page viewer webview HTML — navigation, link handling, custom styles |
 

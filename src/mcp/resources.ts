@@ -30,7 +30,7 @@ export const RESOURCE_CONTENT: Record<string, string> = {
   'desk://guide/quick-start': `# Desk Agent Quick-Start
 
 Desk is a VS Code extension with tabbed bookmarks and \`.desk\` doc pages.
-It runs a local JSON-RPC 2.0 MCP server at **http://localhost:3333/mcp**.
+It runs a local JSON-RPC 2.0 MCP server at **http://127.0.0.1:3333/mcp** by default. If port 3333 is already taken (e.g. a second VS Code window), Desk picks the next free port — check the setup notification in VS Code for the actual URL.
 
 ## Data model
 
@@ -84,7 +84,7 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
 - **HTTP 200 always** — errors arrive as a JSON-RPC \`error\` object, not as HTTP 4xx/5xx.
 
-## All 16 tools
+## All 17 tools
 
 | Tool | R | W | Required args |
 |------|---|---|---------------|
@@ -102,6 +102,7 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 | get_workflow_config | ✓ | | — |
 | submit_workflow_config | | ✓ | config |
 | list_skills | ✓ | | — |
+| get_skill | ✓ | | name |
 | add_skill | | ✓ | name, content |
 | remove_skill | | ✓ | name |
 `,
