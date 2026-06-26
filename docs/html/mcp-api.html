@@ -126,7 +126,7 @@
     <!-- CONNECTING -->
     <h2>Connecting an AI Agent</h2>
 
-    <p>Desk starts a local HTTP server (default port <code>3333</code>) when VS Code loads. It speaks <strong>JSON-RPC 2.0</strong> over HTTP POST at <code>/mcp</code>, following the <a href="https://spec.modelcontextprotocol.io" style="color:var(--accent2)">Model Context Protocol</a> (Streamable HTTP transport).</p>
+    <p>Desk starts a local HTTP server (default port <code>3333</code>) when VS Code loads. It speaks <strong>JSON-RPC 2.0</strong> over HTTP POST at <code>/mcp</code>, following the <a href="https://spec.modelcontextprotocol.io" style="color:var(--accent2)">Model Context Protocol</a> (Streamable HTTP transport). If port 3333 is already in use (e.g. a second VS Code window), Desk automatically picks the next free port — the exact URL is shown in the MCP setup notification inside VS Code.</p>
 
     <h3>Claude Code (<code>~/.claude/settings.json</code>)</h3>
     <pre><code>{
@@ -144,7 +144,7 @@
   -d '{
     "jsonrpc": "2.0",
     "method": "tools/call",
-    "params": { "name": "list_projects", "arguments": {} },
+    "params": { "name": "list_bookmarks", "arguments": {} },
     "id": 1
   }'</code></pre>
 
@@ -159,26 +159,6 @@
     <!-- TOOLS -->
     <h2>Tools</h2>
 
-    <!-- list_projects -->
-    <div class="tool-card">
-      <div class="tool-header">
-        <span class="tool-name">list_projects</span>
-        <span class="tool-badge badge-read">read</span>
-      </div>
-      <div class="tool-body">
-        <p class="tool-desc">Returns all projects with their IDs, names, and bookmark counts.</p>
-        <table>
-          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
-        </table>
-        <h3>Example response</h3>
-        <pre><code>[
-  { <span class="str">"id"</span>: <span class="str">"proj_abc123"</span>, <span class="str">"name"</span>: <span class="str">"Work"</span>, <span class="str">"bookmarkCount"</span>: <span class="num">4</span> },
-  { <span class="str">"id"</span>: <span class="str">"proj_def456"</span>, <span class="str">"name"</span>: <span class="str">"Research"</span>, <span class="str">"bookmarkCount"</span>: <span class="num">2</span> }
-]</code></pre>
-      </div>
-    </div>
-
     <!-- list_bookmarks -->
     <div class="tool-card">
       <div class="tool-header">
@@ -186,13 +166,12 @@
         <span class="tool-badge badge-read">read</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Returns bookmarks. Optionally scoped to a single project.</p>
+        <p class="tool-desc">Returns all bookmarks as a flat array.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>project_id</code></td><td>string</td><td><span class="opt">optional</span></td><td>If provided, returns only bookmarks in that project. If omitted, returns all bookmarks with an added <code>project_id</code> field.</td></tr>
           <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
         </table>
-        <h3>Example response (single tab)</h3>
+        <h3>Example response</h3>
         <pre><code>[
   {
     <span class="str">"id"</span>: <span class="str">"bm_xyz789"</span>,
@@ -212,10 +191,9 @@
         <span class="tool-badge badge-write">write</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Adds a new bookmark to a project. If <code>icon</code> is omitted, Desk auto-fetches and caches the site's favicon.</p>
+        <p class="tool-desc">Adds a new bookmark. If <code>icon</code> is omitted, Desk auto-fetches and caches the site's favicon.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>project_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the target project.</td></tr>
           <tr><td><code>title</code></td><td>string</td><td><span class="req">required</span></td><td>Display name shown on the bookmark card.</td></tr>
           <tr><td><code>url</code></td><td>string</td><td><span class="req">required</span></td><td>Full URL including scheme (<code>https://…</code>).</td></tr>
           <tr><td><code>icon</code></td><td>string</td><td><span class="opt">optional</span></td><td>Emoji or base64 data URL. Omit to auto-fetch favicon.</td></tr>
@@ -224,7 +202,6 @@
         </table>
         <h3>Example</h3>
         <pre><code>{
-  <span class="str">"project_id"</span>: <span class="str">"proj_abc123"</span>,
   <span class="str">"title"</span>: <span class="str">"GitHub"</span>,
   <span class="str">"url"</span>: <span class="str">"https://github.com"</span>
   <span class="cm">// icon omitted → favicon auto-fetched</span>
@@ -239,45 +216,10 @@
         <span class="tool-badge badge-write">write</span>
       </div>
       <div class="tool-body">
-        <p class="tool-desc">Permanently removes a bookmark from a project.</p>
+        <p class="tool-desc">Permanently removes a bookmark.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>project_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the project that contains the bookmark.</td></tr>
           <tr><td><code>bookmark_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the bookmark to remove.</td></tr>
-          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- create_project -->
-    <div class="tool-card">
-      <div class="tool-header">
-        <span class="tool-name">create_project</span>
-        <span class="tool-badge badge-write">write</span>
-      </div>
-      <div class="tool-body">
-        <p class="tool-desc">Creates a new empty project.</p>
-        <table>
-          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>name</code></td><td>string</td><td><span class="req">required</span></td><td>Human-readable label shown in the sidebar.</td></tr>
-          <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
-        </table>
-        <h3>Example response</h3>
-        <pre><code>{ <span class="str">"id"</span>: <span class="str">"proj_new111"</span>, <span class="str">"name"</span>: <span class="str">"AI Tools"</span>, <span class="str">"bookmarks"</span>: [] }</code></pre>
-      </div>
-    </div>
-
-    <!-- remove_project -->
-    <div class="tool-card">
-      <div class="tool-header">
-        <span class="tool-name">remove_project</span>
-        <span class="tool-badge badge-write">write</span>
-      </div>
-      <div class="tool-body">
-        <p class="tool-desc">Removes a project and all its bookmarks. This cannot be undone.</p>
-        <table>
-          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>project_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the project to remove.</td></tr>
           <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
         </table>
       </div>
@@ -293,14 +235,12 @@
         <p class="tool-desc">Partially updates a bookmark's fields. Only the fields present in <code>fields</code> are changed.</p>
         <table>
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-          <tr><td><code>project_id</code></td><td>string</td><td><span class="req">required</span></td><td>Project containing the bookmark.</td></tr>
           <tr><td><code>bookmark_id</code></td><td>string</td><td><span class="req">required</span></td><td>ID of the bookmark to update.</td></tr>
           <tr><td><code>fields</code></td><td>object</td><td><span class="req">required</span></td><td>Any subset of <code>title</code>, <code>url</code>, <code>icon</code>, <code>description</code>.</td></tr>
           <tr><td><code>scope</code></td><td>string</td><td><span class="opt">optional</span></td><td><code>"workspace"</code> or <code>"global"</code> (default: <code>"global"</code>).</td></tr>
         </table>
         <h3>Example — rename a bookmark</h3>
         <pre><code>{
-  <span class="str">"project_id"</span>: <span class="str">"proj_abc123"</span>,
   <span class="str">"bookmark_id"</span>: <span class="str">"bm_xyz789"</span>,
   <span class="str">"fields"</span>: { <span class="str">"title"</span>: <span class="str">"MDN — HTML"</span>, <span class="str">"url"</span>: <span class="str">"https://developer.mozilla.org/en-US/docs/Web/HTML"</span> }
 }</code></pre>
@@ -341,7 +281,7 @@
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
           <tr><td><code>filename</code></td><td>string</td><td><span class="req">required</span></td><td>Must end in <code>.desk</code>, e.g. <code>"auth-flow.desk"</code></td></tr>
           <tr><td><code>title</code></td><td>string</td><td><span class="req">required</span></td><td>Shown in the page header and panel tab.</td></tr>
-          <tr><td><code>content</code></td><td>string</td><td><span class="req">required</span></td><td>HTML body (no <code>&lt;script&gt;</code> tags).</td></tr>
+          <tr><td><code>content</code></td><td>string</td><td><span class="req">required</span></td><td>HTML body. <code>&lt;script&gt;</code> blocks and inline event handlers (<code>onclick</code>, etc.) work — the page viewer uses <code>'unsafe-inline'</code> CSP.</td></tr>
           <tr><td><code>customStyles</code></td><td>string</td><td><span class="opt">optional</span></td><td>CSS scoped to this page only. Use <code>var(--accent)</code>, <code>var(--text)</code> etc. to stay on-theme.</td></tr>
         </table>
         <h3>Returns</h3>
@@ -421,7 +361,7 @@
   <span class="str">"jsonrpc"</span>: <span class="str">"2.0"</span>,
   <span class="str">"error"</span>: {
     <span class="str">"code"</span>: <span class="num">-32603</span>,
-    <span class="str">"message"</span>: <span class="str">"Project not found: proj_abc123"</span>
+    <span class="str">"message"</span>: <span class="str">"Bookmark not found: bm_abc123"</span>
   },
   <span class="str">"id"</span>: <span class="num">1</span>
 }</code></pre>

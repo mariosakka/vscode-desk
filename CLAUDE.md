@@ -7,7 +7,7 @@ Guidelines for AI agents and contributors working on this codebase.
 ## What Desk is
 
 A VS Code extension with four features:
-1. **Tabbed bookmark sidebar** — named tab groups each holding bookmark cards with auto-fetched favicons.
+1. **Bookmark sidebar** — a flat list of bookmark cards per scope (workspace/global) with auto-fetched favicons.
 2. **`.desk` page viewer** — an XML-based lightweight doc format that renders in a VS Code editor tab, with shared theme variables and per-page custom CSS.
 3. **Embedded MCP server** — a local JSON-RPC 2.0 HTTP server so AI agents can read and write bookmarks, pages, workflow config, and skills programmatically.
 4. **Workflow companion** — stores team workflow config and a skill registry; agents submit config and skills via MCP, the extension installs skills on all detected AI agents after user confirmation.
@@ -25,7 +25,7 @@ A VS Code extension with four features:
 │         ↕ postMessage                                        │
 ├──────────────────────────────────────────────────────────────┤
 │  Extension Host (Node.js)                                    │
-│  PortalViewProvider  PageViewPanel                           │
+│  SidebarViewProvider  PageViewPanel                           │
 │         ↕ method calls                                       │
 ├──────────────────────────────────────────────────────────────┤
 │  Services                                                    │
@@ -38,11 +38,11 @@ A VS Code extension with four features:
   McpServer (127.0.0.1:3333 by default)
 ```
 
-**DataService** owns all reads and writes to `desk.data` in `globalState`. No other class touches it directly.  
+**DataService** owns all reads and writes to `data.json` under `~/.desk/`. No other class touches it directly.  
 **FaviconService** fetches and caches favicons. No other class fetches favicons.  
 **PageReader** reads and writes `.desk` files. No other class touches the `desk-pages/` directory.  
-**WorkflowConfigService** owns `desk.workflowConfig` and pending review state. No other class reads or writes workflow config directly.  
-**SkillRegistry** owns `desk.skills`, validates skill frontmatter, and drives installation via `AgentAdapter`. No other class installs skill files directly.  
+**WorkflowConfigService** owns `workflow.json` and pending review state. No other class reads or writes workflow config directly.  
+**SkillRegistry** owns `skills.json`, validates skill frontmatter, and drives installation via `AgentAdapter`. No other class installs skill files directly.  
 **McpServer** has no business logic — it parses JSON-RPC and delegates to the services above.
 
 ---
@@ -52,15 +52,15 @@ A VS Code extension with four features:
 ```
 src/
   extension.ts                  activate() + command registration
-  models.ts                     Bookmark, Tab, PortalData interfaces
-  portalViewProvider.ts         WebviewViewProvider for the sidebar
+  models.ts                     Bookmark, DeskData interfaces
+  sidebarViewProvider.ts        WebviewViewProvider for the sidebar
   pages/
     pageFormat.ts               Parse/serialize .desk XML; extract scripts for nonce re-injection
     pageReader.ts               Read/write .desk files in desk-pages/
     pageViewPanel.ts            Full-width WebviewPanel for the page viewer
   services/
     dataService/
-      dataService.ts            globalState CRUD (key: desk.data)
+      dataService.ts            JSON file CRUD (~/.desk/.../data.json)
       dataService.test.ts
     faviconService/
       faviconService.ts         Favicon fetch + cache (key: desk.favicon-cache)
@@ -75,7 +75,7 @@ src/
     server/
       server.ts                 JSON-RPC 2.0 HTTP server
       server.test.ts
-    toolSchemas.ts              JSON schemas for all 16 tools
+    toolSchemas.ts              JSON schemas for all 14 tools
     resources.ts                3 MCP resources (self-documentation for agents)
   agents/
     constants.ts                AgentId, ConfigDir, ConfigFile, CliBinary enums
@@ -108,7 +108,7 @@ src/
       index.html                Sidebar webview template (mounts #app)
       index.tsx                 React entry point — createRoot('#app')
       SidebarApp.tsx            Root component — workspace/global scope switch, postMessage bridge
-      types.ts                  Bookmark, Tab, PortalData, WorkflowConfig interfaces (webview-side)
+      types.ts                  Bookmark, DeskData, WorkflowConfig interfaces (webview-side)
       hooks/
         useClickOutside.ts      Click-outside detection hook
       components/
@@ -244,7 +244,7 @@ Always go through `PageReader`. It enforces the `desk-pages/` directory, parses 
   <style>/* optional per-page CSS */</style>
   <!-- HTML body -->
   <script>
-    /* JS runs — re-injected with CSP nonce. Use addEventListener, not inline onclick. */
+    /* JS runs after DOM is ready — re-injected at bottom of <body>. */
     document.getElementById('my-btn').addEventListener('click', () => { ... });
   </script>
 </desk-page>
@@ -261,13 +261,20 @@ Always go through `PageReader`. It enforces the `desk-pages/` directory, parses 
 
 ## Storage
 
-| `globalState` key | Type | Contents |
+All data lives in plain JSON files under `~/.desk/`, written by the service layer. The only exception is the favicon cache, which stays in VS Code `globalState` because it is keyed by hostname and accessed frequently across sessions.
+
+| Path | Type | Contents |
 |---|---|---|
-| `desk.data` | `PortalData` | All projects and bookmarks |
-| `desk.favicon-cache` | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
-| `desk.workflowConfig` | `WorkflowConfig` | Team workflow config submitted by agent and confirmed by user |
-| `desk.skills` | `Skill[]` | Workflow skills submitted by agent and confirmed by user |
-| `desk.workflowSkillDismissed` | `boolean` | Dismissed flag for the skill install activation prompt |
+| `~/.desk/global/data.json` | `DeskData` | Global bookmarks |
+| `~/.desk/workspaces/<slug>/data.json` | `DeskData` | Workspace-scoped bookmarks |
+| `~/.desk/global/workflow.json` | `WorkflowConfig` | Global team workflow config |
+| `~/.desk/workspaces/<slug>/workflow.json` | `WorkflowConfig` | Workspace-scoped workflow config |
+| `~/.desk/global/skills.json` | `Skill[]` | Global workflow skills |
+| `~/.desk/workspaces/<slug>/skills.json` | `Skill[]` | Workspace-scoped skills |
+| `desk.favicon-cache` (globalState) | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
+| `<workspace>/desk-pages/*.desk` | XML | Page files managed by `PageReader` |
+
+`<slug>` is derived from the VS Code workspace name: lowercased, non-alphanumeric runs replaced with `-`.
 
 ---
 
@@ -278,9 +285,7 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 | Command ID | Title | Description |
 |---|---|---|
 | `desk.addBookmark` | Desk: Add Bookmark | Interactive prompt to add a bookmark |
-| `desk.addProject` | Desk: Add Project | Interactive prompt to create a project |
 | `desk.removeBookmark` | Desk: Remove Bookmark | QuickPick to remove a bookmark |
-| `desk.removeProject` | Desk: Remove Project | QuickPick to remove a project |
 | `desk.updateBookmark` | Desk: Edit Bookmark | QuickPick to edit a bookmark's title, URL, or icon |
 | `desk.openPage` | Desk: Open Page | QuickPick to open a `.desk` page |
 | `desk.newPage` | Desk: New Page | Interactive prompt to create a new page |
@@ -293,7 +298,6 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 | `desk.editSkill` | Desk: Edit Skill | QuickPick to open an existing skill for editing |
 | `desk.submitSkill` | Desk: Submit Skill | Reads the active editor and stores/updates the skill in the registry |
 | `desk.removeSkill` | Desk: Remove Skill | QuickPick to remove a skill |
-| `desk.listProjects` | Desk: List Projects | QuickPick showing all projects |
 | `desk.listBookmarks` | Desk: List Bookmarks | QuickPick showing all bookmarks |
 | `desk.listSkills` | Desk: List Skills | QuickPick showing all installed skills |
 | `desk.viewWorkflow` | Desk: View Workflow Config | Shows current `WorkflowConfig` in a QuickPick |
@@ -302,21 +306,18 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 
 ## Webview message protocol
 
-**Sidebar (PortalViewProvider ↔ `src/webview/sidebar/SidebarApp.tsx`)**
+**Sidebar (SidebarViewProvider ↔ `src/webview/sidebar/SidebarApp.tsx`)**
 
 All Webview → Host messages include a `scope: 'workspace' | 'global'` field.
 
 | Direction | `type` | Extra fields |
 |-----------|--------|--------------|
 | Host → Webview | `update` | `data: SidebarData` |
-| Host → Webview | `switchTab` | `projectId: string` |
 | Webview → Host | `ready` | — |
 | Webview → Host | `openUrl` | `url: string` — opens in VS Code Simple Browser (or PageViewPanel for `desk-page:` URLs) |
-| Webview → Host | `addBookmark` | `projectId, title, url` — favicon fetched by host |
-| Webview → Host | `removeBookmark` | `projectId, bookmarkId` |
-| Webview → Host | `updateBookmark` | `projectId, bookmarkId, fields: { title?, url? }` |
-| Webview → Host | `addProject` | `name: string` |
-| Webview → Host | `removeProject` | `projectId: string` |
+| Webview → Host | `addBookmark` | `title, url` — favicon fetched by host |
+| Webview → Host | `removeBookmark` | `bookmarkId` |
+| Webview → Host | `updateBookmark` | `bookmarkId, fields: { title?, url? }` |
 | Webview → Host | `openPage` | `filename: string` |
 | Webview → Host | `newPage` | `title: string` |
 | Webview → Host | `deletePage` | `filename: string` |
@@ -346,25 +347,23 @@ The page viewer has no host→webview messages — navigation replaces the entir
 - **Capabilities:** `{ tools: {}, resources: {} }`
 - **HTTP status:** always `200` for valid JSON-RPC. Errors arrive as `{ error: { code, message } }` in the response body.
 
-**16 tools:**
+**14 tools:**
 
 | Tool | R/W | Required args |
 |------|-----|---------------|
-| `list_projects` | R | — |
-| `list_bookmarks` | R | — (`project_id` optional) |
-| `add_bookmark` | W | `project_id`, `title`, `url` |
-| `remove_bookmark` | W | `project_id`, `bookmark_id` |
-| `create_project` | W | `name` |
-| `remove_project` | W | `project_id` |
-| `update_bookmark` | W | `project_id`, `bookmark_id`, `fields` |
+| `list_bookmarks` | R | — |
+| `add_bookmark` | W | `title`, `url` |
+| `remove_bookmark` | W | `bookmark_id` |
+| `update_bookmark` | W | `bookmark_id`, `fields` |
 | `list_pages` | R | — |
 | `create_page` | W | `filename`, `title`, `content` |
 | `update_page` | W | `filename` (+ any fields) |
 | `delete_page` | W | `filename` |
 | `get_workflow_config` | R | — |
 | `submit_workflow_config` | W | `config` (partial WorkflowConfig) |
-| `add_skill` | W | `name`, `content` (`description` optional) |
 | `list_skills` | R | — |
+| `get_skill` | R | `name` |
+| `add_skill` | W | `name`, `content` (`description` optional) |
 | `remove_skill` | W | `name` |
 
 **3 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
@@ -426,7 +425,7 @@ Unit test rules:
 
 | File | What it tests |
 |------|---------------|
-| `e2e/mcp.spec.ts` | JSON-RPC protocol, all 16 tools, 3 resources — uses a self-contained in-process HTTP stub (no VS Code dep) |
+| `e2e/mcp.spec.ts` | JSON-RPC protocol, all 14 tools, 3 resources — uses a self-contained in-process HTTP stub (no VS Code dep) |
 | `e2e/sidebar.spec.ts` | Sidebar webview HTML — tabs, bookmarks, icon rendering, postMessage bridge |
 | `e2e/page-viewer.spec.ts` | Page viewer webview HTML — navigation, link handling, custom styles |
 

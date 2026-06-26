@@ -10,7 +10,7 @@ import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { AgentAdapter } from './agents/agentAdapter';
 
 interface ScopedData {
-  portal: import('./models').PortalData;
+  data: import('./models').DeskData;
   pages: import('./pages/pageFormat').PageMeta[];
   workflow: import('./services/workflowConfigService/workflowConfigService').WorkflowConfig | null;
   skills: Omit<import('./services/skillRegistry/skillRegistry').Skill, 'content'>[];
@@ -20,9 +20,10 @@ interface SidebarData {
   workspaceName: string | null;
   workspace: ScopedData | null;
   global: ScopedData;
+  pageTemplate: string | null;
 }
 
-export class PortalViewProvider implements vscode.WebviewViewProvider {
+export class SidebarViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'desk.sidebar';
   private _view?: vscode.WebviewView;
 
@@ -98,15 +99,13 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
         }
         case 'removeBookmark': {
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          resolved.dataService.removeBookmark(message.projectId, message.bookmarkId);
+          resolved.dataService.removeBookmark(message.bookmarkId);
           this.refresh();
           break;
         }
-        case 'addProject': {
-          const name: string = message.name;
-          if (!name?.trim()) break;
+        case 'updateBookmark': {
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          resolved.dataService.createProject(name.trim());
+          resolved.dataService.updateBookmark(message.bookmarkId, message.fields);
           this.refresh();
           break;
         }
@@ -116,13 +115,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
           if (!title?.trim() || !url?.trim()) break;
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
           const icon = this._faviconService ? await this._faviconService.getIcon(url.trim()) : '🌐';
-          resolved.dataService.addBookmark(message.projectId, { title: title.trim(), url: url.trim(), icon, description: '' });
-          this.refresh();
-          break;
-        }
-        case 'removeProject': {
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          resolved.dataService.removeProject(message.projectId);
+          resolved.dataService.addBookmark({ title: title.trim(), url: url.trim(), icon, description: '' });
           this.refresh();
           break;
         }
@@ -199,12 +192,22 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
           vscode.window.showTextDocument(uri);
           break;
         }
+        case 'editPageTemplate': {
+          if (!this._globalDataService.getPageTemplate()) {
+            this._globalDataService.setPageTemplate(
+              '<style>\n  /* Shared styles applied to all new pages */\n  /* Use: --bg --surface --surface2 --border --text --muted --accent --accent2 --radius */\n</style>',
+            );
+          }
+          vscode.window.showTextDocument(vscode.Uri.file(this._globalDataService.getPageTemplateFilePath()));
+          break;
+        }
+        case 'clearPageTemplate': {
+          this._globalDataService.clearPageTemplate();
+          this.refresh();
+          break;
+        }
       }
     });
-  }
-
-  switchTab(projectId: string): void {
-    this._view?.webview.postMessage({ type: 'switchTab', projectId });
   }
 
   refresh(): void {
@@ -216,7 +219,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
       wf: WorkflowConfigService | null,
       sr: SkillRegistry | null,
     ): ScopedData => ({
-      portal: ds.get(),
+      data: ds.get(),
       pages: ps ? ps.list() : [],
       workflow: wf?.get() ?? null,
       skills: sr ? sr.list() : [],
@@ -238,6 +241,7 @@ export class PortalViewProvider implements vscode.WebviewViewProvider {
         this._globalWorkflowService,
         this._globalSkillRegistry,
       ),
+      pageTemplate: this._globalDataService.getPageTemplate(),
     };
 
     this._view.webview.postMessage({ type: 'update', data: sidebarData });

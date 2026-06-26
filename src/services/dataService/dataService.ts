@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Bookmark, Project, PortalData } from '../../models';
+import { Bookmark, DeskData } from '../../models';
 
-const DEFAULT_DATA: PortalData = { projects: [] };
+const DEFAULT_DATA: DeskData = { bookmarks: [] };
 
 function generateId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).substring(2, 9)}`;
@@ -11,7 +11,7 @@ function generateId(prefix: string): string {
 export class DataService {
   constructor(private readonly dir: string) {}
 
-  get(): PortalData {
+  get(): DeskData {
     try {
       return JSON.parse(fs.readFileSync(path.join(this.dir, 'data.json'), 'utf-8'));
     } catch {
@@ -19,51 +19,54 @@ export class DataService {
     }
   }
 
-  save(data: PortalData): void {
+  save(data: DeskData): void {
     fs.mkdirSync(this.dir, { recursive: true });
     fs.writeFileSync(path.join(this.dir, 'data.json'), JSON.stringify(data, null, 2), 'utf-8');
   }
 
-  addBookmark(projectId: string, fields: Omit<Bookmark, 'id'>): Bookmark {
+  addBookmark(fields: Omit<Bookmark, 'id'>): Bookmark {
     const data = this.get();
-    const project = data.projects.find(p => p.id === projectId);
-    if (!project) throw new Error(`Project not found: ${projectId}`);
     const bookmark: Bookmark = { id: generateId('bm'), ...fields };
-    project.bookmarks.push(bookmark);
+    data.bookmarks.push(bookmark);
     this.save(data);
     return bookmark;
   }
 
-  removeBookmark(projectId: string, bookmarkId: string): void {
+  removeBookmark(bookmarkId: string): void {
     const data = this.get();
-    const project = data.projects.find(p => p.id === projectId);
-    if (!project) throw new Error(`Project not found: ${projectId}`);
-    project.bookmarks = project.bookmarks.filter(b => b.id !== bookmarkId);
+    const exists = data.bookmarks.some(b => b.id === bookmarkId);
+    if (!exists) throw new Error(`Bookmark not found: ${bookmarkId}`);
+    data.bookmarks = data.bookmarks.filter(b => b.id !== bookmarkId);
     this.save(data);
   }
 
-  createProject(name: string): Project {
+  updateBookmark(bookmarkId: string, fields: Partial<Omit<Bookmark, 'id'>>): Bookmark {
     const data = this.get();
-    const project: Project = { id: generateId('project'), name, bookmarks: [] };
-    data.projects.push(project);
-    this.save(data);
-    return project;
-  }
-
-  removeProject(projectId: string): void {
-    const data = this.get();
-    data.projects = data.projects.filter(p => p.id !== projectId);
-    this.save(data);
-  }
-
-  updateBookmark(projectId: string, bookmarkId: string, fields: Partial<Omit<Bookmark, 'id'>>): Bookmark {
-    const data = this.get();
-    const project = data.projects.find(p => p.id === projectId);
-    if (!project) throw new Error(`Project not found: ${projectId}`);
-    const bm = project.bookmarks.find(b => b.id === bookmarkId);
+    const bm = data.bookmarks.find(b => b.id === bookmarkId);
     if (!bm) throw new Error(`Bookmark not found: ${bookmarkId}`);
     Object.assign(bm, fields);
     this.save(data);
     return bm;
+  }
+
+  getPageTemplate(): string | null {
+    try {
+      return fs.readFileSync(path.join(this.dir, 'page-template.desk'), 'utf-8');
+    } catch {
+      return null;
+    }
+  }
+
+  setPageTemplate(content: string): void {
+    fs.mkdirSync(this.dir, { recursive: true });
+    fs.writeFileSync(path.join(this.dir, 'page-template.desk'), content, 'utf-8');
+  }
+
+  clearPageTemplate(): void {
+    try { fs.unlinkSync(path.join(this.dir, 'page-template.desk')); } catch {}
+  }
+
+  getPageTemplateFilePath(): string {
+    return path.join(this.dir, 'page-template.desk');
   }
 }

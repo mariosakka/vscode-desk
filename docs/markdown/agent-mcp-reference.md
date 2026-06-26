@@ -1,6 +1,6 @@
 # Desk MCP — Full Agent Reference
 
-**Endpoint:** `POST http://127.0.0.1:3333/mcp`  
+**Endpoint:** `POST http://127.0.0.1:<port>/mcp` (default port `3333`; auto-increments if in use — check the setup notification in VS Code for the actual port)  
 **Protocol:** JSON-RPC 2.0 (MCP Streamable HTTP transport, version `2024-11-05`)  
 **Server identity:** `{ "name": "vscode-desk", "version": "0.0.1" }`
 
@@ -71,9 +71,9 @@ Omitting `scope` defaults to `"global"`.
 
 ## Bookmark tools
 
-### `list_projects`
+### `list_bookmarks`
 
-Returns all projects with their IDs, names, and bookmark counts.
+Returns all bookmarks as a flat array.
 
 **Arguments:**
 
@@ -82,27 +82,6 @@ Returns all projects with their IDs, names, and bookmark counts.
 | `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
 
 **Returns:**
-```json
-[
-  { "id": "proj_abc123", "name": "Work", "bookmarkCount": 4 },
-  { "id": "proj_def456", "name": "Research", "bookmarkCount": 2 }
-]
-```
-
----
-
-### `list_bookmarks`
-
-Returns bookmarks. Without `project_id` returns all bookmarks across all projects, each with a `project_id` field added.
-
-**Arguments:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `project_id` | string | no | Filter to one project |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
-
-**Returns (single project):**
 ```json
 [
   {
@@ -115,24 +94,16 @@ Returns bookmarks. Without `project_id` returns all bookmarks across all project
 ]
 ```
 
-**Returns (all projects — no `project_id`):**
-```json
-[
-  { "id": "bm_xyz789", "project_id": "proj_abc123", "title": "MDN Web Docs", ... }
-]
-```
-
 ---
 
 ### `add_bookmark`
 
-Adds a bookmark to a project. If `icon` is omitted, Desk fetches the site's favicon automatically and caches it for 30 days. Falls back to `🌐` if the fetch fails.
+Adds a bookmark. If `icon` is omitted, Desk fetches the site's favicon automatically and caches it for 30 days. Falls back to `🌐` if the fetch fails.
 
 **Arguments:**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `project_id` | string | **yes** | Target project ID |
 | `title` | string | **yes** | Display name on the card |
 | `url` | string | **yes** | Full URL including scheme |
 | `icon` | string | no | Emoji or base64 `data:` URL. Omit to auto-fetch favicon |
@@ -157,42 +128,7 @@ Permanently removes a bookmark. Cannot be undone.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `project_id` | string | **yes** | |
 | `bookmark_id` | string | **yes** | |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
-
-**Returns:** `"removed"`
-
----
-
-### `create_project`
-
-Creates a new empty project.
-
-**Arguments:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | **yes** | |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
-
-**Returns:** the new project object.
-
-```json
-{ "id": "proj_new111", "name": "AI Tools", "bookmarks": [] }
-```
-
----
-
-### `remove_project`
-
-Removes a project and **all its bookmarks**. Cannot be undone.
-
-**Arguments:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `project_id` | string | **yes** | |
 | `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
 
 **Returns:** `"removed"`
@@ -207,7 +143,6 @@ Partially updates a bookmark. Only the fields present in `fields` are changed; e
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `project_id` | string | **yes** | |
 | `bookmark_id` | string | **yes** | |
 | `fields` | object | **yes** | Any subset of `title`, `url`, `icon`, `description` |
 | `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
@@ -217,7 +152,6 @@ Partially updates a bookmark. Only the fields present in `fields` are changed; e
 ```json
 // rename and re-point a bookmark
 {
-  "project_id": "proj_abc123",
   "bookmark_id": "bm_xyz789",
   "fields": { "title": "MDN — HTML", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML" }
 }
@@ -239,14 +173,20 @@ Pages are `.desk` files stored in `<workspace>/desk-pages/`. All page tools retu
     .my-class { color: var(--accent2); }
   </style>
 
-  <!-- HTML body goes here — any standard HTML except <script> tags -->
+  <!-- HTML body -->
   <h2>Section heading</h2>
   <p>Paragraph with a <a href="other-page.desk">page link</a> or an
      <a href="https://example.com">external link</a>.</p>
+
+  <script>
+    /* JS runs — extracted and re-injected at bottom of <body> after DOM is ready */
+    document.getElementById('my-btn').addEventListener('click', function () { ... });
+    /* onclick="..." inline handlers also work */
+  </script>
 </desk-page>
 ```
 
-`<script>` tags are stripped before rendering. Everything else — tables, code blocks, images (`data:` URLs only), divs — is allowed.
+`<script>` blocks and inline event handlers (`onclick`, etc.) both work — the page viewer uses `'unsafe-inline'` CSP. `.desk` pages are local user-controlled content so this is acceptable. Everything else — tables, code blocks, images (`data:` URLs only), divs — is allowed.
 
 **Built-in CSS classes you can use in content:**
 
@@ -285,7 +225,7 @@ Creates a new `.desk` file. Fails silently if the file already exists (use `upda
 |-------|------|----------|-------------|
 | `filename` | string | **yes** | Must end in `.desk`, e.g. `"auth-flow.desk"` |
 | `title` | string | **yes** | Shown in the page header and panel tab |
-| `content` | string | **yes** | HTML body content (no `<script>` tags) |
+| `content` | string | **yes** | HTML body content (`<script>` blocks and inline handlers work) |
 | `customStyles` | string | no | CSS injected only for this page |
 
 **Returns:** `"created auth-flow.desk"`
@@ -544,7 +484,6 @@ Desk maps its own variables onto VS Code's theme tokens, so they automatically a
 
 | Situation | Code | Message pattern |
 |-----------|------|-----------------|
-| Project not found | `-32603` | `"Project not found: <id>"` |
 | Bookmark not found | `-32603` | `"Bookmark not found: <id>"` |
 | Page file not found | `-32603` | `"ENOENT: no such file..."` |
 | No workspace open | `-32603` | `"No workspace open — pages unavailable"` |

@@ -5,7 +5,7 @@ import { FaviconService } from './services/faviconService/faviconService';
 import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { McpServer } from './mcp/server/server';
-import { PortalViewProvider } from './portalViewProvider';
+import { SidebarViewProvider } from './sidebarViewProvider';
 import { PageReader } from './pages/pageReader';
 import { PageViewPanel } from './pages/pageViewPanel';
 import { AgentAdapter } from './agents/agentAdapter';
@@ -45,7 +45,7 @@ export function activate(context: vscode.ExtensionContext): void {
     new GeminiAdapter(),
   ];
 
-  const provider = new PortalViewProvider(
+  const provider = new SidebarViewProvider(
     context.extensionUri,
     globalDataService,
     globalPageReader,
@@ -88,11 +88,13 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
+    vscode.window.registerWebviewViewProvider(SidebarViewProvider.viewType, provider),
   );
 
   const preferredPort = vscode.workspace.getConfiguration('desk').get<number>('mcpPort', 3333);
+  let resolvedPort = preferredPort;
   mcpServer.start(preferredPort).then(actualPort => {
+    resolvedPort = actualPort;
     context.subscriptions.push({ dispose: () => mcpServer.stop() });
     agentRegistry.showSetupPrompt(actualPort).then(() => agentRegistry.showSkillInstallPrompt()).catch(() => {});
   }).catch(() => {});
@@ -116,27 +118,15 @@ export function activate(context: vscode.ExtensionContext): void {
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdAddBookmark(ds, faviconService, provider);
     }),
-    vscode.commands.registerCommand('desk.addProject', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdAddProject(ds, provider);
-    }),
     vscode.commands.registerCommand('desk.removeBookmark', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
       const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
       await cmdRemoveBookmark(ds, provider);
     }),
-    vscode.commands.registerCommand('desk.removeProject', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdRemoveProject(ds, provider);
-    }),
     vscode.commands.registerCommand('desk.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageReader)),
     vscode.commands.registerCommand('desk.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageReader)),
-    vscode.commands.registerCommand('desk.setupAgents',           () => agentRegistry.showSetupPromptForced(port)),
+    vscode.commands.registerCommand('desk.setupAgents',           () => agentRegistry.showSetupPromptForced(resolvedPort)),
     vscode.commands.registerCommand('desk.configureWorkflow', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
@@ -176,12 +166,6 @@ export function activate(context: vscode.ExtensionContext): void {
       const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
       await cmdSubmitSkill(registry, adapters, provider);
     }),
-    vscode.commands.registerCommand('desk.listProjects', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdListProjects(ds, provider);
-    }),
     vscode.commands.registerCommand('desk.listBookmarks', async () => {
       const scope = await pickScope();
       if (scope === undefined) return;
@@ -217,17 +201,13 @@ export function deactivate(): void {}
 async function cmdAddBookmark(
   dataService: DataService,
   faviconService: FaviconService,
-  provider: PortalViewProvider,
+  provider: SidebarViewProvider,
 ): Promise<void> {
-  const projectId = await pickProject(dataService);
-  if (!projectId) return;
-
   const title = await vscode.window.showInputBox({ prompt: 'Bookmark title', ignoreFocusOut: true });
   if (!title) return;
 
-  const project = dataService.get().projects.find(p => p.id === projectId);
-  if (project?.bookmarks.some(b => b.title.toLowerCase() === title.toLowerCase())) {
-    vscode.window.showWarningMessage(`A bookmark named "${title}" already exists in this project.`);
+  if (dataService.get().bookmarks.some(b => b.title.toLowerCase() === title.toLowerCase())) {
+    vscode.window.showWarningMessage(`A bookmark named "${title}" already exists.`);
     return;
   }
 
@@ -245,72 +225,23 @@ async function cmdAddBookmark(
     ? iconInput.trim()
     : await faviconService.getIcon(url);
 
-  dataService.addBookmark(projectId, { title, url, icon, description });
+  dataService.addBookmark({ title, url, icon, description });
   provider.refresh();
 }
 
-async function cmdAddProject(dataService: DataService, provider: PortalViewProvider): Promise<void> {
-  const name = await vscode.window.showInputBox({ prompt: 'Project name', ignoreFocusOut: true });
-  if (!name) return;
-  if (dataService.get().projects.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-    vscode.window.showWarningMessage(`A project named "${name}" already exists.`);
-    return;
-  }
-  dataService.createProject(name);
-  provider.refresh();
-}
-
-async function cmdRemoveBookmark(dataService: DataService, provider: PortalViewProvider): Promise<void> {
+async function cmdRemoveBookmark(dataService: DataService, provider: SidebarViewProvider): Promise<void> {
   const data = dataService.get();
-  if (data.projects.length === 0) {
-    vscode.window.showErrorMessage('No projects yet.');
-    return;
-  }
-  const projectPick = await vscode.window.showQuickPick(
-    data.projects.map(p => ({ label: p.name, id: p.id })),
-    { placeHolder: 'Select project' },
-  );
-  if (!projectPick) return;
-  const project = data.projects.find(p => p.id === projectPick.id);
-  if (!project || project.bookmarks.length === 0) {
-    vscode.window.showErrorMessage('No bookmarks in this project.');
+  if (data.bookmarks.length === 0) {
+    vscode.window.showErrorMessage('No bookmarks yet.');
     return;
   }
   const bmPick = await vscode.window.showQuickPick(
-    project.bookmarks.map(b => ({ label: b.title, description: b.url, id: b.id })),
+    data.bookmarks.map(b => ({ label: b.title, description: b.url, id: b.id })),
     { placeHolder: 'Select bookmark to remove' },
   );
   if (!bmPick) return;
-  dataService.removeBookmark(projectPick.id, bmPick.id);
+  dataService.removeBookmark(bmPick.id);
   provider.refresh();
-}
-
-async function cmdRemoveProject(dataService: DataService, provider: PortalViewProvider): Promise<void> {
-  const data = dataService.get();
-  if (data.projects.length === 0) {
-    vscode.window.showErrorMessage('No projects yet.');
-    return;
-  }
-  const pick = await vscode.window.showQuickPick(
-    data.projects.map(p => ({ label: p.name, description: `${p.bookmarks.length} bookmark(s)`, id: p.id })),
-    { placeHolder: 'Select project to remove' },
-  );
-  if (!pick) return;
-  dataService.removeProject(pick.id);
-  provider.refresh();
-}
-
-async function pickProject(dataService: DataService): Promise<string | undefined> {
-  const data = dataService.get();
-  if (data.projects.length === 0) {
-    vscode.window.showErrorMessage('No projects yet. Run "Desk: Add Project" first.');
-    return undefined;
-  }
-  const pick = await vscode.window.showQuickPick(
-    data.projects.map(p => ({ label: p.name, id: p.id })),
-    { placeHolder: 'Select project' },
-  );
-  return pick?.id;
 }
 
 async function cmdOpenPage(extensionUri: vscode.Uri, pageStore: PageReader | null): Promise<void> {
@@ -471,13 +402,12 @@ async function cmdOpenUrl(): Promise<void> {
 async function cmdUpdateBookmark(
   dataService: DataService,
   faviconService: FaviconService,
-  provider: PortalViewProvider,
+  provider: SidebarViewProvider,
 ): Promise<void> {
   const data = dataService.get();
-  const allBookmarks = data.projects.flatMap(p => p.bookmarks.map(b => ({ ...b, projectId: p.id, projectName: p.name })));
-  if (allBookmarks.length === 0) { vscode.window.showErrorMessage('No bookmarks yet.'); return; }
+  if (data.bookmarks.length === 0) { vscode.window.showErrorMessage('No bookmarks yet.'); return; }
   const pick = await vscode.window.showQuickPick(
-    allBookmarks.map(b => ({ label: b.title, description: `${b.projectName} — ${b.url}`, id: b.id, projectId: b.projectId, b })),
+    data.bookmarks.map(b => ({ label: b.title, description: b.url, id: b.id, b })),
     { placeHolder: 'Select bookmark to edit' },
   );
   if (!pick) return;
@@ -486,11 +416,11 @@ async function cmdUpdateBookmark(
   const url = await vscode.window.showInputBox({ prompt: 'New URL', value: pick.b.url, ignoreFocusOut: true });
   if (url === undefined) return;
   const icon = await faviconService.getIcon(url || pick.b.url);
-  dataService.updateBookmark(pick.projectId, pick.id, { title: title || pick.b.title, url: url || pick.b.url, icon });
+  dataService.updateBookmark(pick.id, { title: title || pick.b.title, url: url || pick.b.url, icon });
   provider.refresh();
 }
 
-async function cmdDeletePage(pageStore: PageReader | null, provider: PortalViewProvider): Promise<void> {
+async function cmdDeletePage(pageStore: PageReader | null, provider: SidebarViewProvider): Promise<void> {
   if (!pageStore) { vscode.window.showErrorMessage('Desk: No page store available.'); return; }
   const pages = pageStore.list();
   if (pages.length === 0) { vscode.window.showErrorMessage('No pages yet.'); return; }
@@ -508,7 +438,7 @@ async function cmdDeletePage(pageStore: PageReader | null, provider: PortalViewP
 async function cmdRemoveSkill(
   skillRegistry: SkillRegistry,
   adapters: AgentAdapter[],
-  provider: PortalViewProvider,
+  provider: SidebarViewProvider,
 ): Promise<void> {
   const skills = skillRegistry.list();
   if (skills.length === 0) { vscode.window.showErrorMessage('No skills installed.'); return; }
@@ -560,7 +490,7 @@ async function cmdEditSkill(skillRegistry: SkillRegistry): Promise<void> {
 async function cmdSubmitSkill(
   skillRegistry: SkillRegistry,
   adapters: AgentAdapter[],
-  provider: PortalViewProvider,
+  provider: SidebarViewProvider,
 ): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor) { vscode.window.showErrorMessage('Desk: no active editor — open a skill file first.'); return; }
@@ -581,23 +511,9 @@ async function cmdSubmitSkill(
   provider.refresh();
 }
 
-async function cmdListProjects(dataService: DataService, provider: PortalViewProvider): Promise<void> {
-  const data = dataService.get();
-  if (!data.projects.length) { vscode.window.showInformationMessage('No projects yet.'); return; }
-  const items = data.projects.map(p => ({
-    label: p.name,
-    description: `${p.bookmarks.length} bookmark${p.bookmarks.length !== 1 ? 's' : ''}`,
-    id: p.id,
-  }));
-  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a project to switch to' });
-  if (pick) provider.switchTab(pick.id);
-}
-
 async function cmdListBookmarks(dataService: DataService): Promise<void> {
   const data = dataService.get();
-  const items = data.projects.flatMap(p =>
-    p.bookmarks.map(b => ({ label: b.title, description: b.url, detail: `Project: ${p.name}`, url: b.url }))
-  );
+  const items = data.bookmarks.map(b => ({ label: b.title, description: b.url, url: b.url }));
   if (!items.length) { vscode.window.showInformationMessage('No bookmarks yet.'); return; }
   const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Select a bookmark to open' });
   if (pick) vscode.commands.executeCommand('simpleBrowser.show', pick.url);

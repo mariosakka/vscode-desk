@@ -61,6 +61,13 @@ body {
   color: var(--muted);
 }
 
+/* ── Content wrapper — applied automatically by the template ── */
+.page-content {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 40px 64px;
+}
+
 /* ── Default typography for simple pages ── */
 h1 { font-size: 1.7rem; font-weight: 700; margin: 36px 0 16px; }
 h2 { font-size: 1.3rem; font-weight: 600; margin: 32px 0 12px; color: var(--accent); }

@@ -6,23 +6,21 @@ import styles from './BookmarkGrid.module.css';
 
 interface Props {
   bookmarks: Bookmark[];
-  tabId: string;
   onOpen: (url: string) => void;
-  onRemove: (projectId: string, bookmarkId: string) => void;
-  onEdit: (projectId: string, bookmarkId: string, title: string, url: string) => void;
+  onRemove: (bookmarkId: string) => void;
+  onEdit: (bookmarkId: string, title: string, url: string) => void;
 }
 
-export function BookmarkGrid({ bookmarks, tabId, onOpen, onRemove, onEdit }: Props) {
+export function BookmarkGrid({ bookmarks, onOpen, onRemove, onEdit }: Props) {
   return (
     <div id="bookmarks-grid" className={styles.grid}>
       {bookmarks.length === 0 ? (
-        <EmptyState message="No bookmarks yet. Click + Bookmark below to add one." />
+        <EmptyState message="No bookmarks yet. Click + Bookmark above to add one." />
       ) : (
         bookmarks.map(bm => (
           <BookmarkCard
             key={bm.id}
             bookmark={bm}
-            tabId={tabId}
             onOpen={onOpen}
             onRemove={onRemove}
             onEdit={onEdit}

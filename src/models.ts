@@ -6,14 +6,8 @@ export interface Bookmark {
   description: string;
 }
 
-export interface Project {
-  id: string;
-  name: string;
+export interface DeskData {
   bookmarks: Bookmark[];
-}
-
-export interface PortalData {
-  projects: Project[];
 }
 
 export type Scope = 'workspace' | 'global';

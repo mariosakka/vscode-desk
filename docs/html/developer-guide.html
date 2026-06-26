@@ -223,9 +223,14 @@ this.provider.refresh()  <span class="cm">// pushes update to open webview</span
     <p>All data lives in plain JSON files under <code>~/.desk/</code>, managed by helpers in <code>src/storage/deskDir.ts</code>:</p>
     <table>
       <tr><th>Path</th><th>Type</th><th>Contents</th></tr>
-      <tr><td><code>~/.desk/global/data.json</code></td><td><code>PortalData</code></td><td>Global projects and bookmarks. Survives VS Code restarts and workspace changes.</td></tr>
-      <tr><td><code>~/.desk/workspaces/&lt;slug&gt;/data.json</code></td><td><code>PortalData</code></td><td>Workspace-scoped projects and bookmarks.</td></tr>
-      <tr><td><code>~/.desk/global/favicon-cache.json</code></td><td><code>Record&lt;hostname, CacheEntry&gt;</code></td><td>Base64 favicon data URLs, each with a <code>fetchedAt</code> timestamp. Entries older than 30 days are re-fetched on next access.</td></tr>
+      <tr><td><code>~/.desk/global/data.json</code></td><td><code>DeskData</code></td><td>Global bookmarks. Survives VS Code restarts and workspace changes.</td></tr>
+      <tr><td><code>~/.desk/workspaces/&lt;slug&gt;/data.json</code></td><td><code>DeskData</code></td><td>Workspace-scoped bookmarks.</td></tr>
+      <tr><td><code>~/.desk/global/workflow.json</code></td><td><code>WorkflowConfig</code></td><td>Global team workflow config.</td></tr>
+      <tr><td><code>~/.desk/workspaces/&lt;slug&gt;/workflow.json</code></td><td><code>WorkflowConfig</code></td><td>Workspace-scoped workflow config.</td></tr>
+      <tr><td><code>~/.desk/global/skills.json</code></td><td><code>Skill[]</code></td><td>Global workflow skills.</td></tr>
+      <tr><td><code>~/.desk/workspaces/&lt;slug&gt;/skills.json</code></td><td><code>Skill[]</code></td><td>Workspace-scoped skills.</td></tr>
+      <tr><td><code>desk.favicon-cache</code> (VS Code globalState)</td><td><code>Record&lt;hostname, CacheEntry&gt;</code></td><td>Base64 favicon data URLs, each with a <code>fetchedAt</code> timestamp. Entries older than 30 days are re-fetched on next access.</td></tr>
+      <tr><td><code>&lt;workspace&gt;/desk-pages/*.desk</code></td><td>XML</td><td>Page files managed by <code>PageReader</code>.</td></tr>
     </table>
 
     <div class="callout tip">
@@ -258,7 +263,7 @@ npm test          <span class="cm"># jest — all test files under src/</span></
     <h3>Test files</h3>
     <table>
       <tr><th>File</th><th>What it tests</th><th>Tests</th></tr>
-      <tr><td><code>dataService.test.ts</code></td><td>CRUD operations on projects and bookmarks; empty default state; error on missing project; global vs workspace scope.</td><td>13</td></tr>
+      <tr><td><code>dataService.test.ts</code></td><td>CRUD operations on bookmarks; empty default state; error on missing bookmark; global vs workspace scope.</td><td>13</td></tr>
       <tr><td><code>faviconService.test.ts</code></td><td>Invalid URL rejection; fetch failure fallback; cache miss/hit; stale re-fetch; hostname deduplication.</td><td>7</td></tr>
       <tr><td><code>server.test.ts</code></td><td>Full JSON-RPC round trips: initialize, all 17 tools, 3 resources, favicon auto-fetch, icon skip when provided, error for unknown tool, 404 for wrong path.</td><td>19</td></tr>
     </table>
@@ -274,29 +279,38 @@ npm test          <span class="cm"># jest — all test files under src/</span></
     <h2>Webview Details</h2>
 
     <h3>Content Security Policy</h3>
-    <p>The webview CSP allows scripts and styles only from VS Code's trusted <code>${cspSource}</code>, plus <code>img-src data:</code> so base64 favicon data URLs render without external network requests. No <code>http:</code> or <code>https:</code> image sources are permitted.</p>
+    <p>The <strong>sidebar</strong> CSP allows scripts and styles only from VS Code's trusted <code>${cspSource}</code>, plus <code>img-src data:</code> for base64 favicon data URLs.</p>
+    <p>The <strong>page viewer</strong> CSP uses <code>script-src 'unsafe-inline' ${cspSource}</code> so that <code>&lt;script&gt;</code> blocks and inline event handlers in <code>.desk</code> pages run normally. This is acceptable because <code>.desk</code> pages are local, user-controlled content — there is no remote code execution surface.</p>
 
     <h3>Theming</h3>
     <p>Both CSS files map Desk's internal variables (<code>--bg</code>, <code>--text</code>, <code>--accent</code>, etc.) directly onto VS Code's injected theme tokens (<code>--vscode-editor-background</code>, <code>--vscode-textLink-foreground</code>, etc.) with hardcoded fallbacks. No JavaScript theme logic is needed — VS Code re-injects its tokens whenever the user changes theme, and the CSS cascade handles the rest.</p>
 
     <h3>Sidebar message protocol</h3>
+    <p>All Webview → Host messages carry a <code>scope: 'workspace' | 'global'</code> field.</p>
     <table>
       <tr><th>Direction</th><th>Message type</th><th>Payload</th></tr>
-      <tr><td>Host → Webview</td><td><code>update</code></td><td><code>{ data: PortalData }</code> — full state snapshot</td></tr>
-      <tr><td>Webview → Host</td><td><code>ready</code></td><td>none — triggers initial <code>update</code></td></tr>
+      <tr><td>Host → Webview</td><td><code>update</code></td><td><code>{ data: SidebarData }</code> — full state snapshot</td></tr>
+      <tr><td>Webview → Host</td><td><code>ready</code></td><td>— triggers initial <code>update</code></td></tr>
       <tr><td>Webview → Host</td><td><code>openUrl</code></td><td><code>{ url: string }</code> — opens in browser or page viewer</td></tr>
-      <tr><td>Webview → Host</td><td><code>addBookmark</code></td><td><code>{ projectId, title, url, icon?, description? }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>removeBookmark</code></td><td><code>{ projectId, bookmarkId }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>addProject</code></td><td><code>{ name: string }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>removeProject</code></td><td><code>{ projectId: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>addBookmark</code></td><td><code>{ title, url }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>removeBookmark</code></td><td><code>{ bookmarkId }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>updateBookmark</code></td><td><code>{ bookmarkId, fields: { title?, url? } }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>openPage</code></td><td><code>{ filename: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>newPage</code></td><td><code>{ title: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>deletePage</code></td><td><code>{ filename: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>editPage</code></td><td><code>{ filename: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>newSkill</code></td><td>—</td></tr>
+      <tr><td>Webview → Host</td><td><code>editSkill</code></td><td><code>{ name: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>removeSkill</code></td><td><code>{ name: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>saveWorkflow</code></td><td><code>{ config: WorkflowConfig }</code></td></tr>
     </table>
 
     <h3>Page viewer message protocol</h3>
+    <p>The page viewer has no Host → Webview messages — navigation replaces the entire webview HTML via <code>panel.webview.html</code>.</p>
     <table>
       <tr><th>Direction</th><th>Message type</th><th>Payload</th></tr>
-      <tr><td>Host → Webview</td><td><code>load</code></td><td><code>{ title, html, hasBack: boolean }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>navigate</code></td><td><code>{ filename: string }</code> — follow a .desk link</td></tr>
-      <tr><td>Webview → Host</td><td><code>back</code></td><td>none — pop back-stack</td></tr>
+      <tr><td>Webview → Host</td><td><code>navigate</code></td><td><code>{ filename: string }</code> — load another .desk page</td></tr>
+      <tr><td>Webview → Host</td><td><code>back</code></td><td>— pop back-stack</td></tr>
       <tr><td>Webview → Host</td><td><code>openUrl</code></td><td><code>{ url: string }</code> — open https:// in browser</td></tr>
     </table>
 

@@ -6,14 +6,8 @@ export interface Bookmark {
   description: string;
 }
 
-export interface Project {
-  id: string;
-  name: string;
+export interface DeskData {
   bookmarks: Bookmark[];
-}
-
-export interface PortalData {
-  projects: Project[];
 }
 
 export interface PageMeta {
@@ -47,7 +41,7 @@ export interface SkillSummary {
 export type Scope = 'workspace' | 'global';
 
 export interface ScopedData {
-  portal: PortalData;
+  data: DeskData;
   pages: PageMeta[];
   workflow: WorkflowConfig | null;
   skills: SkillSummary[];
@@ -57,4 +51,5 @@ export interface SidebarData {
   workspaceName: string | null;
   workspace: ScopedData | null;
   global: ScopedData;
+  pageTemplate: string | null;
 }

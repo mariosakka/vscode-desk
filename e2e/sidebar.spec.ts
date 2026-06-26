@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test';
 import { buildSidebarHtml } from './helpers/webview';
 import { dispatchToWebview, findSentMessage } from './helpers/vscode-mock';
 
-const TAB_1 = { id: 'project_1', name: 'Work', bookmarks: [] };
-const TAB_2 = { id: 'project_2', name: 'Research', bookmarks: [] };
 const BM_EMOJI = {
   id: 'bm_1', title: 'GitHub', url: 'https://github.com',
   icon: '🐙', description: 'Code hosting',
@@ -13,19 +11,17 @@ const BM_IMG = {
   icon: 'data:image/png;base64,iVBORw0KGgo=', description: '',
 };
 
-const TAB_DATA = [TAB_1];
-
-function makeData(projects: typeof TAB_DATA = TAB_DATA) {
+function makeData(bookmarks: typeof BM_EMOJI[] = []) {
   return {
     workspaceName: 'test-workspace',
     workspace: {
-      portal: { projects },
+      data: { bookmarks },
       pages: [],
       workflow: null,
       skills: [],
     },
     global: {
-      portal: { projects: [] },
+      data: { bookmarks: [] },
       pages: [],
       workflow: null,
       skills: [],
@@ -37,39 +33,22 @@ test.beforeEach(async ({ page }) => {
   await page.setContent(buildSidebarHtml());
 });
 
-test('empty state — shows "No projects yet" prompt', async ({ page }) => {
+test('empty state — shows "No bookmarks yet" prompt', async ({ page }) => {
   await dispatchToWebview(page, { type: 'update', data: makeData([]) });
-  await expect(page.locator('#bookmarks-grid-workspace')).toContainText('No projects yet');
-  await expect(page.locator('#tabs-bar-workspace')).toBeEmpty();
+  await expect(page.locator('#bookmarks-grid-workspace')).toContainText('No bookmarks yet');
 });
 
-test('renders tab buttons from update message', async ({ page }) => {
-  await dispatchToWebview(page, { type: 'update', data: makeData([TAB_1, TAB_2]) });
-  const tabs = page.locator('[data-testid="tab-button"]');
-  await expect(tabs).toHaveCount(2);
-  await expect(tabs.nth(0)).toHaveText('Work');
-  await expect(tabs.nth(1)).toHaveText('Research');
-});
-
-test('first tab is active by default', async ({ page }) => {
-  await dispatchToWebview(page, { type: 'update', data: makeData([TAB_1, TAB_2]) });
-  await expect(page.locator('[data-testid="tab-button"][data-active="true"]')).toHaveText('Work');
-});
-
-test('clicking a tab switches the active tab and shows its bookmarks', async ({ page }) => {
-  const tab2WithBm = { ...TAB_2, bookmarks: [BM_EMOJI] };
-  await dispatchToWebview(page, { type: 'update', data: makeData([TAB_1, tab2WithBm]) });
-
-  await page.locator('[data-testid="tab-button"]', { hasText: 'Research' }).click();
-
-  await expect(page.locator('[data-testid="tab-button"][data-active="true"]')).toHaveText('Research');
-  await expect(page.locator('[data-testid="bookmark-title"]')).toHaveText('GitHub');
+test('renders bookmark cards from update message', async ({ page }) => {
+  await dispatchToWebview(page, { type: 'update', data: makeData([BM_EMOJI]) });
+  const cards = page.locator('[data-testid="bookmark-card"]');
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText('GitHub');
 });
 
 test('clicking a bookmark card posts openUrl', async ({ page }) => {
   await dispatchToWebview(page, {
     type: 'update',
-    data: makeData([{ ...TAB_1, bookmarks: [BM_EMOJI] }]),
+    data: makeData([BM_EMOJI]),
   });
 
   await page.locator('[data-testid="bookmark-card"]').click();
@@ -82,7 +61,7 @@ test('clicking a bookmark card posts openUrl', async ({ page }) => {
 test('clicking × button posts removeBookmark', async ({ page }) => {
   await dispatchToWebview(page, {
     type: 'update',
-    data: makeData([{ ...TAB_1, bookmarks: [BM_EMOJI] }]),
+    data: makeData([BM_EMOJI]),
   });
 
   await page.locator('[data-testid="bookmark-card"]').hover();
@@ -91,14 +70,13 @@ test('clicking × button posts removeBookmark', async ({ page }) => {
 
   const msg = await findSentMessage(page, 'removeBookmark');
   expect(msg).not.toBeNull();
-  expect(msg.projectId).toBe('project_1');
   expect(msg.bookmarkId).toBe('bm_1');
 });
 
 test('base64 icon renders as <img>', async ({ page }) => {
   await dispatchToWebview(page, {
     type: 'update',
-    data: makeData([{ ...TAB_1, bookmarks: [BM_IMG] }]),
+    data: makeData([BM_IMG]),
   });
 
   const img = page.locator('[data-testid="bookmark-icon"] img');
@@ -109,7 +87,7 @@ test('base64 icon renders as <img>', async ({ page }) => {
 test('emoji icon renders as text (no <img>)', async ({ page }) => {
   await dispatchToWebview(page, {
     type: 'update',
-    data: makeData([{ ...TAB_1, bookmarks: [BM_EMOJI] }]),
+    data: makeData([BM_EMOJI]),
   });
 
   await expect(page.locator('[data-testid="bookmark-icon"] img')).toHaveCount(0);
@@ -129,7 +107,7 @@ test('workspace section is hidden when workspace is null', async ({ page }) => {
       workspaceName: null,
       workspace: null,
       global: {
-        portal: { projects: [] },
+        data: { bookmarks: [] },
         pages: [],
         workflow: null,
         skills: [],
@@ -138,5 +116,5 @@ test('workspace section is hidden when workspace is null', async ({ page }) => {
   });
 
   await expect(page.locator('button', { hasText: 'workspace' })).toHaveCount(0);
-  await expect(page.locator('#bookmarks-grid-global')).toContainText('No projects yet');
+  await expect(page.locator('#bookmarks-grid-global')).toContainText('No bookmarks yet');
 });
