@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.6](https://github.com/mariosakka/vscode-desk/compare/v0.3.5...v0.3.6) (2026-06-26)
+
+
+### Bug Fixes
+
+* auto-select free MCP port; harden nav bar against page CSS ([#32](https://github.com/mariosakka/vscode-desk/issues/32)) ([e1323a3](https://github.com/mariosakka/vscode-desk/commit/e1323a3b90b4a332b58df156abdbd228a8a23f08))
+
+## [0.3.5](https://github.com/mariosakka/vscode-desk/compare/v0.3.4...v0.3.5) (2026-06-25)
+
+
+### Bug Fixes
+
+* allow inline event handlers in page viewer by using unsafe-inline CSP ([#30](https://github.com/mariosakka/vscode-desk/issues/30)) ([a34e576](https://github.com/mariosakka/vscode-desk/commit/a34e5769d89da539e46b20618d6fe755ae0977e9))
+
 ## [0.3.4](https://github.com/mariosakka/vscode-desk/compare/v0.3.3...v0.3.4) (2026-06-25)
 
 
