@@ -263,6 +263,17 @@ export class McpServer {
         return { content: [{ type: 'text', text: JSON.stringify({ removed: args.name }) }] };
       }
 
+      case 'get_page_template': {
+        const template = this.globalDataService.getPageTemplate();
+        if (!template) throw new Error('No page template set');
+        return { content: [{ type: 'text', text: template }] };
+      }
+
+      case 'set_page_template': {
+        this.globalDataService.setPageTemplate(args.content);
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'saved' }) }] };
+      }
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }

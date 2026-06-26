@@ -9,6 +9,7 @@ import sectionBtnStyles from './components/shared/SectionBtn.module.css';
 import { PagesPanel } from './components/PagesPanel/PagesPanel';
 import { SkillsPanel } from './components/SkillsPanel/SkillsPanel';
 import { WorkflowPanel } from './components/WorkflowPanel/WorkflowPanel';
+import { PageTemplatePanel } from './components/PageTemplatePanel/PageTemplatePanel';
 
 declare function acquireVsCodeApi(): { postMessage: (msg: unknown) => void };
 const vscode = acquireVsCodeApi();
@@ -175,6 +176,11 @@ export function SidebarApp() {
           send={send}
         />
       )}
+      <PageTemplatePanel
+        template={data?.pageTemplate ?? null}
+        onEdit={() => send({ type: 'editPageTemplate' })}
+        onClear={() => send({ type: 'clearPageTemplate' })}
+      />
     </div>
   );
 }

@@ -214,4 +214,23 @@ export const TOOLS: McpTool[] = [
     },
   },
 
+  // ── Page template tools ───────────────────────────────────────────────────
+  {
+    name: 'get_page_template',
+    description: 'Returns the global page template content (shared style/structure agents apply to all new pages). Returns -32603 if not set.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'set_page_template',
+    description: 'Saves the global page template. Always global — no scope. Call get_page_template first on session start to check if one already exists.',
+    inputSchema: {
+      type: 'object',
+      required: ['content'],
+      properties: {
+        content: { type: 'string', description: '<style> block and/or HTML skeleton that agents copy when creating new pages' },
+      },
+      additionalProperties: false,
+    },
+  },
+
 ];

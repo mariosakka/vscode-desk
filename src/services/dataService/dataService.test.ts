@@ -115,4 +115,24 @@ describe('DataService', () => {
       expect(svc2.get().bookmarks[0].title).toBe('Persistent');
     });
   });
+
+  describe('page template', () => {
+    it('returns null when no template is set', () => {
+      const svc = new DataService(tmpDir);
+      expect(svc.getPageTemplate()).toBeNull();
+    });
+
+    it('saves and retrieves a template', () => {
+      const svc = new DataService(tmpDir);
+      svc.setPageTemplate('<style>.card { background: var(--surface); }</style>');
+      expect(svc.getPageTemplate()).toBe('<style>.card { background: var(--surface); }</style>');
+    });
+
+    it('clearPageTemplate removes the file', () => {
+      const svc = new DataService(tmpDir);
+      svc.setPageTemplate('something');
+      svc.clearPageTemplate();
+      expect(svc.getPageTemplate()).toBeNull();
+    });
+  });
 });

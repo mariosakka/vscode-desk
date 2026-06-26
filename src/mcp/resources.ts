@@ -80,7 +80,16 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
 - **HTTP 200 always** — errors arrive as a JSON-RPC \`error\` object, not as HTTP 4xx/5xx.
 
-## All 14 tools
+## Page template
+
+A single global template stores shared styles/structure that all agents apply when creating new pages. On session start, call \`get_page_template\` to check if one is set. If it returns an error, either use defaults or create a template with \`set_page_template\` for consistency across projects.
+
+\`\`\`
+get_page_template   → returns the shared <style> block / HTML skeleton, or error if not set
+set_page_template   → saves a new template (always global, no scope arg)
+\`\`\`
+
+## All 16 tools
 
 | Tool | R | W | Required args |
 |------|---|---|---------------|
@@ -98,48 +107,70 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 | get_skill | ✓ | | name |
 | add_skill | | ✓ | name, content |
 | remove_skill | | ✓ | name |
+| get_page_template | ✓ | | — |
+| set_page_template | | ✓ | content |
 `,
 
   'desk://guide/desk-page-format': `# Desk Page Format (.desk)
 
 Pages are XML files stored in \`<workspace>/desk-pages/\`.
 
+## Before creating a page
+
+Call \`get_page_template\` first. If it returns content, use that \`<style>\` block and/or HTML structure as the basis for the new page so all pages stay visually consistent. If it returns an error (not set), create the page using defaults — and consider calling \`set_page_template\` afterward to establish a shared style for future pages.
+
+## Layout
+
+Content is automatically wrapped in a centred \`.page-content\` container (max-width 860px, padding 32px 40px). **Do not add a wrapper div or body layout CSS** — the template already handles it. Just write HTML content directly inside \`<desk-page>\`.
+
 ## File structure
 
 \`\`\`xml
 <desk-page title="Page Title">
   <style>
-    /* optional CSS — only active for this page */
-    /* use theme variables (see below) to stay on-theme */
-    .my-class { color: var(--accent2); }
+    /* per-page CSS only — do NOT set body layout, width, padding, or margin */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
   </style>
 
-  <!-- HTML body -->
-  <h2>Heading</h2>
-  <p>Jump to section: <a href="#section1">in-page anchor</a></p>
-  <p>Link to another page: <a href="other.desk">other page</a></p>
-  <p>External link: <a href="https://example.com">opens in browser</a></p>
+  <h1>Page Title</h1>
+  <p>Introductory paragraph using default typography.</p>
+
+  <h2>Section Heading</h2>
+  <p>Body text. Link to <a href="#anchor">in-page section</a>, <a href="other.desk">another page</a>, or <a href="https://example.com">external URL</a>.</p>
+
+  <h3 id="anchor">Subsection</h3>
+  <p>Inline code: <code>const x = 1</code>. Code block:</p>
+  <pre><code>function greet(name) {
+  return \`Hello, \${name}\`;
+}</code></pre>
+
+  <table>
+    <tr><th>Column A</th><th>Column B</th></tr>
+    <tr><td>Value</td><td>Value</td></tr>
+  </table>
+
+  <div class="callout tip">Tip callout using a built-in class.</div>
+
+  <button id="my-btn">Click me</button>
 
   <script>
-    /* JS is extracted and re-injected at bottom of <body> — runs after DOM is ready */
     document.getElementById('my-btn').addEventListener('click', function () {
-      document.documentElement.dataset.theme =
-        document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      alert('Works!');
     });
-    /* onclick="..." attributes also work */
   </script>
 </desk-page>
 \`\`\`
 
-- \`#hash\` links scroll to the named anchor — native browser behaviour, no postMessage.
-- \`<script>\` blocks are extracted and re-injected at the bottom of \`<body>\` — they run normally.
-- Inline event handlers (\`onclick="..."\`) also work — the page viewer CSP uses \`'unsafe-inline'\`.
-- \`.desk\` links navigate inside the viewer (back button maintained).
-- \`https://\` links open in the browser.
+## Rules
+
+- **No body/wrapper CSS** — writing \`body { display: flex }\` or \`body { padding }\` will conflict with the template.
+- **\`#hash\` links** scroll to the named anchor natively.
+- **\`<script>\`** blocks run after DOM is ready (re-injected at bottom of body).
+- **Inline handlers** (\`onclick="..."\`) also work.
+- **\`.desk\` links** navigate inside the viewer; **\`https://\` links** open in the browser.
+- **No external resources** — CDN links for fonts, icons, or JS are blocked by CSP. Use theme variables and built-in classes only.
 
 ## Theme CSS variables
-
-These map onto VS Code's active theme — they work in any customStyles:
 
 | Variable | Usage |
 |----------|-------|
@@ -149,19 +180,35 @@ These map onto VS Code's active theme — they work in any customStyles:
 | \`--border\` | Borders, dividers |
 | \`--text\` | Body text |
 | \`--muted\` | Secondary / hint text |
-| \`--accent\` | Primary highlight (button color from active theme) |
-| \`--accent2\` | Links, code, tip callouts (link color from active theme) |
+| \`--accent\` | Primary highlight |
+| \`--accent2\` | Links, inline code, tips |
 | \`--radius\` | Border radius (10px) |
+
+## Built-in element styles (no CSS needed)
+
+These render correctly out of the box: \`h1\`–\`h3\` (sized + coloured), \`p\` \`ul\` \`ol\`, \`a\` (teal underline-on-hover), \`code\` (teal inline), \`pre code\` (block), \`table\` th/td (hover rows), \`blockquote\`, \`hr\`, \`strong\`, \`em\`.
 
 ## Built-in callout classes
 
-Use these in content without adding customStyles:
-
 \`\`\`html
 <div class="callout">neutral aside</div>
-<div class="callout tip">tip (teal border)</div>
-<div class="callout warn">warning (yellow border)</div>
-<div class="callout danger">danger (red border)</div>
+<div class="callout tip">tip — accent2 left border</div>
+<div class="callout warn">warning — yellow left border</div>
+<div class="callout danger">danger — red left border</div>
+\`\`\`
+
+## Card grid pattern
+
+\`\`\`html
+<style>
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 24px 0; }
+  .card  { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card h3 { margin-top: 0; }
+</style>
+<div class="cards">
+  <div class="card"><h3>Title</h3><p>Description.</p></div>
+  <div class="card"><h3>Title</h3><p>Description.</p></div>
+</div>
 \`\`\`
 `,
 

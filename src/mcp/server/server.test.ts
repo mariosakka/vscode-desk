@@ -6,6 +6,10 @@ const mockDataService = {
   addBookmark: jest.fn(),
   removeBookmark: jest.fn(),
   updateBookmark: jest.fn(),
+  getPageTemplate: jest.fn().mockReturnValue(null),
+  setPageTemplate: jest.fn(),
+  clearPageTemplate: jest.fn(),
+  getPageTemplateFilePath: jest.fn().mockReturnValue('/tmp/page-template.desk'),
 };
 
 const mockProvider = { refresh: jest.fn() };
@@ -79,9 +83,9 @@ describe('McpServer', () => {
     expect(res.result.protocolVersion).toBeDefined();
   });
 
-  it('lists 14 tools', async () => {
+  it('lists 16 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 2 });
-    expect(res.result.tools).toHaveLength(14);
+    expect(res.result.tools).toHaveLength(16);
     const names = res.result.tools.map((t: any) => t.name);
     expect(names).toContain('list_bookmarks');
     expect(names).toContain('add_bookmark');
@@ -91,6 +95,35 @@ describe('McpServer', () => {
     expect(names).toContain('create_page');
     expect(names).toContain('update_page');
     expect(names).toContain('delete_page');
+    expect(names).toContain('get_page_template');
+    expect(names).toContain('set_page_template');
+  });
+
+  it('get_page_template returns error when not set', async () => {
+    mockDataService.getPageTemplate.mockReturnValue(null);
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_page_template', arguments: {} }, id: 99,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toContain('No page template');
+  });
+
+  it('set_page_template saves content and get_page_template returns it', async () => {
+    const content = '<style>.card { background: var(--surface); }</style>';
+    mockDataService.setPageTemplate.mockImplementation((c: string) => {
+      mockDataService.getPageTemplate.mockReturnValue(c);
+    });
+    await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'set_page_template', arguments: { content } }, id: 100,
+    });
+    expect(mockDataService.setPageTemplate).toHaveBeenCalledWith(content);
+    const res2 = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_page_template', arguments: {} }, id: 101,
+    });
+    expect(res2.result.content[0].text).toBe(content);
   });
 
   it('lists 3 resources', async () => {
@@ -195,9 +228,9 @@ describe('McpServer — workflow tools', () => {
     setTimeout(done, 30);
   });
 
-  it('lists 14 tools', async () => {
+  it('lists 16 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 });
-    expect(res.result.tools).toHaveLength(14);
+    expect(res.result.tools).toHaveLength(16);
   });
 
 

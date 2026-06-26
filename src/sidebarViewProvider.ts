@@ -20,6 +20,7 @@ interface SidebarData {
   workspaceName: string | null;
   workspace: ScopedData | null;
   global: ScopedData;
+  pageTemplate: string | null;
 }
 
 export class SidebarViewProvider implements vscode.WebviewViewProvider {
@@ -191,6 +192,20 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           vscode.window.showTextDocument(uri);
           break;
         }
+        case 'editPageTemplate': {
+          if (!this._globalDataService.getPageTemplate()) {
+            this._globalDataService.setPageTemplate(
+              '<style>\n  /* Shared styles applied to all new pages */\n  /* Use: --bg --surface --surface2 --border --text --muted --accent --accent2 --radius */\n</style>',
+            );
+          }
+          vscode.window.showTextDocument(vscode.Uri.file(this._globalDataService.getPageTemplateFilePath()));
+          break;
+        }
+        case 'clearPageTemplate': {
+          this._globalDataService.clearPageTemplate();
+          this.refresh();
+          break;
+        }
       }
     });
   }
@@ -226,6 +241,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
         this._globalWorkflowService,
         this._globalSkillRegistry,
       ),
+      pageTemplate: this._globalDataService.getPageTemplate(),
     };
 
     this._view.webview.postMessage({ type: 'update', data: sidebarData });

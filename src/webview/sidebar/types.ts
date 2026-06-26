@@ -51,4 +51,5 @@ export interface SidebarData {
   workspaceName: string | null;
   workspace: ScopedData | null;
   global: ScopedData;
+  pageTemplate: string | null;
 }

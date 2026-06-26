@@ -48,4 +48,25 @@ export class DataService {
     this.save(data);
     return bm;
   }
+
+  getPageTemplate(): string | null {
+    try {
+      return fs.readFileSync(path.join(this.dir, 'page-template.desk'), 'utf-8');
+    } catch {
+      return null;
+    }
+  }
+
+  setPageTemplate(content: string): void {
+    fs.mkdirSync(this.dir, { recursive: true });
+    fs.writeFileSync(path.join(this.dir, 'page-template.desk'), content, 'utf-8');
+  }
+
+  clearPageTemplate(): void {
+    try { fs.unlinkSync(path.join(this.dir, 'page-template.desk')); } catch {}
+  }
+
+  getPageTemplateFilePath(): string {
+    return path.join(this.dir, 'page-template.desk');
+  }
 }
