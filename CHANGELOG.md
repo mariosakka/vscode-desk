@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.6](https://github.com/mariosakka/vscode-desk/compare/v0.3.5...v0.3.6) (2026-06-26)
+
+
+### Bug Fixes
+
+* auto-select free MCP port; harden nav bar against page CSS ([#32](https://github.com/mariosakka/vscode-desk/issues/32)) ([e1323a3](https://github.com/mariosakka/vscode-desk/commit/e1323a3b90b4a332b58df156abdbd228a8a23f08))
+
 ## [0.3.5](https://github.com/mariosakka/vscode-desk/compare/v0.3.4...v0.3.5) (2026-06-25)
 
 
