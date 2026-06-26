@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import styles from './PagesPanel.module.css';
 import sectionBtnStyles from '../shared/SectionBtn.module.css';
-import { PageIcon, PlusIcon, TrashIcon, CloseIcon, PencilIcon } from '../shared/Icons';
+import { PageIcon, PlusIcon, TrashIcon, PencilIcon } from '../shared/Icons';
 import { ConfirmButtons } from '../shared/ConfirmButtons';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { HoverIconButton } from '../shared/HoverIconButton';
+import { PanelRow } from '../shared/PanelRow';
+import { InlineBarForm } from '../shared/InlineBarForm';
 
 interface Props {
   pages: Array<{ filename: string; title: string }>;
@@ -17,92 +19,55 @@ interface Props {
 export function PagesPanel({ pages, onOpen, onNew, onDelete, onEdit }: Props) {
   const [adding, setAdding] = useState(false);
   const [pendingFilename, setPendingFilename] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState('');
-  const [newError, setNewError] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (adding) inputRef.current?.focus();
-  }, [adding]);
-
-  const handleNewSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const title = newTitle.trim();
-    if (!title) return;
-    const filename = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.astrolabe';
-    if (pages.some(p => p.filename === filename || p.title.toLowerCase() === title.toLowerCase())) {
-      setNewError(`A page named "${title}" already exists.`);
-      return;
-    }
-    onNew(title);
-    setNewTitle('');
-    setNewError('');
-    setAdding(false);
-  };
 
   return (
     <CollapsibleSection icon={<PageIcon size={13} />} title="Pages" badge={pages.length}>
       {pages.map(page => (
-        <div key={page.filename} className={styles.row}>
-          <PageIcon size={13} />
-          <span
-            className={styles.rowTitle}
-            onClick={() => onOpen(page.filename)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={e => e.key === 'Enter' && onOpen(page.filename)}
-          >
-            {page.title}
-          </span>
-          {pendingFilename === page.filename ? (
-            <ConfirmButtons
-              onConfirm={e => { e.stopPropagation(); onDelete(page.filename); setPendingFilename(null); }}
-              onCancel={e => { e.stopPropagation(); setPendingFilename(null); }}
-            />
-          ) : (
-            <>
-              <HoverIconButton title="Edit page" hoverColor="accent" onClick={() => onEdit(page.filename)}>
-                <PencilIcon size={12} />
-              </HoverIconButton>
-              <HoverIconButton title="Delete page" hoverColor="danger" onClick={() => setPendingFilename(page.filename)}>
-                <TrashIcon size={12} />
-              </HoverIconButton>
-            </>
-          )}
-        </div>
-      ))}
-      <div className={styles.addRow}>
-        {adding ? (
-          <>
-            <form className={styles.inlineForm} onSubmit={handleNewSubmit}>
-              <input
-                ref={inputRef}
-                className={styles.inlineInput}
-                value={newTitle}
-                onChange={e => { setNewTitle(e.target.value); setNewError(''); }}
-                onKeyDown={e => e.key === 'Escape' && (setAdding(false), setNewTitle(''), setNewError(''))}
-                placeholder="Page title…"
-                maxLength={80}
+        <PanelRow
+          key={page.filename}
+          icon={<PageIcon size={13} />}
+          label={page.title}
+          onClick={() => onOpen(page.filename)}
+          actions={
+            pendingFilename === page.filename ? (
+              <ConfirmButtons
+                onConfirm={e => { e.stopPropagation(); onDelete(page.filename); setPendingFilename(null); }}
+                onCancel={e => { e.stopPropagation(); setPendingFilename(null); }}
               />
-              <button
-                type="button"
-                className={styles.cancelInline}
-                onClick={() => { setAdding(false); setNewTitle(''); setNewError(''); }}
-                title="Cancel"
-              >
-                <CloseIcon size={10} />
-              </button>
-            </form>
-            {newError && <span className={styles.error}>{newError}</span>}
-          </>
-        ) : (
+            ) : (
+              <>
+                <HoverIconButton title="Edit page" hoverColor="accent" onClick={() => onEdit(page.filename)}>
+                  <PencilIcon size={12} />
+                </HoverIconButton>
+                <HoverIconButton title="Delete page" hoverColor="danger" onClick={() => setPendingFilename(page.filename)}>
+                  <TrashIcon size={12} />
+                </HoverIconButton>
+              </>
+            )
+          }
+        />
+      ))}
+      {adding ? (
+        <InlineBarForm
+          placeholder="Page title…"
+          maxLength={80}
+          validate={title =>
+            pages.some(p => p.title.toLowerCase() === title.toLowerCase())
+              ? `"${title}" already exists`
+              : null
+          }
+          onSubmit={title => { onNew(title); setAdding(false); }}
+          onCancel={() => setAdding(false)}
+        />
+      ) : (
+        <div className={styles.addRow}>
           <button className={sectionBtnStyles.btn} type="button" onClick={() => setAdding(true)}>
             <PlusIcon size={11} />
             <PageIcon size={13} />
             New Page
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </CollapsibleSection>
   );
 }
