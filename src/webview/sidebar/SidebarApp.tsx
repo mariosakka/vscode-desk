@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ScopedData, SidebarData } from './types';
-import { BookmarkGrid } from './components/BookmarkGrid/BookmarkGrid';
-import { InlineBookmarkForm } from './components/InlineBookmarkForm/InlineBookmarkForm';
-import { QuickOpenForm } from './components/QuickOpenForm/QuickOpenForm';
-import { BookmarkIcon, GlobeIcon } from './components/shared/Icons';
-import { EmptyState } from './components/shared/EmptyState';
-import sectionBtnStyles from './components/shared/SectionBtn.module.css';
+import { BookmarksPanel } from './components/BookmarksPanel/BookmarksPanel';
 import { PagesPanel } from './components/PagesPanel/PagesPanel';
 import { SkillsPanel } from './components/SkillsPanel/SkillsPanel';
 import { WorkflowPanel } from './components/WorkflowPanel/WorkflowPanel';
@@ -24,65 +19,27 @@ window.addEventListener('message', (e: MessageEvent) => {
   }
 });
 
-type FormMode = 'idle' | 'addingBookmark' | 'quickOpen';
 type Scope = 'workspace' | 'global';
 
 interface ScopedPaneProps {
   scopedData: ScopedData;
   scope: Scope;
-  formMode: FormMode;
-  setFormMode: (m: FormMode) => void;
   send: (msg: unknown) => void;
 }
 
-function ScopedPane({ scopedData, scope, formMode, setFormMode, send }: ScopedPaneProps) {
+function ScopedPane({ scopedData, scope, send }: ScopedPaneProps) {
   const bookmarks = scopedData.data.bookmarks ?? [];
 
   return (
     <>
-      {formMode === 'quickOpen' && (
-        <QuickOpenForm
-          onSubmit={url => { send({ type: 'openUrl', url, scope }); setFormMode('idle'); }}
-          onCancel={() => setFormMode('idle')}
-        />
-      )}
-      <div>
-        <div style={{ display: 'flex', gap: '6px', padding: '8px 12px 0' }}>
-          <button
-            className={sectionBtnStyles.btn}
-            onClick={() => setFormMode('addingBookmark')}
-            disabled={formMode !== 'idle'}
-            title="Add bookmark"
-          >
-            <BookmarkIcon size={11} /> Bookmark
-          </button>
-          <button
-            className={sectionBtnStyles.btn}
-            onClick={() => setFormMode('quickOpen')}
-            disabled={formMode !== 'idle'}
-            title="Open URL"
-          >
-            <GlobeIcon size={11} />
-          </button>
-        </div>
-        <div id={`bookmarks-grid-${scope}`}>
-          <BookmarkGrid
-            bookmarks={bookmarks}
-            onOpen={(url) => send({ type: 'openUrl', url, scope })}
-            onRemove={(bookmarkId) => send({ type: 'removeBookmark', bookmarkId, scope })}
-            onEdit={(bookmarkId, title, url) => send({ type: 'updateBookmark', bookmarkId, fields: { title, url }, scope })}
-          />
-          {formMode === 'addingBookmark' ? (
-            <InlineBookmarkForm
-              existingTitles={bookmarks.map(b => b.title)}
-              onSubmit={(title, url) => { send({ type: 'addBookmark', title, url, scope }); setFormMode('idle'); }}
-              onCancel={() => setFormMode('idle')}
-            />
-          ) : formMode === 'idle' && bookmarks.length === 0 ? (
-            <EmptyState message="No bookmarks yet. Click + Bookmark above to add one." />
-          ) : null}
-        </div>
-      </div>
+      <BookmarksPanel
+        bookmarks={bookmarks}
+        onOpen={(url) => send({ type: 'openUrl', url, scope })}
+        onRemove={(bookmarkId) => send({ type: 'removeBookmark', bookmarkId, scope })}
+        onEdit={(bookmarkId, title, url) => send({ type: 'updateBookmark', bookmarkId, fields: { title, url }, scope })}
+        onAdd={(title, url) => send({ type: 'addBookmark', title, url, scope })}
+        onOpenUrl={(url) => send({ type: 'openUrl', url, scope })}
+      />
       <PagesPanel
         pages={scopedData.pages ?? []}
         onOpen={(filename) => send({ type: 'openPage', filename, scope })}
@@ -108,8 +65,6 @@ function ScopedPane({ scopedData, scope, formMode, setFormMode, send }: ScopedPa
 export function SidebarApp() {
   const [data, setData] = useState<SidebarData | null>(null);
   const [activeScope, setActiveScope] = useState<Scope>('workspace');
-  const [wsFormMode, setWsFormMode] = useState<FormMode>('idle');
-  const [globalFormMode, setGlobalFormMode] = useState<FormMode>('idle');
 
   useEffect(() => {
     _onData = (incoming) => {
@@ -160,21 +115,9 @@ export function SidebarApp() {
       )}
 
       {hasWorkspace && activeScope === 'workspace' ? (
-        <ScopedPane
-          scopedData={data!.workspace!}
-          scope="workspace"
-          formMode={wsFormMode}
-          setFormMode={setWsFormMode}
-          send={send}
-        />
+        <ScopedPane scopedData={data!.workspace!} scope="workspace" send={send} />
       ) : (
-        <ScopedPane
-          scopedData={data?.global ?? emptyScoped}
-          scope="global"
-          formMode={globalFormMode}
-          setFormMode={setGlobalFormMode}
-          send={send}
-        />
+        <ScopedPane scopedData={data?.global ?? emptyScoped} scope="global" send={send} />
       )}
       <PageTemplatePanel
         template={data?.pageTemplate ?? null}
