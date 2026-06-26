@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/mariosakka/vscode-desk/compare/v0.3.6...v0.4.0) (2026-06-26)
+
+
+### Features
+
+* global page template — MCP tools + sidebar panel ([9106025](https://github.com/mariosakka/vscode-desk/commit/910602569f1e565fe231f272595d68dbb3e21a89))
+* page consistency — global template, content wrapper, richer docs ([d495fdc](https://github.com/mariosakka/vscode-desk/commit/d495fdcfacca618f5ba9d38678fbceafab561934))
+
+
+### Bug Fixes
+
+* scroll to top when navigating to a new .desk page ([eadd97f](https://github.com/mariosakka/vscode-desk/commit/eadd97f87e23ca5614081410da6929ceb4ff35de))
+
 ## [0.3.6](https://github.com/mariosakka/vscode-desk/compare/v0.3.5...v0.3.6) (2026-06-26)
 
 
