@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/mariosakka/vscode-desk/compare/v0.4.0...v0.4.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* bookmarks section — remove duplicate empty state, match pages panel style ([95deb4f](https://github.com/mariosakka/vscode-desk/commit/95deb4fdc5a82202f13f383cfffac39da349c882))
+* bookmarks section visual bugs + style match pages panel ([b9869fe](https://github.com/mariosakka/vscode-desk/commit/b9869fee78d74d1a3c843d98049ccba848752d20))
+
 ## [0.4.0](https://github.com/mariosakka/vscode-desk/compare/v0.3.6...v0.4.0) (2026-06-26)
 
 
