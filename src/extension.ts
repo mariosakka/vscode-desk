@@ -91,11 +91,11 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider(PortalViewProvider.viewType, provider),
   );
 
-  const port = vscode.workspace.getConfiguration('desk').get<number>('mcpPort', 3333);
-  mcpServer.start(port);
-  context.subscriptions.push({ dispose: () => mcpServer.stop() });
-
-  agentRegistry.showSetupPrompt(port).then(() => agentRegistry.showSkillInstallPrompt()).catch(() => {});
+  const preferredPort = vscode.workspace.getConfiguration('desk').get<number>('mcpPort', 3333);
+  mcpServer.start(preferredPort).then(actualPort => {
+    context.subscriptions.push({ dispose: () => mcpServer.stop() });
+    agentRegistry.showSetupPrompt(actualPort).then(() => agentRegistry.showSkillInstallPrompt()).catch(() => {});
+  }).catch(() => {});
 
   async function pickScope(): Promise<'workspace' | 'global' | undefined> {
     if (!workspaceDataService) return 'global';

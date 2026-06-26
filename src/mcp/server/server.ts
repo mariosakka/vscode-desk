@@ -28,14 +28,26 @@ export class McpServer {
     private readonly onSkillSubmitted: ((scope: string) => void) | null = null,
   ) {}
 
-  start(port: number): void {
-    this.server = http.createServer((req, res) => {
-      this.handleRequest(req, res).catch(err => {
-        res.writeHead(500);
-        res.end(JSON.stringify({ error: err.message }));
+  start(port: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const srv = http.createServer((req, res) => {
+        this.handleRequest(req, res).catch(err => {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: err.message }));
+        });
       });
+      srv.once('error', (err: NodeJS.ErrnoException) => {
+        srv.close();
+        if (err.code === 'EADDRINUSE') {
+          this.start(port + 1).then(resolve, reject);
+        } else {
+          reject(err);
+        }
+      });
+      srv.once('listening', () => resolve(port));
+      srv.listen(port, '127.0.0.1');
+      this.server = srv;
     });
-    this.server.listen(port, '127.0.0.1');
   }
 
   stop(): void {
