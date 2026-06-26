@@ -38,7 +38,7 @@ A VS Code extension with four features:
   McpServer (127.0.0.1:3333 by default)
 ```
 
-**DataService** owns all reads and writes to `data.json` under `~/.desk/`. No other class touches it directly.  
+**DataService** owns all reads and writes under `~/.desk/` — `data.json` (bookmarks) and `page-template.desk`. No other class touches these files directly.  
 **FaviconService** fetches and caches favicons. No other class fetches favicons.  
 **PageReader** reads and writes `.desk` files. No other class touches the `desk-pages/` directory.  
 **WorkflowConfigService** owns `workflow.json` and pending review state. No other class reads or writes workflow config directly.  
@@ -75,7 +75,7 @@ src/
     server/
       server.ts                 JSON-RPC 2.0 HTTP server
       server.test.ts
-    toolSchemas.ts              JSON schemas for all 14 tools
+    toolSchemas.ts              JSON schemas for all 16 tools
     resources.ts                3 MCP resources (self-documentation for agents)
   agents/
     constants.ts                AgentId, ConfigDir, ConfigFile, CliBinary enums
@@ -114,55 +114,52 @@ src/
       components/
         shared/
           Icons.tsx             All SVG icons (TrashIcon, CheckIcon, CloseIcon, BookmarkIcon,
-                                ProjectIcon, GlobeIcon, PageIcon, ChevronIcon, PlusIcon,
+                                GlobeIcon, PageIcon, ChevronIcon, PlusIcon,
                                 SkillIcon, WorkflowIcon, PencilIcon)
           ConfirmButtons.tsx    Inline delete-confirmation pattern (Delete? ✓ ✗)
           ConfirmButtons.module.css
           CollapsibleSection.tsx  Animated expand/collapse panel with header button and action slot
           CollapsibleSection.module.css
-          EmptyState.tsx        Centered placeholder text
+          EmptyState.tsx        Centered placeholder text — use in every panel with 0-item state
           EmptyState.module.css
           HoverIconButton.tsx   Icon button that appears on row hover; calls e.stopPropagation()
           HoverIconButton.module.css
-          InlineBarForm.tsx     Single-input inline form (shared by forms that need a bar layout)
+          PanelRow.tsx          Shared row: icon + label + optional sublabel + actions slot;
+                                used by PagesPanel and SkillsPanel
+          PanelRow.module.css
+          InlineBarForm.tsx     Single-input inline form with validate callback; used by PagesPanel
           InlineBarForm.module.css
           EditActions.tsx       Save/cancel button pair used inside edit forms
           EditActions.module.css
           DismissButton.tsx     Small × button for dismissing banners/notices
           DismissButton.module.css
-          SectionBtn.module.css Shared CSS for section-level action buttons (+ Project, + Bookmark, etc.)
+          SectionBtn.module.css Shared CSS for section-level action buttons (+ Bookmark, New Page, etc.)
           Inputs.module.css     Shared CSS for text inputs inside bookmark/page edit forms
           FormButtons.module.css  Shared CSS for form submit/cancel button pairs
-        Header/
-          Header.tsx            Legacy header component (unused in current layout)
-          Header.module.css
-        TabBar/
-          TabBar.tsx            Tab strip with active state, remove, and confirm
-          TabBar.module.css
-        BookmarkGrid/
-          BookmarkGrid.tsx      Grid wrapper — maps bookmarks to BookmarkCard
-          BookmarkGrid.module.css
         BookmarkCard/
           BookmarkCard.tsx      Individual bookmark card with inline edit and hover delete
           BookmarkCard.module.css
-        InlineTabForm/
-          InlineTabForm.tsx     Inline tab name input with duplicate check
-          InlineTabForm.module.css
         InlineBookmarkForm/
-          InlineBookmarkForm.tsx  Inline title + URL form with duplicate check
+          InlineBookmarkForm.tsx  Two-field (title + URL) inline form with duplicate check
           InlineBookmarkForm.module.css
         QuickOpenForm/
           QuickOpenForm.tsx     Single-field URL input for opening arbitrary URLs
           QuickOpenForm.module.css
+        BookmarksPanel/
+          BookmarksPanel.tsx    CollapsibleSection listing bookmarks with add/open/edit/delete and quick-open
+          BookmarksPanel.module.css
         PagesPanel/
-          PagesPanel.tsx        CollapsibleSection listing .desk pages with open/edit/delete/new actions
+          PagesPanel.tsx        CollapsibleSection listing .desk pages; uses PanelRow + InlineBarForm
           PagesPanel.module.css
         SkillsPanel/
-          SkillsPanel.tsx       CollapsibleSection listing skills with edit/remove/submit actions
+          SkillsPanel.tsx       CollapsibleSection listing skills; uses PanelRow + EmptyState
           SkillsPanel.module.css
         WorkflowPanel/
           WorkflowPanel.tsx     CollapsibleSection for viewing and editing WorkflowConfig inline
           WorkflowPanel.module.css
+        PageTemplatePanel/
+          PageTemplatePanel.tsx  CollapsibleSection for the global page template (set/edit/clear)
+          PageTemplatePanel.module.css
     page/
       index.html                Page viewer template
       index.css                 VS Code theme token mapping + doc layout
@@ -249,7 +246,7 @@ Always go through `PageReader`. It enforces the `desk-pages/` directory, parses 
   </script>
 </desk-page>
 ```
-- Content is injected directly into `<body>` — full viewport available, custom `body` layout (flex, grid) works as intended.
+- Content is injected into a `<div class="page-content">` wrapper (max-width 860px, centred) — do not add body layout CSS or an outer wrapper div.
 - The back button is a `position: fixed` overlay and is never displaced by page CSS.
 - `#hash` links scroll to the named anchor (native browser behaviour — no postMessage).
 - `<script>` blocks are extracted by `pageFormat.parse()` and re-injected at the bottom of `<body>` by `PageViewPanel`. Inline event handlers (`onclick`, etc.) also work — the page viewer CSP uses `'unsafe-inline'` (`.desk` pages are local user-controlled content).
@@ -271,6 +268,7 @@ All data lives in plain JSON files under `~/.desk/`, written by the service laye
 | `~/.desk/workspaces/<slug>/workflow.json` | `WorkflowConfig` | Workspace-scoped workflow config |
 | `~/.desk/global/skills.json` | `Skill[]` | Global workflow skills |
 | `~/.desk/workspaces/<slug>/skills.json` | `Skill[]` | Workspace-scoped skills |
+| `~/.desk/global/page-template.desk` | text | Global page template — shared `<style>` block / HTML skeleton agents use when creating new pages |
 | `desk.favicon-cache` (globalState) | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
 | `<workspace>/desk-pages/*.desk` | XML | Page files managed by `PageReader` |
 
@@ -308,11 +306,11 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 
 **Sidebar (SidebarViewProvider ↔ `src/webview/sidebar/SidebarApp.tsx`)**
 
-All Webview → Host messages include a `scope: 'workspace' | 'global'` field.
+All Webview → Host messages include a `scope: 'workspace' | 'global'` field unless noted.
 
 | Direction | `type` | Extra fields |
 |-----------|--------|--------------|
-| Host → Webview | `update` | `data: SidebarData` |
+| Host → Webview | `update` | `data: SidebarData` (includes `pageTemplate: string \| null`) |
 | Webview → Host | `ready` | — |
 | Webview → Host | `openUrl` | `url: string` — opens in VS Code Simple Browser (or PageViewPanel for `desk-page:` URLs) |
 | Webview → Host | `addBookmark` | `title, url` — favicon fetched by host |
@@ -327,6 +325,8 @@ All Webview → Host messages include a `scope: 'workspace' | 'global'` field.
 | Webview → Host | `submitSkill` | — — runs `desk.submitSkill` command |
 | Webview → Host | `removeSkill` | `name: string` |
 | Webview → Host | `saveWorkflow` | `config: WorkflowConfig` |
+| Webview → Host | `editPageTemplate` | — (no scope) — creates starter file if absent, opens in VS Code editor |
+| Webview → Host | `clearPageTemplate` | — (no scope) — deletes `~/.desk/global/page-template.desk` |
 
 **Page viewer (PageViewPanel ↔ `src/webview/page/index.js`)**
 
@@ -347,7 +347,7 @@ The page viewer has no host→webview messages — navigation replaces the entir
 - **Capabilities:** `{ tools: {}, resources: {} }`
 - **HTTP status:** always `200` for valid JSON-RPC. Errors arrive as `{ error: { code, message } }` in the response body.
 
-**14 tools:**
+**16 tools:**
 
 | Tool | R/W | Required args |
 |------|-----|---------------|
@@ -365,6 +365,8 @@ The page viewer has no host→webview messages — navigation replaces the entir
 | `get_skill` | R | `name` |
 | `add_skill` | W | `name`, `content` (`description` optional) |
 | `remove_skill` | W | `name` |
+| `get_page_template` | R | — |
+| `set_page_template` | W | `content` |
 
 **3 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
 - `desk://guide/quick-start`
@@ -372,7 +374,8 @@ The page viewer has no host→webview messages — navigation replaces the entir
 - `desk://guide/skill-format`
 
 Page tools return an error when VS Code has no workspace folder open.  
-`submit_workflow_config` and `add_skill` queue for user confirmation and return `{ status: "submitted" }` immediately — they do not block.
+`submit_workflow_config` and `add_skill` queue for user confirmation and return `{ status: "submitted" }` immediately — they do not block.  
+`get_page_template` / `set_page_template` are always global (no scope arg) — stored at `~/.desk/global/page-template.desk`.
 
 ---
 
@@ -396,15 +399,15 @@ Tests run in Node via Jest. The `vscode` module is mocked at `src/__mocks__/vsco
 
 ### Unit tests
 
-Current test count: **135 total**
+Current test count: **138 total**
 
 | File | Count |
 |------|-------|
-| `services/dataService/dataService.test.ts` | 13 |
+| `services/dataService/dataService.test.ts` | 16 |
 | `services/faviconService/faviconService.test.ts` | 7 |
 | `services/workflowConfigService/workflowConfigService.test.ts` | 6 |
 | `services/skillRegistry/skillRegistry.test.ts` | 15 |
-| `mcp/server/server.test.ts` | 21 |
+| `mcp/server/server.test.ts` | 24 |
 | `agents/jsonFileAdapter/jsonFileAdapter.test.ts` | 15 |
 | `agents/adapters/claudeCode/claudeCode.test.ts` | 14 |
 | `agents/adapters/cursor/cursor.test.ts` | 10 |
@@ -425,7 +428,7 @@ Unit test rules:
 
 | File | What it tests |
 |------|---------------|
-| `e2e/mcp.spec.ts` | JSON-RPC protocol, all 14 tools, 3 resources — uses a self-contained in-process HTTP stub (no VS Code dep) |
+| `e2e/mcp.spec.ts` | JSON-RPC protocol, all 16 tools, 3 resources — uses a self-contained in-process HTTP stub (no VS Code dep) |
 | `e2e/sidebar.spec.ts` | Sidebar webview HTML — tabs, bookmarks, icon rendering, postMessage bridge |
 | `e2e/page-viewer.spec.ts` | Page viewer webview HTML — navigation, link handling, custom styles |
 

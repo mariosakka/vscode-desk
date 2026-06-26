@@ -5,6 +5,8 @@ import { SkillIcon, TrashIcon, PlusIcon, PencilIcon } from '../shared/Icons';
 import { ConfirmButtons } from '../shared/ConfirmButtons';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { HoverIconButton } from '../shared/HoverIconButton';
+import { PanelRow } from '../shared/PanelRow';
+import { EmptyState } from '../shared/EmptyState';
 
 interface Skill {
   name: string;
@@ -32,34 +34,31 @@ export function SkillsPanel({ skills, onRemove, onNew, onEdit, onSubmit }: Props
 
   return (
     <CollapsibleSection icon={<SkillIcon size={13} />} title="Skills" badge={skills.length} action={newBtn}>
-      {skills.length === 0 && (
-        <p className={styles.empty}>No skills installed.</p>
-      )}
+      {skills.length === 0 && <EmptyState message="No skills installed." />}
       {skills.map(skill => (
-        <div key={skill.name} className={styles.row}>
-          <SkillIcon size={13} />
-          <div className={styles.rowBody}>
-            <span className={styles.skillName}>{skill.name}</span>
-            {skill.description && (
-              <span className={styles.skillDesc}>{skill.description}</span>
-            )}
-          </div>
-          {pendingName === skill.name ? (
-            <ConfirmButtons
-              onConfirm={e => { e.stopPropagation(); onRemove(skill.name); setPendingName(null); }}
-              onCancel={e => { e.stopPropagation(); setPendingName(null); }}
-            />
-          ) : (
-            <>
-              <HoverIconButton title="Edit skill" hoverColor="accent" onClick={() => onEdit(skill.name)}>
-                <PencilIcon size={12} />
-              </HoverIconButton>
-              <HoverIconButton title="Remove skill" hoverColor="danger" onClick={() => setPendingName(skill.name)}>
-                <TrashIcon size={12} />
-              </HoverIconButton>
-            </>
-          )}
-        </div>
+        <PanelRow
+          key={skill.name}
+          icon={<SkillIcon size={13} />}
+          label={skill.name}
+          sublabel={skill.description || undefined}
+          actions={
+            pendingName === skill.name ? (
+              <ConfirmButtons
+                onConfirm={e => { e.stopPropagation(); onRemove(skill.name); setPendingName(null); }}
+                onCancel={e => { e.stopPropagation(); setPendingName(null); }}
+              />
+            ) : (
+              <>
+                <HoverIconButton title="Edit skill" hoverColor="accent" onClick={() => onEdit(skill.name)}>
+                  <PencilIcon size={12} />
+                </HoverIconButton>
+                <HoverIconButton title="Remove skill" hoverColor="danger" onClick={() => setPendingName(skill.name)}>
+                  <TrashIcon size={12} />
+                </HoverIconButton>
+              </>
+            )
+          }
+        />
       ))}
       <div className={styles.submitRow}>
         <button className={sectionBtnStyles.btn} type="button" onClick={onSubmit}>

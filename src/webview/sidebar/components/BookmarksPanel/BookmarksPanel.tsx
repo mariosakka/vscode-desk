@@ -3,6 +3,7 @@ import styles from './BookmarksPanel.module.css';
 import sectionBtnStyles from '../shared/SectionBtn.module.css';
 import { BookmarkIcon, GlobeIcon, PlusIcon } from '../shared/Icons';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { EmptyState } from '../shared/EmptyState';
 import { BookmarkCard } from '../BookmarkCard/BookmarkCard';
 import { InlineBookmarkForm } from '../InlineBookmarkForm/InlineBookmarkForm';
 import { QuickOpenForm } from '../QuickOpenForm/QuickOpenForm';
@@ -40,7 +41,7 @@ export function BookmarksPanel({ bookmarks, onOpen, onRemove, onEdit, onAdd, onO
         />
       ))}
       {bookmarks.length === 0 && mode === 'idle' && (
-        <p className={styles.empty}>No bookmarks yet.</p>
+        <EmptyState message="No bookmarks yet." />
       )}
       <div className={styles.addRow}>
         {mode === 'adding' ? (
