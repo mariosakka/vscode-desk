@@ -5,8 +5,6 @@ const mockDataService = {
   get: jest.fn(),
   addBookmark: jest.fn(),
   removeBookmark: jest.fn(),
-  createProject: jest.fn(),
-  removeProject: jest.fn(),
   updateBookmark: jest.fn(),
 };
 
@@ -81,16 +79,13 @@ describe('McpServer', () => {
     expect(res.result.protocolVersion).toBeDefined();
   });
 
-  it('lists 17 tools', async () => {
+  it('lists 14 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 2 });
-    expect(res.result.tools).toHaveLength(17);
+    expect(res.result.tools).toHaveLength(14);
     const names = res.result.tools.map((t: any) => t.name);
-    expect(names).toContain('list_projects');
     expect(names).toContain('list_bookmarks');
     expect(names).toContain('add_bookmark');
     expect(names).toContain('remove_bookmark');
-    expect(names).toContain('create_project');
-    expect(names).toContain('remove_project');
     expect(names).toContain('update_bookmark');
     expect(names).toContain('list_pages');
     expect(names).toContain('create_page');
@@ -108,48 +103,32 @@ describe('McpServer', () => {
 
   it('reads the quick-start resource', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'desk://guide/quick-start' }, id: 4 });
-    expect(res.result.contents[0].text).toContain('list_projects');
+    expect(res.result.contents[0].text).toContain('list_bookmarks');
     expect(res.result.contents[0].mimeType).toBe('text/markdown');
   });
 
-  it('calls list_projects and returns project summaries', async () => {
+  it('calls list_bookmarks and returns flat array of bookmarks', async () => {
     mockDataService.get.mockReturnValue({
-      projects: [{ id: 'project_1', name: 'Work', bookmarks: [{ id: 'bm_1' }, { id: 'bm_2' }] }],
+      bookmarks: [{ id: 'bm_1', title: 'A', url: 'https://a.com', icon: '🔗', description: '' }],
     });
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
-      params: { name: 'list_projects', arguments: {} }, id: 3,
-    });
-    const projects = JSON.parse(res.result.content[0].text);
-    expect(projects[0].name).toBe('Work');
-    expect(projects[0].bookmarkCount).toBe(2);
-  });
-
-  it('calls list_bookmarks (all projects) and returns flat list with project_id', async () => {
-    mockDataService.get.mockReturnValue({
-      projects: [
-        { id: 'project_1', name: 'Work', bookmarks: [{ id: 'bm_1', title: 'A' }] },
-        { id: 'project_2', name: 'Misc', bookmarks: [{ id: 'bm_2', title: 'B' }] },
-      ],
-    });
-    const res = await postMcp(PORT, {
-      jsonrpc: '2.0', method: 'tools/call',
-      params: { name: 'list_bookmarks', arguments: {} }, id: 4,
+      params: { name: 'list_bookmarks', arguments: {} }, id: 3,
     });
     const bms = JSON.parse(res.result.content[0].text);
-    expect(bms).toHaveLength(2);
-    expect(bms[0].project_id).toBe('project_1');
+    expect(bms).toHaveLength(1);
+    expect(bms[0].title).toBe('A');
   });
 
   it('add_bookmark auto-fetches favicon when icon not provided', async () => {
     mockDataService.addBookmark.mockReturnValue({ id: 'bm_new', title: 'New', url: 'https://x.com', icon: 'data:image/png;base64,TEST', description: '' });
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
-      params: { name: 'add_bookmark', arguments: { project_id: 'project_1', title: 'New', url: 'https://x.com' } },
+      params: { name: 'add_bookmark', arguments: { title: 'New', url: 'https://x.com' } },
       id: 5,
     });
     expect(mockFaviconService.getIcon).toHaveBeenCalledWith('https://x.com');
-    expect(mockDataService.addBookmark).toHaveBeenCalledWith('project_1', expect.objectContaining({ icon: 'data:image/png;base64,TEST' }));
+    expect(mockDataService.addBookmark).toHaveBeenCalledWith(expect.objectContaining({ icon: 'data:image/png;base64,TEST' }));
     expect(mockProvider.refresh).toHaveBeenCalledTimes(1);
     expect(JSON.parse(res.result.content[0].text).id).toBe('bm_new');
   });
@@ -158,11 +137,11 @@ describe('McpServer', () => {
     mockDataService.addBookmark.mockReturnValue({ id: 'bm_2', title: 'T', url: 'https://x.com', icon: '🚀', description: '' });
     await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
-      params: { name: 'add_bookmark', arguments: { project_id: 'project_1', title: 'T', url: 'https://x.com', icon: '🚀' } },
+      params: { name: 'add_bookmark', arguments: { title: 'T', url: 'https://x.com', icon: '🚀' } },
       id: 6,
     });
     expect(mockFaviconService.getIcon).not.toHaveBeenCalled();
-    expect(mockDataService.addBookmark).toHaveBeenCalledWith('project_1', expect.objectContaining({ icon: '🚀' }));
+    expect(mockDataService.addBookmark).toHaveBeenCalledWith(expect.objectContaining({ icon: '🚀' }));
   });
 
   it('returns error for unknown tool', async () => {
@@ -216,9 +195,9 @@ describe('McpServer — workflow tools', () => {
     setTimeout(done, 30);
   });
 
-  it('lists 17 tools', async () => {
+  it('lists 14 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 });
-    expect(res.result.tools).toHaveLength(17);
+    expect(res.result.tools).toHaveLength(14);
   });
 
 

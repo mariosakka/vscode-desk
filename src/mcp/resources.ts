@@ -30,21 +30,18 @@ export const RESOURCE_CONTENT: Record<string, string> = {
   'desk://guide/quick-start': `# Desk Agent Quick-Start
 
 Desk is a VS Code extension with tabbed bookmarks and \`.desk\` doc pages.
-It runs a local JSON-RPC 2.0 MCP server at **http://127.0.0.1:3333/mcp** by default. If port 3333 is already taken (e.g. a second VS Code window), Desk picks the next free port — check the setup notification in VS Code for the actual URL.
+It runs a local JSON-RPC 2.0 MCP server at **http://localhost:3333/mcp**.
 
 ## Data model
 
 \`\`\`
 DeskData
-└── projects[]
-    ├── id          string   ("project_abc123")
-    ├── name        string
-    └── bookmarks[]
-        ├── id          string   ("bm_xyz789")
-        ├── title       string
-        ├── url         string   (https://… or desk-page:<filename>)
-        ├── icon        string   (emoji or "data:image/…" base64)
-        └── description string
+└── bookmarks[]
+    ├── id          string   ("bm_xyz789")
+    ├── title       string
+    ├── url         string   (https://… or desk-page:<filename>)
+    ├── icon        string   (emoji or "data:image/…" base64)
+    └── description string
 \`\`\`
 
 Pages are \`.desk\` files in \`<workspace>/desk-pages/\` — separate from bookmarks.
@@ -52,9 +49,8 @@ Pages are \`.desk\` files in \`<workspace>/desk-pages/\` — separate from bookm
 ## Typical loop — bookmarks
 
 \`\`\`
-list_projects       → find the right project (IDs are opaque — always fetch fresh)
-list_bookmarks      → check what already exists to avoid duplicates
-add_bookmark        → add (omit icon to auto-fetch favicon)
+list_bookmarks      → see what's already there
+add_bookmark        → add (favicon auto-fetched if icon omitted)
 update_bookmark     → patch any fields
 remove_bookmark     → clean up
 \`\`\`
@@ -77,24 +73,21 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 
 ## Key rules
 
-- **IDs are opaque** — always call list_projects / list_bookmarks to get current IDs; never cache across sessions.
+- **IDs are opaque** — always call list_bookmarks to get current IDs; never cache across sessions.
 - **Favicon is free** — omit \`icon\` in add_bookmark and Desk fetches it automatically (30-day cache).
 - **desk-page: links** — set a bookmark's \`url\` to \`desk-page:filename.desk\` and clicking it opens the page viewer directly from the sidebar.
 - **update_page is partial** — only fields you include are overwritten; omit \`content\` to change just the title, etc.
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
 - **HTTP 200 always** — errors arrive as a JSON-RPC \`error\` object, not as HTTP 4xx/5xx.
 
-## All 17 tools
+## All 14 tools
 
 | Tool | R | W | Required args |
 |------|---|---|---------------|
-| list_projects | ✓ | | — |
-| list_bookmarks | ✓ | | — (project_id optional) |
-| add_bookmark | | ✓ | project_id, title, url |
-| remove_bookmark | | ✓ | project_id, bookmark_id |
-| create_project | | ✓ | name |
-| remove_project | | ✓ | project_id |
-| update_bookmark | | ✓ | project_id, bookmark_id, fields |
+| list_bookmarks | ✓ | | — |
+| add_bookmark | | ✓ | title, url |
+| remove_bookmark | | ✓ | bookmark_id |
+| update_bookmark | | ✓ | bookmark_id, fields |
 | list_pages | ✓ | | — |
 | create_page | | ✓ | filename, title, content |
 | update_page | | ✓ | filename (+ any fields) |

@@ -13,109 +13,106 @@ afterEach(() => {
 
 describe('DataService', () => {
   describe('get()', () => {
-    it('returns empty projects when storage is empty', () => {
+    it('returns empty bookmarks when storage is empty', () => {
       const svc = new DataService(tmpDir);
       const data = svc.get();
-      expect(data.projects).toHaveLength(0);
+      expect(data.bookmarks).toHaveLength(0);
     });
 
     it('returns stored data when present', () => {
       fs.writeFileSync(
         path.join(tmpDir, 'data.json'),
-        JSON.stringify({ projects: [{ id: 'project_1', name: 'Custom', bookmarks: [] }] }),
+        JSON.stringify({ bookmarks: [{ id: 'bm_1', title: 'Custom', url: 'https://example.com', icon: '🔗', description: '' }] }),
         'utf-8'
       );
       const svc = new DataService(tmpDir);
-      expect(svc.get().projects[0].name).toBe('Custom');
+      expect(svc.get().bookmarks[0].title).toBe('Custom');
     });
 
     it('does not mutate default data across calls', () => {
       const svc = new DataService(tmpDir);
       const a = svc.get();
-      a.projects.push({ id: 'project_injected', name: 'Injected', bookmarks: [] });
+      a.bookmarks.push({ id: 'bm_injected', title: 'Injected', url: 'https://example.com', icon: '🔗', description: '' });
       const b = svc.get();
-      expect(b.projects).toHaveLength(0);
+      expect(b.bookmarks).toHaveLength(0);
     });
   });
 
   describe('addBookmark()', () => {
-    it('adds a bookmark to the specified project', () => {
+    it('adds a bookmark with a generated bm_ id', () => {
       const svc = new DataService(tmpDir);
-      const project = svc.createProject('Work');
-      const bm = svc.addBookmark(project.id, { title: 'Test', url: 'https://example.com', icon: '🔗', description: 'A test bookmark' });
+      const bm = svc.addBookmark({ title: 'Test', url: 'https://example.com', icon: '🔗', description: 'A test bookmark' });
       expect(bm.id).toMatch(/^bm_/);
       expect(bm.title).toBe('Test');
-      expect(svc.get().projects[0].bookmarks).toHaveLength(1);
+      expect(svc.get().bookmarks).toHaveLength(1);
     });
 
-    it('throws when project not found', () => {
+    it('adds multiple bookmarks independently', () => {
       const svc = new DataService(tmpDir);
-      expect(() => svc.addBookmark('project_nope', { title: 'T', url: 'https://example.com', icon: '🔗', description: '' }))
-        .toThrow('Project not found: project_nope');
+      svc.addBookmark({ title: 'First', url: 'https://first.com', icon: '🔗', description: '' });
+      svc.addBookmark({ title: 'Second', url: 'https://second.com', icon: '🔗', description: '' });
+      expect(svc.get().bookmarks).toHaveLength(2);
     });
   });
 
   describe('removeBookmark()', () => {
-    it('removes the bookmark from the project', () => {
+    it('removes the bookmark', () => {
       const svc = new DataService(tmpDir);
-      const project = svc.createProject('Work');
-      const bm = svc.addBookmark(project.id, { title: 'ToRemove', url: 'https://example.com', icon: '🔗', description: '' });
-      svc.removeBookmark(project.id, bm.id);
-      expect(svc.get().projects[0].bookmarks).toHaveLength(0);
+      const bm = svc.addBookmark({ title: 'ToRemove', url: 'https://example.com', icon: '🔗', description: '' });
+      svc.removeBookmark(bm.id);
+      expect(svc.get().bookmarks).toHaveLength(0);
     });
 
-    it('throws when project not found', () => {
+    it('throws Bookmark not found when id missing', () => {
       const svc = new DataService(tmpDir);
-      expect(() => svc.removeBookmark('project_nope', 'bm_1')).toThrow('Project not found: project_nope');
-    });
-  });
-
-  describe('createProject()', () => {
-    it('creates a new empty project', () => {
-      const svc = new DataService(tmpDir);
-      const project = svc.createProject('Tools');
-      expect(project.id).toMatch(/^project_/);
-      expect(project.name).toBe('Tools');
-      expect(project.bookmarks).toHaveLength(0);
-      expect(svc.get().projects).toHaveLength(1);
-    });
-
-    it('creates multiple independent projects', () => {
-      const svc = new DataService(tmpDir);
-      svc.createProject('Work');
-      svc.createProject('Personal');
-      expect(svc.get().projects).toHaveLength(2);
-    });
-  });
-
-  describe('removeProject()', () => {
-    it('removes the project', () => {
-      const svc = new DataService(tmpDir);
-      const project = svc.createProject('Temp');
-      svc.removeProject(project.id);
-      expect(svc.get().projects).toHaveLength(0);
+      expect(() => svc.removeBookmark('bm_nope')).toThrow('Bookmark not found: bm_nope');
     });
   });
 
   describe('updateBookmark()', () => {
     it('updates only the specified fields', () => {
       const svc = new DataService(tmpDir);
-      const project = svc.createProject('Work');
-      const bm = svc.addBookmark(project.id, { title: 'Original', url: 'https://original.com', icon: '🔗', description: 'desc' });
-      const updated = svc.updateBookmark(project.id, bm.id, { title: 'Updated' });
+      const bm = svc.addBookmark({ title: 'Original', url: 'https://original.com', icon: '🔗', description: 'desc' });
+      const updated = svc.updateBookmark(bm.id, { title: 'Updated' });
       expect(updated.title).toBe('Updated');
       expect(updated.url).toBe('https://original.com');
     });
 
-    it('throws when project not found', () => {
+    it('preserves unmodified fields', () => {
       const svc = new DataService(tmpDir);
-      expect(() => svc.updateBookmark('project_nope', 'bm_1', {})).toThrow('Project not found: project_nope');
+      const bm = svc.addBookmark({ title: 'T', url: 'https://x.com', icon: '🔗', description: 'original desc' });
+      const updated = svc.updateBookmark(bm.id, { url: 'https://y.com' });
+      expect(updated.description).toBe('original desc');
+      expect(updated.icon).toBe('🔗');
     });
 
-    it('throws when bookmark not found', () => {
+    it('throws Bookmark not found when id missing', () => {
       const svc = new DataService(tmpDir);
-      const project = svc.createProject('Work');
-      expect(() => svc.updateBookmark(project.id, 'bm_nope', {})).toThrow('Bookmark not found: bm_nope');
+      expect(() => svc.updateBookmark('bm_nope', {})).toThrow('Bookmark not found: bm_nope');
+    });
+  });
+
+  describe('scope isolation', () => {
+    it('global and workspace dirs are independent', () => {
+      const globalDir = fs.mkdtempSync(path.join(os.tmpdir(), 'desk-global-'));
+      try {
+        const globalSvc = new DataService(globalDir);
+        const workspaceSvc = new DataService(tmpDir);
+        globalSvc.addBookmark({ title: 'Global BM', url: 'https://global.com', icon: '🌐', description: '' });
+        expect(globalSvc.get().bookmarks).toHaveLength(1);
+        expect(workspaceSvc.get().bookmarks).toHaveLength(0);
+      } finally {
+        fs.rmSync(globalDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('data persistence', () => {
+    it('saved data survives a new DataService instance pointed at same dir', () => {
+      const svc1 = new DataService(tmpDir);
+      svc1.addBookmark({ title: 'Persistent', url: 'https://persistent.com', icon: '🔗', description: '' });
+      const svc2 = new DataService(tmpDir);
+      expect(svc2.get().bookmarks[0].title).toBe('Persistent');
     });
   });
 });

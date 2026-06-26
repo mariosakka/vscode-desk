@@ -18,27 +18,21 @@ const SCOPE_PROPERTY = {
 
 export const TOOLS: McpTool[] = [
   {
-    name: 'list_projects',
-    description: 'Returns all projects with their bookmark counts',
-    inputSchema: { type: 'object', properties: { scope: SCOPE_PROPERTY }, additionalProperties: false },
-  },
-  {
     name: 'list_bookmarks',
-    description: 'Returns bookmarks; pass project_id to filter to one project',
+    description: 'Returns all bookmarks in the flat list',
     inputSchema: {
       type: 'object',
-      properties: { project_id: { type: 'string', description: 'Optional project ID' }, scope: SCOPE_PROPERTY },
+      properties: { scope: SCOPE_PROPERTY },
       additionalProperties: false,
     },
   },
   {
     name: 'add_bookmark',
-    description: 'Adds a bookmark to a project. Icon is auto-fetched from the URL if not provided.',
+    description: 'Adds a bookmark to the flat list. Icon is auto-fetched from the URL if not provided.',
     inputSchema: {
       type: 'object',
-      required: ['project_id', 'title', 'url'],
+      required: ['title', 'url'],
       properties: {
-        project_id: { type: 'string' },
         title: { type: 'string' },
         url: { type: 'string' },
         icon: { type: 'string', description: 'Emoji or leave blank to auto-fetch favicon' },
@@ -50,31 +44,11 @@ export const TOOLS: McpTool[] = [
   },
   {
     name: 'remove_bookmark',
-    description: 'Removes a bookmark from a project',
+    description: 'Removes a bookmark',
     inputSchema: {
       type: 'object',
-      required: ['project_id', 'bookmark_id'],
-      properties: { project_id: { type: 'string' }, bookmark_id: { type: 'string' }, scope: SCOPE_PROPERTY },
-      additionalProperties: false,
-    },
-  },
-  {
-    name: 'create_project',
-    description: 'Creates a new empty project',
-    inputSchema: {
-      type: 'object',
-      required: ['name'],
-      properties: { name: { type: 'string' }, scope: SCOPE_PROPERTY },
-      additionalProperties: false,
-    },
-  },
-  {
-    name: 'remove_project',
-    description: 'Removes a project and all its bookmarks',
-    inputSchema: {
-      type: 'object',
-      required: ['project_id'],
-      properties: { project_id: { type: 'string' }, scope: SCOPE_PROPERTY },
+      required: ['bookmark_id'],
+      properties: { bookmark_id: { type: 'string' }, scope: SCOPE_PROPERTY },
       additionalProperties: false,
     },
   },
@@ -83,9 +57,8 @@ export const TOOLS: McpTool[] = [
     description: 'Updates one or more fields on a bookmark',
     inputSchema: {
       type: 'object',
-      required: ['project_id', 'bookmark_id', 'fields'],
+      required: ['bookmark_id', 'fields'],
       properties: {
-        project_id: { type: 'string' },
         bookmark_id: { type: 'string' },
         fields: {
           type: 'object',

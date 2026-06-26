@@ -71,9 +71,9 @@ Omitting `scope` defaults to `"global"`.
 
 ## Bookmark tools
 
-### `list_projects`
+### `list_bookmarks`
 
-Returns all projects with their IDs, names, and bookmark counts.
+Returns all bookmarks as a flat array.
 
 **Arguments:**
 
@@ -82,27 +82,6 @@ Returns all projects with their IDs, names, and bookmark counts.
 | `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
 
 **Returns:**
-```json
-[
-  { "id": "proj_abc123", "name": "Work", "bookmarkCount": 4 },
-  { "id": "proj_def456", "name": "Research", "bookmarkCount": 2 }
-]
-```
-
----
-
-### `list_bookmarks`
-
-Returns bookmarks. Without `project_id` returns all bookmarks across all projects, each with a `project_id` field added.
-
-**Arguments:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `project_id` | string | no | Filter to one project |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
-
-**Returns (single project):**
 ```json
 [
   {
@@ -115,24 +94,16 @@ Returns bookmarks. Without `project_id` returns all bookmarks across all project
 ]
 ```
 
-**Returns (all projects — no `project_id`):**
-```json
-[
-  { "id": "bm_xyz789", "project_id": "proj_abc123", "title": "MDN Web Docs", ... }
-]
-```
-
 ---
 
 ### `add_bookmark`
 
-Adds a bookmark to a project. If `icon` is omitted, Desk fetches the site's favicon automatically and caches it for 30 days. Falls back to `🌐` if the fetch fails.
+Adds a bookmark. If `icon` is omitted, Desk fetches the site's favicon automatically and caches it for 30 days. Falls back to `🌐` if the fetch fails.
 
 **Arguments:**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `project_id` | string | **yes** | Target project ID |
 | `title` | string | **yes** | Display name on the card |
 | `url` | string | **yes** | Full URL including scheme |
 | `icon` | string | no | Emoji or base64 `data:` URL. Omit to auto-fetch favicon |
@@ -157,42 +128,7 @@ Permanently removes a bookmark. Cannot be undone.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `project_id` | string | **yes** | |
 | `bookmark_id` | string | **yes** | |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
-
-**Returns:** `"removed"`
-
----
-
-### `create_project`
-
-Creates a new empty project.
-
-**Arguments:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | **yes** | |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
-
-**Returns:** the new project object.
-
-```json
-{ "id": "proj_new111", "name": "AI Tools", "bookmarks": [] }
-```
-
----
-
-### `remove_project`
-
-Removes a project and **all its bookmarks**. Cannot be undone.
-
-**Arguments:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `project_id` | string | **yes** | |
 | `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
 
 **Returns:** `"removed"`
@@ -207,7 +143,6 @@ Partially updates a bookmark. Only the fields present in `fields` are changed; e
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `project_id` | string | **yes** | |
 | `bookmark_id` | string | **yes** | |
 | `fields` | object | **yes** | Any subset of `title`, `url`, `icon`, `description` |
 | `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
@@ -217,7 +152,6 @@ Partially updates a bookmark. Only the fields present in `fields` are changed; e
 ```json
 // rename and re-point a bookmark
 {
-  "project_id": "proj_abc123",
   "bookmark_id": "bm_xyz789",
   "fields": { "title": "MDN — HTML", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML" }
 }
@@ -550,7 +484,6 @@ Desk maps its own variables onto VS Code's theme tokens, so they automatically a
 
 | Situation | Code | Message pattern |
 |-----------|------|-----------------|
-| Project not found | `-32603` | `"Project not found: <id>"` |
 | Bookmark not found | `-32603` | `"Bookmark not found: <id>"` |
 | Page file not found | `-32603` | `"ENOENT: no such file..."` |
 | No workspace open | `-32603` | `"No workspace open — pages unavailable"` |

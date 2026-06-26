@@ -9,13 +9,12 @@ import { HoverIconButton } from '../shared/HoverIconButton';
 
 interface Props {
   bookmark: Bookmark;
-  tabId: string;
   onOpen: (url: string) => void;
-  onRemove: (projectId: string, bookmarkId: string) => void;
-  onEdit: (projectId: string, bookmarkId: string, title: string, url: string) => void;
+  onRemove: (bookmarkId: string) => void;
+  onEdit: (bookmarkId: string, title: string, url: string) => void;
 }
 
-export function BookmarkCard({ bookmark, tabId, onOpen, onRemove, onEdit }: Props) {
+export function BookmarkCard({ bookmark, onOpen, onRemove, onEdit }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(bookmark.title);
@@ -26,7 +25,7 @@ export function BookmarkCard({ bookmark, tabId, onOpen, onRemove, onEdit }: Prop
     const title = editTitle.trim();
     const url = editUrl.trim();
     if (!title || !url) return;
-    onEdit(tabId, bookmark.id, title, url);
+    onEdit(bookmark.id, title, url);
     setEditing(false);
   };
 
@@ -82,7 +81,7 @@ export function BookmarkCard({ bookmark, tabId, onOpen, onRemove, onEdit }: Prop
       </div>
       {confirming ? (
         <ConfirmButtons
-          onConfirm={() => onRemove(tabId, bookmark.id)}
+          onConfirm={() => onRemove(bookmark.id)}
           onCancel={() => setConfirming(false)}
         />
       ) : (

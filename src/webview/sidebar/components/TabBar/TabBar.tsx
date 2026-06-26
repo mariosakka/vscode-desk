@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Project } from '../../types';
+
 import styles from './TabBar.module.css';
 import { TrashIcon } from '../shared/Icons';
 import { ConfirmButtons } from '../shared/ConfirmButtons';
 import { HoverIconButton } from '../shared/HoverIconButton';
 
 interface Props {
-  tabs: Project[];
+  tabs: { id: string; name: string }[];
   activeTabId: string;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;

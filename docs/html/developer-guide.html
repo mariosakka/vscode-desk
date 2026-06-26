@@ -223,8 +223,8 @@ this.provider.refresh()  <span class="cm">// pushes update to open webview</span
     <p>All data lives in plain JSON files under <code>~/.desk/</code>, managed by helpers in <code>src/storage/deskDir.ts</code>:</p>
     <table>
       <tr><th>Path</th><th>Type</th><th>Contents</th></tr>
-      <tr><td><code>~/.desk/global/data.json</code></td><td><code>PortalData</code></td><td>Global projects and bookmarks. Survives VS Code restarts and workspace changes.</td></tr>
-      <tr><td><code>~/.desk/workspaces/&lt;slug&gt;/data.json</code></td><td><code>PortalData</code></td><td>Workspace-scoped projects and bookmarks.</td></tr>
+      <tr><td><code>~/.desk/global/data.json</code></td><td><code>DeskData</code></td><td>Global bookmarks. Survives VS Code restarts and workspace changes.</td></tr>
+      <tr><td><code>~/.desk/workspaces/&lt;slug&gt;/data.json</code></td><td><code>DeskData</code></td><td>Workspace-scoped bookmarks.</td></tr>
       <tr><td><code>~/.desk/global/workflow.json</code></td><td><code>WorkflowConfig</code></td><td>Global team workflow config.</td></tr>
       <tr><td><code>~/.desk/workspaces/&lt;slug&gt;/workflow.json</code></td><td><code>WorkflowConfig</code></td><td>Workspace-scoped workflow config.</td></tr>
       <tr><td><code>~/.desk/global/skills.json</code></td><td><code>Skill[]</code></td><td>Global workflow skills.</td></tr>
@@ -263,7 +263,7 @@ npm test          <span class="cm"># jest — all test files under src/</span></
     <h3>Test files</h3>
     <table>
       <tr><th>File</th><th>What it tests</th><th>Tests</th></tr>
-      <tr><td><code>dataService.test.ts</code></td><td>CRUD operations on projects and bookmarks; empty default state; error on missing project; global vs workspace scope.</td><td>13</td></tr>
+      <tr><td><code>dataService.test.ts</code></td><td>CRUD operations on bookmarks; empty default state; error on missing bookmark; global vs workspace scope.</td><td>13</td></tr>
       <tr><td><code>faviconService.test.ts</code></td><td>Invalid URL rejection; fetch failure fallback; cache miss/hit; stale re-fetch; hostname deduplication.</td><td>7</td></tr>
       <tr><td><code>server.test.ts</code></td><td>Full JSON-RPC round trips: initialize, all 17 tools, 3 resources, favicon auto-fetch, icon skip when provided, error for unknown tool, 404 for wrong path.</td><td>19</td></tr>
     </table>
@@ -290,14 +290,11 @@ npm test          <span class="cm"># jest — all test files under src/</span></
     <table>
       <tr><th>Direction</th><th>Message type</th><th>Payload</th></tr>
       <tr><td>Host → Webview</td><td><code>update</code></td><td><code>{ data: SidebarData }</code> — full state snapshot</td></tr>
-      <tr><td>Host → Webview</td><td><code>switchTab</code></td><td><code>{ projectId: string }</code></td></tr>
       <tr><td>Webview → Host</td><td><code>ready</code></td><td>— triggers initial <code>update</code></td></tr>
       <tr><td>Webview → Host</td><td><code>openUrl</code></td><td><code>{ url: string }</code> — opens in browser or page viewer</td></tr>
-      <tr><td>Webview → Host</td><td><code>addBookmark</code></td><td><code>{ projectId, title, url }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>removeBookmark</code></td><td><code>{ projectId, bookmarkId }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>updateBookmark</code></td><td><code>{ projectId, bookmarkId, fields: { title?, url? } }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>addProject</code></td><td><code>{ name: string }</code></td></tr>
-      <tr><td>Webview → Host</td><td><code>removeProject</code></td><td><code>{ projectId: string }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>addBookmark</code></td><td><code>{ title, url }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>removeBookmark</code></td><td><code>{ bookmarkId }</code></td></tr>
+      <tr><td>Webview → Host</td><td><code>updateBookmark</code></td><td><code>{ bookmarkId, fields: { title?, url? } }</code></td></tr>
       <tr><td>Webview → Host</td><td><code>openPage</code></td><td><code>{ filename: string }</code></td></tr>
       <tr><td>Webview → Host</td><td><code>newPage</code></td><td><code>{ title: string }</code></td></tr>
       <tr><td>Webview → Host</td><td><code>deletePage</code></td><td><code>{ filename: string }</code></td></tr>

@@ -45,16 +45,8 @@
         "title": "Desk: Add Bookmark"
       },
       {
-        "command": "desk.addProject",
-        "title": "Desk: Add Project"
-      },
-      {
         "command": "desk.removeBookmark",
         "title": "Desk: Remove Bookmark"
-      },
-      {
-        "command": "desk.removeProject",
-        "title": "Desk: Remove Project"
       },
       {
         "command": "desk.openPage",
@@ -103,10 +95,6 @@
       {
         "command": "desk.submitSkill",
         "title": "Desk: Submit Skill"
-      },
-      {
-        "command": "desk.listProjects",
-        "title": "Desk: List Projects"
       },
       {
         "command": "desk.listBookmarks",

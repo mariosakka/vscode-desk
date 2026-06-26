@@ -6,14 +6,8 @@ export interface Bookmark {
   description: string;
 }
 
-export interface Project {
-  id: string;
-  name: string;
-  bookmarks: Bookmark[];
-}
-
 export interface DeskData {
-  projects: Project[];
+  bookmarks: Bookmark[];
 }
 
 export interface PageMeta {

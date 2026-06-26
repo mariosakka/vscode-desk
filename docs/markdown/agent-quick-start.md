@@ -23,16 +23,13 @@ Add it to your MCP client config (Claude Code example):
 ## The shape of data
 
 ```
-PortalData
-└── projects[]
-    ├── id        string   (e.g. "proj_abc123")
-    ├── name      string
-    └── bookmarks[]
-        ├── id          string   (e.g. "bm_xyz789")
-        ├── title       string
-        ├── url         string
-        ├── icon        string   (emoji or "data:image/..." base64)
-        └── description string
+DeskData
+└── bookmarks[]
+    ├── id          string   (e.g. "bm_xyz789")
+    ├── title       string
+    ├── url         string
+    ├── icon        string   (emoji or "data:image/..." base64)
+    └── description string
 ```
 
 Data is stored as plain JSON files in `~/.desk/global/` (global scope) or `~/.desk/workspaces/<slug>/` (workspace scope). All tools accept an optional `scope: "global" | "workspace"` parameter; it defaults to `"global"`.
@@ -42,10 +39,9 @@ Pages are separate — they live as `.desk` files in `desk-pages/` inside the op
 ## The typical loop
 
 ```
-list_projects       → find or create the right project
 list_bookmarks      → see what's already there
-add_bookmark        → add new ones  (favicon auto-fetched if icon omitted)
-update_bookmark     → fix title/url/description
+add_bookmark        → add (favicon auto-fetched if icon omitted)
+update_bookmark     → patch any fields
 remove_bookmark     → clean up
 ```
 
@@ -72,23 +68,16 @@ remove_skill           → remove a skill and uninstall from all agent paths
 ## Minimal example — add one bookmark
 
 ```json
-// 1. Find a project
-{ "jsonrpc": "2.0", "method": "tools/call",
-  "params": { "name": "list_projects", "arguments": {} }, "id": 1 }
-
-// → [{ "id": "proj_abc123", "name": "Work", "bookmarkCount": 3 }]
-
-// 2. Add a bookmark (icon auto-fetched)
+// Add a bookmark (icon auto-fetched)
 { "jsonrpc": "2.0", "method": "tools/call",
   "params": {
     "name": "add_bookmark",
     "arguments": {
-      "project_id": "proj_abc123",
       "title": "GitHub",
       "url": "https://github.com",
       "description": "Code hosting"
     }
-  }, "id": 2 }
+  }, "id": 1 }
 
 // → { "id": "bm_new999", "title": "GitHub", "url": "https://github.com", ... }
 ```
@@ -113,7 +102,7 @@ or by adding a bookmark with `url: "desk-page:auth-flow.desk"`.
 
 ## Key rules
 
-- **IDs are opaque** — always call `list_projects` / `list_bookmarks` to get current IDs; never guess or cache them across sessions.
+- **IDs are opaque** — always call `list_bookmarks` to get current IDs; never guess or cache them across sessions.
 - **Favicon is free** — omit `icon` in `add_bookmark` and Desk fetches and caches it automatically (30-day TTL).
 - **Custom styles are scoped** — CSS in `customStyles` only applies inside that page; use `var(--accent)`, `var(--accent2)`, `var(--text)`, `var(--muted)` to stay on-theme.
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
@@ -121,17 +110,14 @@ or by adding a bookmark with `url: "desk-page:auth-flow.desk"`.
 - **HTTP 200 always** — errors come back as a JSON-RPC `error` object, not as HTTP 4xx/5xx.
 - **Scope defaults to global** — omit `scope` to read/write global data; pass `scope: "workspace"` for workspace-specific data.
 
-## All 17 tools at a glance
+## All 14 tools at a glance
 
 | Tool | Reads | Writes | Required args |
 |------|-------|--------|---------------|
-| `list_projects` | ✓ | | — |
-| `list_bookmarks` | ✓ | | — (`project_id` optional) |
-| `add_bookmark` | | ✓ | `project_id`, `title`, `url` |
-| `remove_bookmark` | | ✓ | `project_id`, `bookmark_id` |
-| `create_project` | | ✓ | `name` |
-| `remove_project` | | ✓ | `project_id` |
-| `update_bookmark` | | ✓ | `project_id`, `bookmark_id`, `fields` |
+| `list_bookmarks` | ✓ | | — |
+| `add_bookmark` | | ✓ | `title`, `url` |
+| `remove_bookmark` | | ✓ | `bookmark_id` |
+| `update_bookmark` | | ✓ | `bookmark_id`, `fields` |
 | `list_pages` | ✓ | | — |
 | `create_page` | | ✓ | `filename`, `title`, `content` |
 | `update_page` | | ✓ | `filename` (+ any fields to change) |
