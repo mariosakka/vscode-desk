@@ -86,6 +86,8 @@ export function activate(context: vscode.ExtensionContext): void {
       await showSkillConfirmPrompt(registry, adapters);
       provider.refresh();
     },
+    workspaceName,
+    workspaceRoot,
   );
 
   context.subscriptions.push(

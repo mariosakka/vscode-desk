@@ -24,6 +24,12 @@ export const RESOURCES: McpResource[] = [
     description: 'YAML frontmatter spec, content rules, and install paths for workflow skills submitted via add_skill.',
     mimeType: 'text/markdown',
   },
+  {
+    uri: 'desk://workspace/current',
+    name: 'Current Workspace',
+    description: 'The VS Code workspace name and folder path this MCP server instance is attached to. Read at session start to verify you are connected to the correct window before any write operations.',
+    mimeType: 'application/json',
+  },
 ];
 
 export const RESOURCE_CONTENT: Record<string, string> = {
@@ -71,8 +77,21 @@ communication: [{ label: "General", channel: "#general" }, { label: "Deploys", c
 general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-repo" }]
 \`\`\`
 
+## Session start — verify workspace
+
+Multiple VS Code windows run separate Desk instances, but only one can own port 3333. Before doing any write operations, confirm you are connected to the intended window:
+
+\`\`\`
+resources/read desk://workspace/current
+\`\`\`
+
+This returns \`{ "workspaceName": "my-project", "workspacePath": "/home/user/work/my-project" }\`.
+
+Compare \`workspacePath\` against the directory you are actually working in. If they do not match, **stop and tell the user** — they may have the wrong VS Code window in focus. Do not create, update, or delete anything until the mismatch is resolved.
+
 ## Key rules
 
+- **Verify workspace first** — always read \`desk://workspace/current\` before write operations in a new session.
 - **IDs are opaque** — always call list_bookmarks to get current IDs; never cache across sessions.
 - **Favicon is free** — omit \`icon\` in add_bookmark and Desk fetches it automatically (30-day cache).
 - **desk-page: links** — set a bookmark's \`url\` to \`desk-page:filename.desk\` and clicking it opens the page viewer directly from the sidebar.

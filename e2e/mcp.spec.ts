@@ -89,9 +89,13 @@ function dispatch(
       { uri: 'desk://guide/quick-start',          name: 'Desk Agent Quick-Start',        mimeType: 'text/markdown' },
       { uri: 'desk://guide/desk-page-format',     name: 'Desk Page Format (.desk)',       mimeType: 'text/markdown' },
       { uri: 'desk://guide/skill-format',         name: 'Desk Skill Format',             mimeType: 'text/markdown' },
+      { uri: 'desk://workspace/current',          name: 'Current Workspace',             mimeType: 'application/json' },
     ]};
   }
   if (method === 'resources/read') {
+    if (params.uri === 'desk://workspace/current') {
+      return { contents: [{ uri: params.uri, mimeType: 'application/json', text: JSON.stringify({ workspaceName: 'test', workspacePath: '/tmp/test' }, null, 2) }] };
+    }
     const content: Record<string, string> = {
       'desk://guide/quick-start': '# Desk Agent Quick-Start\nlist_bookmarks to get started.',
       'desk://guide/desk-page-format': '# Desk Page Format (.desk)\n<desk-page title="...">...',
@@ -232,13 +236,14 @@ test('tools/list returns 14 tools', async ({ request }) => {
   expect(names).toContain('add_skill');
 });
 
-test('resources/list returns 3 resources including skill-format', async ({ request }) => {
+test('resources/list returns 4 resources including skill-format and workspace/current', async ({ request }) => {
   const res = await rpc(request, 'resources/list');
-  expect(res.result.resources).toHaveLength(3);
+  expect(res.result.resources).toHaveLength(4);
   const uris = res.result.resources.map((r: any) => r.uri);
   expect(uris).toContain('desk://guide/quick-start');
   expect(uris).toContain('desk://guide/desk-page-format');
   expect(uris).toContain('desk://guide/skill-format');
+  expect(uris).toContain('desk://workspace/current');
 });
 
 test('resources/read returns markdown', async ({ request }) => {
@@ -265,6 +270,14 @@ test('resources/read returns skill-format markdown', async ({ request }) => {
   const res = await rpc(request, 'resources/read', { uri: 'desk://guide/skill-format' });
   expect(res.result.contents[0].mimeType).toBe('text/markdown');
   expect(res.result.contents[0].text).toContain('name');
+});
+
+test('resources/read workspace/current returns workspaceName and workspacePath', async ({ request }) => {
+  const res = await rpc(request, 'resources/read', { uri: 'desk://workspace/current' });
+  expect(res.result.contents[0].mimeType).toBe('application/json');
+  const info = JSON.parse(res.result.contents[0].text);
+  expect(info).toHaveProperty('workspaceName');
+  expect(info).toHaveProperty('workspacePath');
 });
 
 test('get_workflow_config returns error when not configured', async ({ request }) => {
