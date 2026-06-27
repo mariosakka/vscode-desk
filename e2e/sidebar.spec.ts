@@ -35,7 +35,7 @@ test.beforeEach(async ({ page }) => {
 
 test('empty state — shows "No bookmarks yet" prompt', async ({ page }) => {
   await dispatchToWebview(page, { type: 'update', data: makeData([]) });
-  await expect(page.locator('#bookmarks-grid-workspace')).toContainText('No bookmarks yet');
+  await expect(page.getByText('No bookmarks yet.')).toBeVisible();
 });
 
 test('renders bookmark cards from update message', async ({ page }) => {
@@ -116,5 +116,5 @@ test('workspace section is hidden when workspace is null', async ({ page }) => {
   });
 
   await expect(page.locator('button', { hasText: 'workspace' })).toHaveCount(0);
-  await expect(page.locator('#bookmarks-grid-global')).toContainText('No bookmarks yet');
+  await expect(page.getByText('No bookmarks yet.')).toBeVisible();
 });
