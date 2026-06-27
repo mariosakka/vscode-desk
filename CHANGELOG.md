@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/mariosakka/vscode-desk/compare/v0.4.1...v0.5.0) (2026-06-27)
+
+
+### Features
+
+* bundle default page template; fall back when none is set ([7cf3f61](https://github.com/mariosakka/vscode-desk/commit/7cf3f61fc21b0c182a20ab3839870fc1f18ee2c7))
+* bundle default page template; fall back when none is set ([8c7ed99](https://github.com/mariosakka/vscode-desk/commit/8c7ed99f5015431efea6a4b993ebefa3e15cffb7))
+
+
+### Bug Fixes
+
+* update e2e sidebar selectors after BookmarksPanel refactor ([93f8b85](https://github.com/mariosakka/vscode-desk/commit/93f8b85af680d9c899ea5a8ca02f4a86323d2eb4))
+* update e2e sidebar selectors after BookmarksPanel refactor ([b0831fa](https://github.com/mariosakka/vscode-desk/commit/b0831faee86356c5b069ab3d25b54f098b2e3b77))
+
 ## [0.4.1](https://github.com/mariosakka/vscode-desk/compare/v0.4.0...v0.4.1) (2026-06-26)
 
 
