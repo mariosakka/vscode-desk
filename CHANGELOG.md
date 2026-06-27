@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/mariosakka/vscode-desk/compare/v0.5.0...v0.6.0) (2026-06-27)
+
+
+### Features
+
+* add desk://workspace/current MCP resource for routing verification ([cc6e99d](https://github.com/mariosakka/vscode-desk/commit/cc6e99dca4be709e840f2922f7d76c73b6ba94dd))
+* add desk://workspace/current MCP resource for routing verification ([4a31db5](https://github.com/mariosakka/vscode-desk/commit/4a31db56988a755999d1e20869728bca1ccd97cd))
+
 ## [0.5.0](https://github.com/mariosakka/vscode-desk/compare/v0.4.1...v0.5.0) (2026-06-27)
 
 
