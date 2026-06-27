@@ -9,7 +9,7 @@ function generateId(prefix: string): string {
 }
 
 export class DataService {
-  constructor(private readonly dir: string) {}
+  constructor(private readonly dir: string, private readonly defaultTemplatePath?: string) {}
 
   get(): DeskData {
     try {
@@ -53,6 +53,9 @@ export class DataService {
     try {
       return fs.readFileSync(path.join(this.dir, 'page-template.desk'), 'utf-8');
     } catch {
+      if (this.defaultTemplatePath) {
+        try { return fs.readFileSync(this.defaultTemplatePath, 'utf-8'); } catch {}
+      }
       return null;
     }
   }

@@ -117,7 +117,7 @@ describe('DataService', () => {
   });
 
   describe('page template', () => {
-    it('returns null when no template is set', () => {
+    it('returns null when no template is set and no default provided', () => {
       const svc = new DataService(tmpDir);
       expect(svc.getPageTemplate()).toBeNull();
     });
@@ -132,6 +132,26 @@ describe('DataService', () => {
       const svc = new DataService(tmpDir);
       svc.setPageTemplate('something');
       svc.clearPageTemplate();
+      expect(svc.getPageTemplate()).toBeNull();
+    });
+
+    it('falls back to bundled default when no user template is set', () => {
+      const defaultPath = path.join(tmpDir, 'bundled.desk');
+      fs.writeFileSync(defaultPath, '<desk-page>bundled default</desk-page>', 'utf-8');
+      const svc = new DataService(tmpDir, defaultPath);
+      expect(svc.getPageTemplate()).toBe('<desk-page>bundled default</desk-page>');
+    });
+
+    it('user template takes precedence over bundled default', () => {
+      const defaultPath = path.join(tmpDir, 'bundled.desk');
+      fs.writeFileSync(defaultPath, '<desk-page>bundled default</desk-page>', 'utf-8');
+      const svc = new DataService(tmpDir, defaultPath);
+      svc.setPageTemplate('<desk-page>user template</desk-page>');
+      expect(svc.getPageTemplate()).toBe('<desk-page>user template</desk-page>');
+    });
+
+    it('returns null when default path is missing and no user template', () => {
+      const svc = new DataService(tmpDir, '/nonexistent/path.desk');
       expect(svc.getPageTemplate()).toBeNull();
     });
   });
