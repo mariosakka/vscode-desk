@@ -38,7 +38,7 @@ A VS Code extension with four features:
   McpServer (127.0.0.1:3333 by default)
 ```
 
-**DataService** owns all reads and writes under `~/.desk/` — `data.json` (bookmarks) and `page-template.desk`. No other class touches these files directly.  
+**DataService** owns all reads and writes under `~/.desk/` — `data.json` (bookmarks) and `page-template.desk`. Accepts an optional `defaultTemplatePath` so `getPageTemplate()` falls back to the bundled default when no user template is saved. No other class touches these files directly.  
 **FaviconService** fetches and caches favicons. No other class fetches favicons.  
 **PageReader** reads and writes `.desk` files. No other class touches the `desk-pages/` directory.  
 **WorkflowConfigService** owns `workflow.json` and pending review state. No other class reads or writes workflow config directly.  
@@ -54,13 +54,16 @@ src/
   extension.ts                  activate() + command registration
   models.ts                     Bookmark, DeskData interfaces
   sidebarViewProvider.ts        WebviewViewProvider for the sidebar
+  resources/
+    default-page-template.desk  Bundled default page template (CSS component library + usage guide);
+                                copied to out/resources/ at build time; used as fallback by DataService
   pages/
     pageFormat.ts               Parse/serialize .desk XML; extract scripts for nonce re-injection
     pageReader.ts               Read/write .desk files in desk-pages/
     pageViewPanel.ts            Full-width WebviewPanel for the page viewer
   services/
     dataService/
-      dataService.ts            JSON file CRUD (~/.desk/.../data.json)
+      dataService.ts            JSON file CRUD (~/.desk/.../data.json) + page template with bundled default fallback
       dataService.test.ts
     faviconService/
       faviconService.ts         Favicon fetch + cache (key: desk.favicon-cache)
@@ -399,11 +402,11 @@ Tests run in Node via Jest. The `vscode` module is mocked at `src/__mocks__/vsco
 
 ### Unit tests
 
-Current test count: **138 total**
+Current test count: **141 total**
 
 | File | Count |
 |------|-------|
-| `services/dataService/dataService.test.ts` | 16 |
+| `services/dataService/dataService.test.ts` | 19 |
 | `services/faviconService/faviconService.test.ts` | 7 |
 | `services/workflowConfigService/workflowConfigService.test.ts` | 6 |
 | `services/skillRegistry/skillRegistry.test.ts` | 15 |
