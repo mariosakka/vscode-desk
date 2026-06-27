@@ -1,0 +1,186 @@
+<desk-page title="Page Title">
+  <style>
+    /* ── Typography */
+    h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; }
+    h2 { font-size: 1.3rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.6rem; border-bottom: 1px solid var(--border); padding-bottom: 0.35rem; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.4rem; color: var(--accent2); }
+    p  { margin-bottom: 0.85rem; line-height: 1.7; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; line-height: 1.65; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+
+    /* ── Inline code */
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; font-size: 0.85em; background: var(--surface2); border-radius: 4px; padding: 0.1em 0.4em; color: var(--accent2); }
+
+    /* ── Code blocks */
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; overflow-x: auto; font-size: 0.84rem; line-height: 1.6; margin: 0.75rem 0 1.25rem; }
+    pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+
+    /* ── Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 1rem 0 1.5rem; }
+    th { text-align: left; padding: 0.5rem 0.75rem; background: var(--surface2); border: 1px solid var(--border); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    td { padding: 0.45rem 0.75rem; border: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    /* ── Callouts */
+    .callout { border-left: 4px solid var(--border); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.85rem 1rem; margin: 1rem 0 1.25rem; font-size: 0.9rem; line-height: 1.6; background: var(--surface); }
+    .callout-info    { border-left-color: var(--accent2); }
+    .callout-warning { border-left-color: var(--accent); }
+    .callout-tip     { border-left-color: var(--accent2); background: var(--surface2); }
+    .callout strong  { display: block; margin-bottom: 0.25rem; color: var(--text); }
+
+    /* ── Numbered step flow */
+    .steps { display: flex; flex-direction: column; gap: 0.6rem; margin: 0.75rem 0 1.25rem; }
+    .step  { display: flex; gap: 0.85rem; align-items: flex-start; }
+    .step-num { flex-shrink: 0; width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--accent); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; margin-top: 0.15rem; }
+    .step-body { font-size: 0.9rem; padding: 0.2rem 0; line-height: 1.6; flex: 1; }
+
+    /* ── Badge / pill tags */
+    .badge { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 9999px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); margin-right: 4px; }
+    .badge-accent  { background: var(--accent);  color: #fff; border-color: transparent; }
+    .badge-accent2 { background: var(--accent2); color: #fff; border-color: transparent; }
+
+    /* ── Section lead box */
+    .lead { border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.9rem 1.1rem; margin-bottom: 1.5rem; background: var(--surface); font-size: 0.95rem; }
+
+    /* ── Flow block (for showing a sequence or connection) */
+    .flow-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .flow-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.5rem; }
+
+    /* ── Card grid */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 0.75rem 0 1.25rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.15rem; }
+    .card h4 { font-size: 0.9rem; font-weight: 700; margin: 0 0 0.35rem; color: var(--accent2); }
+    .card p  { font-size: 0.85rem; margin: 0; color: var(--muted); }
+
+    /* ── Compare grid (side-by-side) */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.75rem 0 1.25rem; }
+    .compare-col  { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+    .compare-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.5rem; }
+
+    /* ── TOC table */
+    .toc-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; font-size: 0.87rem; }
+    .toc-table th { text-align: left; padding: 0.4rem 0.7rem; border-bottom: 2px solid var(--border); color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .toc-table td { padding: 0.35rem 0.7rem; border-bottom: 1px solid var(--border); }
+    .toc-table a  { color: var(--accent2); text-decoration: none; }
+    .toc-table a:hover { text-decoration: underline; }
+
+    /* ── Page header with eyebrow */
+    .page-intro { margin-bottom: 2rem; }
+    .eyebrow { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+
+    /* ── Links */
+    a { color: var(--accent2); }
+  </style>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+  USAGE GUIDE — remove this comment block before publishing a page
+
+  RULES:
+  - Do NOT add a max-width wrapper or layout div — .page-content handles that automatically.
+  - Use ONLY var(--bg), var(--surface), var(--surface2), var(--border),
+    var(--text), var(--muted), var(--accent), var(--accent2), var(--radius).
+  - NEVER write hex colors (#...) or rgb() values in <style>.
+  - Call get_page_template before creating any new page.
+  - No !important overrides — the template variables already apply correctly.
+
+  PATTERNS:
+
+  === Page header with eyebrow (use at the top of every page) ===
+  <section class="page-intro">
+    <div class="eyebrow">Category · Subcategory</div>
+    <h1>Page Title</h1>
+    <p style="color:var(--muted)">One-sentence summary.</p>
+  </section>
+
+  === Callout (info / warning / tip) ===
+  <div class="callout callout-info">
+    <strong>Note:</strong> Body text explaining the important point.
+  </div>
+  <div class="callout callout-warning">
+    <strong>Warning:</strong> Something the reader must not miss.
+  </div>
+  <div class="callout callout-tip">
+    <strong>Tip:</strong> A helpful shortcut or best practice.
+  </div>
+
+  === Numbered step flow ===
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">First action — <code>some code</code> inline.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">Second action.</div>
+    </div>
+  </div>
+
+  === Code block ===
+  <pre><code>def example():
+      return "hello"</code></pre>
+
+  === Table ===
+  <table>
+    <thead><tr><th>Concept A</th><th>Concept B</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>def foo():</code></td><td><code>function foo() {}</code></td><td>Function declaration</td></tr>
+    </tbody>
+  </table>
+
+  === TOC table (use when page has 4+ sections; pair with id="sN" on h2) ===
+  <table class="toc-table">
+    <thead><tr><th>#</th><th>Section</th><th>What's covered</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><a href="#s1">Section Name</a></td><td>Short description</td></tr>
+    </tbody>
+  </table>
+
+  === Section lead box ===
+  <div class="lead">
+    <strong>Core idea:</strong> One-sentence summary of what this page or section is about.
+  </div>
+
+  === Badge pills ===
+  <span class="badge">neutral</span>
+  <span class="badge badge-accent">primary</span>
+  <span class="badge badge-accent2">secondary</span>
+
+  === Flow block (for API calls, connections, sequences) ===
+  <div class="flow-block">
+    <div class="flow-label">source → destination</div>
+    <p>Explanation of what this call does and why.</p>
+  </div>
+
+  === Card grid (for parallel concepts, services, or options) ===
+  <div class="card-grid">
+    <div class="card"><h4>Card Title</h4><p>Short description.</p></div>
+    <div class="card"><h4>Card Title</h4><p>Short description.</p></div>
+  </div>
+
+  === Compare grid (for before/after, A vs B, old vs new) ===
+  <div class="compare-grid">
+    <div class="compare-col">
+      <div class="compare-label">Before</div>
+      <pre><code>old code</code></pre>
+    </div>
+    <div class="compare-col">
+      <div class="compare-label">After</div>
+      <pre><code>new code</code></pre>
+    </div>
+  </div>
+
+  ═══════════════════════════════════════════════════════════════ -->
+
+  <section class="page-intro">
+    <div class="eyebrow">Category · Subcategory</div>
+    <h1>Page Title</h1>
+    <p style="color:var(--muted)">One-sentence summary of what this page covers and who it is for.</p>
+  </section>
+
+  <hr/>
+
+  <h2 id="s1">1. First Section</h2>
+  <!-- content -->
+
+</desk-page>

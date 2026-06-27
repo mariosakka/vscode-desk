@@ -25,7 +25,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const wDir = workspaceName ? workspaceDir(workspaceName) : null;
 
   // Global services — always available
-  const globalDataService = new DataService(gDir);
+  const defaultTemplatePath = path.join(context.extensionPath, 'out', 'resources', 'default-page-template.desk');
+  const globalDataService = new DataService(gDir, defaultTemplatePath);
   const globalPageReader = new PageReader(path.join(gDir, 'pages'));
   const globalWorkflowService = new WorkflowConfigService(gDir);
   const globalSkillRegistry = new SkillRegistry(gDir);

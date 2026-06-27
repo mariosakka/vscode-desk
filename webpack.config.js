@@ -28,6 +28,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: 'src/webview/page', to: 'webview/page' },
+        { from: 'src/resources', to: 'resources' },
       ],
     }),
   ],
