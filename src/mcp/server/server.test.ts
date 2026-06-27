@@ -126,18 +126,51 @@ describe('McpServer', () => {
     expect(res2.result.content[0].text).toBe(content);
   });
 
-  it('lists 3 resources', async () => {
+  it('lists 4 resources', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 3 });
-    expect(res.result.resources).toHaveLength(3);
+    expect(res.result.resources).toHaveLength(4);
     const uris = res.result.resources.map((r: any) => r.uri);
     expect(uris).toContain('desk://guide/quick-start');
     expect(uris).toContain('desk://guide/desk-page-format');
+    expect(uris).toContain('desk://workspace/current');
   });
 
   it('reads the quick-start resource', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/read', params: { uri: 'desk://guide/quick-start' }, id: 4 });
     expect(res.result.contents[0].text).toContain('list_bookmarks');
     expect(res.result.contents[0].mimeType).toBe('text/markdown');
+  });
+
+  it('workspace/current resource returns workspaceName and workspacePath', async () => {
+    const srv = new McpServer(
+      mockDataService as any, null, null, null, null, null, null, null,
+      mockProvider as any, mockFaviconService as any, [], null, null,
+      'my-project', '/home/user/work/my-project',
+    );
+    const port2 = PORT + 1;
+    await srv.start(port2);
+    try {
+      const res = await postMcp(port2, {
+        jsonrpc: '2.0', method: 'resources/read',
+        params: { uri: 'desk://workspace/current' }, id: 50,
+      });
+      const info = JSON.parse(res.result.contents[0].text);
+      expect(info.workspaceName).toBe('my-project');
+      expect(info.workspacePath).toBe('/home/user/work/my-project');
+      expect(res.result.contents[0].mimeType).toBe('application/json');
+    } finally {
+      srv.stop();
+    }
+  });
+
+  it('workspace/current returns nulls when no workspace is open', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'resources/read',
+      params: { uri: 'desk://workspace/current' }, id: 51,
+    });
+    const info = JSON.parse(res.result.contents[0].text);
+    expect(info.workspaceName).toBeNull();
+    expect(info.workspacePath).toBeNull();
   });
 
   it('calls list_bookmarks and returns flat array of bookmarks', async () => {
@@ -234,11 +267,12 @@ describe('McpServer — workflow tools', () => {
   });
 
 
-  it('lists 3 resources', async () => {
+  it('lists 4 resources', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'resources/list', params: {}, id: 2 });
-    expect(res.result.resources).toHaveLength(3);
+    expect(res.result.resources).toHaveLength(4);
     const uris = res.result.resources.map((r: any) => r.uri);
     expect(uris).toContain('desk://guide/skill-format');
+    expect(uris).toContain('desk://workspace/current');
   });
 
   it('get_workflow_config returns config when set', async () => {

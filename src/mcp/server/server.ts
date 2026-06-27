@@ -26,6 +26,8 @@ export class McpServer {
     private readonly adapters: AgentAdapter[] = [],
     private readonly onConfigSubmitted: ((scope: string) => void) | null = null,
     private readonly onSkillSubmitted: ((scope: string) => void) | null = null,
+    private readonly workspaceName: string | null = null,
+    private readonly workspacePath: string | null = null,
   ) {}
 
   start(port: number): Promise<number> {
@@ -143,6 +145,10 @@ export class McpServer {
       return { resources: RESOURCES };
     }
     if (method === 'resources/read') {
+      if (params.uri === 'desk://workspace/current') {
+        const info = { workspaceName: this.workspaceName, workspacePath: this.workspacePath };
+        return { contents: [{ uri: params.uri, mimeType: 'application/json', text: JSON.stringify(info, null, 2) }] };
+      }
       const content = RESOURCE_CONTENT[params.uri];
       if (!content) throw new Error(`Unknown resource: ${params.uri}`);
       return { contents: [{ uri: params.uri, mimeType: 'text/markdown', text: content }] };
