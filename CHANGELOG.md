@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.0](https://github.com/mariosakka/vscode-desk/compare/v0.7.1...v0.8.0) (2026-06-28)
+
+
+### Features
+
+* add extractStyleFromTemplate and assembleSections to pageFormat ([64b23c2](https://github.com/mariosakka/vscode-desk/commit/64b23c2c009afd633bf6b794e162e4c30cef2ccb))
+* assemble create_page and update_page from template + sections ([96d0e93](https://github.com/mariosakka/vscode-desk/commit/96d0e93f7987e07ad7ae133f3c922f0127409840))
+* change create_page and update_page to sections-based schema ([329f581](https://github.com/mariosakka/vscode-desk/commit/329f5814b97d22f62efb2e6c6d36e247d430527c))
+* sections-based create_page and update_page MCP tools ([4e92ae4](https://github.com/mariosakka/vscode-desk/commit/4e92ae4333444a242865f3e93e81613aaadb8adf))
+
 ## [0.7.1](https://github.com/mariosakka/vscode-desk/compare/v0.7.0...v0.7.1) (2026-06-28)
 
 
