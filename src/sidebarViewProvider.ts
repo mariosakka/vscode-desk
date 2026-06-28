@@ -8,6 +8,7 @@ import { PageViewPanel } from './pages/pageViewPanel';
 import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { AgentAdapter } from './agents/agentAdapter';
+import { LibraryService } from './services/libraryService/libraryService';
 
 interface ScopedData {
   data: import('./models').DeskData;
@@ -21,6 +22,7 @@ interface SidebarData {
   workspace: ScopedData | null;
   global: ScopedData;
   pageTemplate: string | null;
+  libraries: { name: string; description?: string; installed: boolean }[];
 }
 
 export class SidebarViewProvider implements vscode.WebviewViewProvider {
@@ -40,6 +42,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
     private _workspaceName: string | null,
     private readonly _faviconService: FaviconService | null = null,
     private readonly _adapters: AgentAdapter[] = [],
+    private readonly _libraryService: LibraryService | null = null,
   ) {}
 
   private _resolveScope(scope: 'workspace' | 'global' = 'workspace'): {
@@ -206,6 +209,20 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           this.refresh();
           break;
         }
+        case 'syncLibraries': {
+          if (this._libraryService) {
+            this._libraryService.installAll().then(() => this.refresh()).catch(() => this.refresh());
+          }
+          break;
+        }
+        case 'removeLibrary': {
+          const name: string = message.name;
+          if (this._libraryService) {
+            try { this._libraryService.remove(name); } catch {}
+            this.refresh();
+          }
+          break;
+        }
       }
     });
   }
@@ -242,6 +259,13 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
         this._globalSkillRegistry,
       ),
       pageTemplate: this._globalDataService.getPageTemplate(),
+      libraries: this._libraryService
+        ? this._libraryService.list().map(l => ({
+            name: l.name,
+            description: l.description,
+            installed: this._libraryService!.isInstalled(l.name),
+          }))
+        : [],
     };
 
     this._view.webview.postMessage({ type: 'update', data: sidebarData });

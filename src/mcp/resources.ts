@@ -108,7 +108,19 @@ get_page_template   → returns the shared <style> block / HTML skeleton, or err
 set_page_template   → saves a new template (always global, no scope arg)
 \`\`\`
 
-## All 16 tools
+## Page libraries
+
+Installed libraries (highlight.js, tocbot, etc.) are auto-injected into every page. Call \`list_libraries\` to see which are available and whether they are installed on disk.
+
+\`\`\`
+list_libraries      → library name, description, installed flag
+add_library         → add/replace a library entry (name, description, files[])
+remove_library      → remove a library and delete its cached files
+\`\`\`
+
+Libraries are global only (no scope). After \`add_library\`, sync from the sidebar or wait for the next install cycle to download the files.
+
+## All 19 tools
 
 | Tool | R | W | Required args |
 |------|---|---|---------------|
@@ -128,6 +140,9 @@ set_page_template   → saves a new template (always global, no scope arg)
 | remove_skill | | ✓ | name |
 | get_page_template | ✓ | | — |
 | set_page_template | | ✓ | content |
+| list_libraries | ✓ | | — |
+| add_library | | ✓ | name, files |
+| remove_library | | ✓ | name |
 `,
 
   'desk://guide/desk-page-format': `# Desk Page Format (.desk)
@@ -187,7 +202,7 @@ Content is automatically wrapped in a centred \`.page-content\` container (max-w
 - **\`<script>\`** blocks run after DOM is ready (re-injected at bottom of body).
 - **Inline handlers** (\`onclick="..."\`) also work.
 - **\`.desk\` links** navigate inside the viewer; **\`https://\` links** open in the browser.
-- **No external resources** — CDN links for fonts, icons, or JS are blocked by CSP. Use theme variables and built-in classes only.
+- **CDN scripts are blocked by CSP** — use installed page libraries instead. Call \`list_libraries\` to see what is available; installed libraries are auto-injected into every page.
 
 ## Theme CSS variables
 

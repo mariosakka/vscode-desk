@@ -5,6 +5,7 @@ import { PagesPanel } from './components/PagesPanel/PagesPanel';
 import { SkillsPanel } from './components/SkillsPanel/SkillsPanel';
 import { WorkflowPanel } from './components/WorkflowPanel/WorkflowPanel';
 import { PageTemplatePanel } from './components/PageTemplatePanel/PageTemplatePanel';
+import { LibrariesPanel } from './components/LibrariesPanel/LibrariesPanel';
 
 declare function acquireVsCodeApi(): { postMessage: (msg: unknown) => void };
 const vscode = acquireVsCodeApi();
@@ -123,6 +124,11 @@ export function SidebarApp() {
         template={data?.pageTemplate ?? null}
         onEdit={() => send({ type: 'editPageTemplate' })}
         onClear={() => send({ type: 'clearPageTemplate' })}
+      />
+      <LibrariesPanel
+        libraries={data?.libraries ?? []}
+        onSync={() => send({ type: 'syncLibraries' })}
+        onRemove={(name) => send({ type: 'removeLibrary', name })}
       />
     </div>
   );

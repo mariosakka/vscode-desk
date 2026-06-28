@@ -47,9 +47,16 @@ export interface ScopedData {
   skills: SkillSummary[];
 }
 
+export interface LibraryEntry {
+  name: string;
+  description?: string;
+  installed: boolean;
+}
+
 export interface SidebarData {
   workspaceName: string | null;
   workspace: ScopedData | null;
   global: ScopedData;
   pageTemplate: string | null;
+  libraries: LibraryEntry[];
 }

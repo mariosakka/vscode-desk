@@ -37,6 +37,18 @@ const mockSkillRegistry = {
   installAll: jest.fn(),
 };
 
+const mockLibraryService = {
+  list: jest.fn().mockReturnValue([]),
+  get: jest.fn().mockReturnValue(null),
+  add: jest.fn(),
+  remove: jest.fn(),
+  isInstalled: jest.fn().mockReturnValue(false),
+  getInstalledFiles: jest.fn().mockReturnValue([]),
+  install: jest.fn().mockResolvedValue(undefined),
+  installAll: jest.fn().mockResolvedValue(undefined),
+  libCacheDir: '/tmp/desk-lib-test',
+};
+
 const onConfigSubmitted = jest.fn();
 const onSkillSubmitted = jest.fn();
 
@@ -83,9 +95,9 @@ describe('McpServer', () => {
     expect(res.result.protocolVersion).toBeDefined();
   });
 
-  it('lists 16 tools', async () => {
+  it('lists 19 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 2 });
-    expect(res.result.tools).toHaveLength(16);
+    expect(res.result.tools).toHaveLength(19);
     const names = res.result.tools.map((t: any) => t.name);
     expect(names).toContain('list_bookmarks');
     expect(names).toContain('add_bookmark');
@@ -261,9 +273,9 @@ describe('McpServer — workflow tools', () => {
     setTimeout(done, 30);
   });
 
-  it('lists 16 tools', async () => {
+  it('lists 19 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 });
-    expect(res.result.tools).toHaveLength(16);
+    expect(res.result.tools).toHaveLength(19);
   });
 
 
@@ -371,5 +383,79 @@ describe('McpServer — workflow tools', () => {
     });
     expect(mockSkillRegistry.remove).toHaveBeenCalledWith('dev-flow', []);
     expect(JSON.parse(res.result.content[0].text).removed).toBe('dev-flow');
+  });
+});
+
+describe('McpServer — library tools', () => {
+  let server: McpServer;
+  const PORT = 13337;
+
+  beforeEach(done => {
+    jest.clearAllMocks();
+    mockLibraryService.list.mockReturnValue([]);
+    mockLibraryService.isInstalled.mockReturnValue(false);
+    server = new McpServer(
+      mockDataService as any,
+      null, null, null, null, null, null, null,
+      mockProvider as any, mockFaviconService as any,
+      [], null, null, null, null,
+      mockLibraryService as any,
+    );
+    server.start(PORT);
+    setTimeout(done, 30);
+  });
+
+  afterEach(done => {
+    server.stop();
+    setTimeout(done, 30);
+  });
+
+  it('list_libraries returns empty array initially', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'list_libraries', arguments: {} }, id: 1,
+    });
+    expect(JSON.parse(res.result.content[0].text)).toEqual([]);
+  });
+
+  it('list_libraries includes installed flag', async () => {
+    const lib = { name: 'highlight', description: 'Syntax highlighting', files: [{ url: 'https://example.com/hl.js', type: 'script' }] };
+    mockLibraryService.list.mockReturnValue([lib]);
+    mockLibraryService.isInstalled.mockReturnValue(true);
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'list_libraries', arguments: {} }, id: 2,
+    });
+    const result = JSON.parse(res.result.content[0].text);
+    expect(result[0].name).toBe('highlight');
+    expect(result[0].installed).toBe(true);
+  });
+
+  it('add_library calls libraryService.add', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'add_library', arguments: { name: 'mylib', files: [{ url: 'https://example.com/a.js', type: 'script' }] } }, id: 3,
+    });
+    expect(mockLibraryService.add).toHaveBeenCalledWith(expect.objectContaining({ name: 'mylib' }));
+    expect(JSON.parse(res.result.content[0].text).status).toBe('added');
+  });
+
+  it('remove_library calls libraryService.remove', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'remove_library', arguments: { name: 'highlight' } }, id: 4,
+    });
+    expect(mockLibraryService.remove).toHaveBeenCalledWith('highlight');
+    expect(JSON.parse(res.result.content[0].text).removed).toBe('highlight');
+  });
+
+  it('remove_library returns error when libraryService.remove throws', async () => {
+    mockLibraryService.remove.mockImplementation(() => { throw new Error('Library not found: missing'); });
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'remove_library', arguments: { name: 'missing' } }, id: 5,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toContain('Library not found');
   });
 });

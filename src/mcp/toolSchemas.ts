@@ -233,4 +233,47 @@ export const TOOLS: McpTool[] = [
     },
   },
 
+  // ── Library tools ────────────────────────────────────────────────────────
+  {
+    name: 'list_libraries',
+    description: 'Returns the curated list of page libraries (highlight.js, tocbot, etc.) with install status. Libraries are global only — their JS/CSS is auto-injected into every page viewer.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'add_library',
+    description: 'Adds or replaces a page library entry. After adding, the user must sync (install) libraries to download the files.',
+    inputSchema: {
+      type: 'object',
+      required: ['name', 'files'],
+      properties: {
+        name: { type: 'string', description: 'Unique library identifier, e.g. "highlight"' },
+        description: { type: 'string', description: 'One-line description of what the library provides' },
+        files: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['url', 'type'],
+            properties: {
+              url: { type: 'string', description: 'Public CDN URL to download the file from' },
+              type: { type: 'string', enum: ['script', 'style'], description: 'script = JS file, style = CSS file' },
+            },
+            additionalProperties: false,
+          },
+          description: 'Files to download for this library',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'remove_library',
+    description: 'Removes a library from the config and deletes its cached files. Returns -32603 if not found.',
+    inputSchema: {
+      type: 'object',
+      required: ['name'],
+      properties: { name: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+
 ];

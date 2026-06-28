@@ -14,6 +14,7 @@ import { ClaudeCodeAdapter } from './agents/adapters/claudeCode/claudeCode';
 import { CursorAdapter } from './agents/adapters/cursor/cursor';
 import { CodexAdapter } from './agents/adapters/codex/codex';
 import { GeminiAdapter } from './agents/adapters/gemini/gemini';
+import { LibraryService } from './services/libraryService/libraryService';
 import { globalDir, workspaceDir } from './storage/deskDir';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -27,6 +28,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // Global services — always available
   const defaultTemplatePath = path.join(context.extensionPath, 'out', 'resources', 'default-page-template.desk');
   const globalDataService = new DataService(gDir, defaultTemplatePath);
+  const libraryService = new LibraryService(gDir);
+  PageViewPanel.setup(libraryService);
+  libraryService.installAll().catch(() => {});
   const globalPageReader = new PageReader(path.join(gDir, 'pages'));
   const globalWorkflowService = new WorkflowConfigService(gDir);
   const globalSkillRegistry = new SkillRegistry(gDir);
@@ -59,6 +63,7 @@ export function activate(context: vscode.ExtensionContext): void {
     workspaceName,
     faviconService,
     adapters,
+    libraryService,
   );
 
   const agentRegistry = new AgentRegistry(adapters, context, workspaceSkillRegistry ?? globalSkillRegistry);
@@ -88,6 +93,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
     workspaceName,
     workspaceRoot,
+    libraryService,
   );
 
   context.subscriptions.push(

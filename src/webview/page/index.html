@@ -8,6 +8,7 @@
     content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src 'unsafe-inline' ${cspSource}; img-src data: ${cspSource};">
   <link rel="stylesheet" href="${cssUri}">
   <style>${customStyles}</style>
+  ${libraryStyles}
 </head>
 <body>
   <nav class="page-nav" id="page-nav" data-has-back="${hasBack}">
@@ -15,6 +16,7 @@
     <span class="page-nav-label">Desk</span>
   </nav>
   <div class="page-content">${content}</div>
+  ${libraryScripts}
   ${pageScripts}
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
