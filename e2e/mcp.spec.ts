@@ -82,6 +82,8 @@ function dispatch(
       'list_pages','create_page','update_page','delete_page',
       'get_workflow_config','submit_workflow_config',
       'list_skills','get_skill','add_skill','remove_skill',
+      'get_page_template','set_page_template',
+      'list_libraries','add_library','remove_library',
     ].map(name => ({ name }))};
   }
   if (method === 'resources/list') {
@@ -225,9 +227,9 @@ test('initialize returns capabilities with tools and resources', async ({ reques
   expect(res.result.serverInfo.name).toBe('vscode-desk');
 });
 
-test('tools/list returns 14 tools', async ({ request }) => {
+test('tools/list returns 19 tools', async ({ request }) => {
   const res = await rpc(request, 'tools/list');
-  expect(res.result.tools).toHaveLength(14);
+  expect(res.result.tools).toHaveLength(19);
   const names = res.result.tools.map((t: any) => t.name);
   expect(names).toContain('list_bookmarks');
   expect(names).toContain('add_bookmark');
