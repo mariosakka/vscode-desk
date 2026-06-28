@@ -3,6 +3,7 @@ import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
 import { SidebarViewProvider } from '../../sidebarViewProvider';
 import { PageReader } from '../../pages/pageReader';
+import { extractStyleFromTemplate, assembleSections, PageSection } from '../../pages/pageFormat';
 import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from '../../services/skillRegistry/skillRegistry';
 import { AgentAdapter } from '../../agents/agentAdapter';
@@ -200,19 +201,38 @@ export class McpServer {
       case 'create_page': {
         const { pageReader } = this._resolveScope(args);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
-        pageReader.write(args.filename, args.title, args.content, args.customStyles ?? '');
+        const templateRaw = this.globalDataService.getPageTemplate() ?? '';
+        const customStyles = extractStyleFromTemplate(templateRaw);
+        const bodyHtml = assembleSections({
+          title: args.title,
+          eyebrow: args.eyebrow,
+          subtitle: args.subtitle,
+          sections: (args.sections as PageSection[]) ?? [],
+        });
+        pageReader.write(args.filename, args.title, bodyHtml, customStyles);
         return { content: [{ type: 'text', text: `created ${args.filename}` }] };
       }
       case 'update_page': {
         const { pageReader } = this._resolveScope(args);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const existing = pageReader.read(args.filename);
-        pageReader.write(
-          args.filename,
-          args.title ?? existing.title,
-          args.content ?? existing.bodyHtml,
-          args.customStyles ?? existing.customStyles,
-        );
+        const newTitle = args.title ?? existing.title;
+        let newBodyHtml: string;
+        let newCustomStyles: string;
+        if (args.sections !== undefined) {
+          const templateRaw = this.globalDataService.getPageTemplate() ?? '';
+          newCustomStyles = extractStyleFromTemplate(templateRaw);
+          newBodyHtml = assembleSections({
+            title: newTitle,
+            eyebrow: args.eyebrow,
+            subtitle: args.subtitle,
+            sections: args.sections as PageSection[],
+          });
+        } else {
+          newBodyHtml = existing.bodyHtml;
+          newCustomStyles = existing.customStyles;
+        }
+        pageReader.write(args.filename, newTitle, newBodyHtml, newCustomStyles);
         return { content: [{ type: 'text', text: `updated ${args.filename}` }] };
       }
       case 'delete_page': {

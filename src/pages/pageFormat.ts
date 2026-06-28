@@ -50,3 +50,46 @@ export function escAttr(s: string): string {
 export function stem(filename: string): string {
   return filename.replace(/\.desk$/, '');
 }
+
+export interface PageSection {
+  id?: string;
+  heading: string;
+  icon?: string;
+  content: string;
+}
+
+export interface AssembleArgs {
+  title: string;
+  eyebrow?: string;
+  subtitle?: string;
+  sections: PageSection[];
+}
+
+export function extractStyleFromTemplate(templateRaw: string): string {
+  const m = templateRaw.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+  return m ? m[1] : '';
+}
+
+export function assembleSections(args: AssembleArgs): string {
+  const { title, eyebrow, subtitle, sections } = args;
+  const headerLines: string[] = [
+    '<section class="page-intro">',
+    ...(eyebrow ? [`  <div class="eyebrow">${eyebrow}</div>`] : []),
+    `  <h1>${title}</h1>`,
+    ...(subtitle ? [`  <p style="color:var(--muted)">${subtitle}</p>`] : []),
+    '</section>',
+    '',
+    '<hr/>',
+  ];
+  const sectionBlocks = sections.map((s, i) => {
+    const id = s.id ?? `sec-${i}`;
+    const iconHtml = s.icon ? `<span class="icon">${s.icon}</span> ` : '';
+    return [
+      `<div class="section" id="${id}">`,
+      `  <h2 class="section-title">${iconHtml}${s.heading}</h2>`,
+      s.content,
+      '</div>',
+    ].join('\n');
+  });
+  return [...headerLines, '', ...sectionBlocks].join('\n');
+}

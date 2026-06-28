@@ -84,15 +84,30 @@ export const TOOLS: McpTool[] = [
   },
   {
     name: 'create_page',
-    description: 'Creates a new .desk page file. content is the HTML body; customStyles is optional CSS injected only for this page.',
+    description: 'Creates a new .desk page assembled from the active page template. Provide structured sections — do not include raw <style> blocks; styles come from the template automatically.',
     inputSchema: {
       type: 'object',
-      required: ['filename', 'title', 'content'],
+      required: ['filename', 'title', 'sections'],
       properties: {
         filename: { type: 'string', description: 'File name including .desk extension, e.g. "auth-flow.desk"' },
         title: { type: 'string' },
-        content: { type: 'string', description: 'HTML body content (no <script> tags)' },
-        customStyles: { type: 'string', description: 'Optional CSS rules scoped to this page' },
+        eyebrow: { type: 'string', description: 'Small label above the title, e.g. "Reference · Backend"' },
+        subtitle: { type: 'string', description: 'One-sentence summary shown below the title' },
+        sections: {
+          type: 'array',
+          description: 'Content sections. Each section becomes an <h2> + body block.',
+          items: {
+            type: 'object',
+            required: ['heading', 'content'],
+            properties: {
+              id: { type: 'string', description: 'Anchor id for scroll-to links, e.g. "sec-0". Auto-assigned if omitted.' },
+              heading: { type: 'string', description: 'Section heading text (plain text, no HTML)' },
+              icon: { type: 'string', description: 'Single emoji shown before the heading, e.g. "🔧"' },
+              content: { type: 'string', description: 'Inner HTML for this section. No <style> tags.' },
+            },
+            additionalProperties: false,
+          },
+        },
         scope: SCOPE_PROPERTY,
       },
       additionalProperties: false,
@@ -100,15 +115,29 @@ export const TOOLS: McpTool[] = [
   },
   {
     name: 'update_page',
-    description: 'Overwrites fields on an existing .desk page. Only provided fields are changed.',
+    description: 'Updates an existing .desk page. Providing sections rebuilds the entire body from the template; omitting sections keeps the existing body. Only provided fields are changed.',
     inputSchema: {
       type: 'object',
       required: ['filename'],
       properties: {
         filename: { type: 'string' },
         title: { type: 'string' },
-        content: { type: 'string' },
-        customStyles: { type: 'string' },
+        eyebrow: { type: 'string' },
+        subtitle: { type: 'string' },
+        sections: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['heading', 'content'],
+            properties: {
+              id: { type: 'string' },
+              heading: { type: 'string' },
+              icon: { type: 'string' },
+              content: { type: 'string' },
+            },
+            additionalProperties: false,
+          },
+        },
         scope: SCOPE_PROPERTY,
       },
       additionalProperties: false,

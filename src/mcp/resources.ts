@@ -15,7 +15,7 @@ export const RESOURCES: McpResource[] = [
   {
     uri: 'desk://guide/desk-page-format',
     name: 'Desk Page Format (.desk)',
-    description: 'The .desk XML file format, available CSS variables, and built-in callout classes for customStyles.',
+    description: 'Structured page sections, automatically injected template styles, theme variables, and supported HTML.',
     mimeType: 'text/markdown',
   },
   {
@@ -66,7 +66,7 @@ remove_bookmark     → clean up
 \`\`\`
 list_pages          → see what exists
 create_page         → write a new .desk file
-update_page         → revise title, body, or per-page CSS (only provided fields change)
+update_page         → update the title or rebuild the page from structured sections
 delete_page         → remove a page
 \`\`\`
 
@@ -95,16 +95,16 @@ Compare \`workspacePath\` against the directory you are actually working in. If 
 - **IDs are opaque** — always call list_bookmarks to get current IDs; never cache across sessions.
 - **Favicon is free** — omit \`icon\` in add_bookmark and Desk fetches it automatically (30-day cache).
 - **desk-page: links** — set a bookmark's \`url\` to \`desk-page:filename.desk\` and clicking it opens the page viewer directly from the sidebar.
-- **update_page is partial** — only fields you include are overwritten; omit \`content\` to change just the title, etc.
+- **update_page has two modes** — without \`sections\`, it changes only the title and preserves body/styles; with \`sections\`, it rebuilds the body from the template.
 - **No workspace, no pages** — page tools return an error if VS Code has no folder open.
 - **HTTP 200 always** — errors arrive as a JSON-RPC \`error\` object, not as HTTP 4xx/5xx.
 
 ## Page template
 
-A single global template stores shared styles/structure that all agents apply when creating new pages. On session start, call \`get_page_template\` to check if one is set. If it returns an error, either use defaults or create a template with \`set_page_template\` for consistency across projects.
+A single global template stores shared style rules for pages. On session start, call \`get_page_template\` to inspect the available CSS classes and patterns. The server automatically injects only the template's \`<style>\` rules when creating or rebuilding a page; agents do not copy template structure or an HTML skeleton. If it returns an error, either use defaults or create a template with \`set_page_template\` for consistency across projects.
 
 \`\`\`
-get_page_template   → returns the shared <style> block / HTML skeleton, or error if not set
+get_page_template   → returns the shared template for inspecting CSS classes/patterns, or error if not set
 set_page_template   → saves a new template (always global, no scope arg)
 \`\`\`
 
@@ -129,8 +129,8 @@ Libraries are global only (no scope). After \`add_library\`, sync from the sideb
 | remove_bookmark | | ✓ | bookmark_id |
 | update_bookmark | | ✓ | bookmark_id, fields |
 | list_pages | ✓ | | — |
-| create_page | | ✓ | filename, title, content |
-| update_page | | ✓ | filename (+ any fields) |
+| create_page | | ✓ | filename, title, sections[] |
+| update_page | | ✓ | filename (+ title or sections[]) |
 | delete_page | | ✓ | filename |
 | get_workflow_config | ✓ | | — |
 | submit_workflow_config | | ✓ | config |
@@ -147,64 +147,55 @@ Libraries are global only (no scope). After \`add_library\`, sync from the sideb
 
   'desk://guide/desk-page-format': `# Desk Page Format (.desk)
 
-Pages are XML files stored in \`<workspace>/desk-pages/\`.
+Pages are XML files stored in \`<workspace>/desk-pages/\`. You never write raw XML — use \`create_page\` with structured sections, then use \`update_page\` to change only the title or rebuild from sections.
 
 ## Before creating a page
 
-Call \`get_page_template\` first. If it returns content, use that \`<style>\` block and/or HTML structure as the basis for the new page so all pages stay visually consistent. If it returns an error (not set), create the page using defaults — and consider calling \`set_page_template\` afterward to establish a shared style for future pages.
+Call \`get_page_template\` first to check what template is active. You do NOT need to copy the template — the server injects it automatically. Just read it to understand which CSS classes and patterns are available.
 
-## Layout
+## Creating a page
 
-Content is automatically wrapped in a centred \`.page-content\` container (max-width 860px, padding 32px 40px). **Do not add a wrapper div or body layout CSS** — the template already handles it. Just write HTML content directly inside \`<desk-page>\`.
+\`create_page\` assembles the page from structured sections. The template's \`<style>\` block is injected automatically — **do not include any \`<style>\` tags in your sections**. You cannot override layout or typography this way; if styles are wrong, update the template via \`set_page_template\`.
 
-## File structure
+Required: \`filename\`, \`title\`, \`sections[]\`
+Optional: \`eyebrow\`, \`subtitle\`
 
-\`\`\`xml
-<desk-page title="Page Title">
-  <style>
-    /* per-page CSS only — do NOT set body layout, width, padding, or margin */
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
-  </style>
-
-  <h1>Page Title</h1>
-  <p>Introductory paragraph using default typography.</p>
-
-  <h2>Section Heading</h2>
-  <p>Body text. Link to <a href="#anchor">in-page section</a>, <a href="other.desk">another page</a>, or <a href="https://example.com">external URL</a>.</p>
-
-  <h3 id="anchor">Subsection</h3>
-  <p>Inline code: <code>const x = 1</code>. Code block:</p>
-  <pre><code>function greet(name) {
-  return \`Hello, \${name}\`;
-}</code></pre>
-
-  <table>
-    <tr><th>Column A</th><th>Column B</th></tr>
-    <tr><td>Value</td><td>Value</td></tr>
-  </table>
-
-  <div class="callout tip">Tip callout using a built-in class.</div>
-
-  <button id="my-btn">Click me</button>
-
-  <script>
-    document.getElementById('my-btn').addEventListener('click', function () {
-      alert('Works!');
-    });
-  </script>
-</desk-page>
+\`\`\`json
+{
+  "filename": "auth-flow.desk",
+  "title": "Auth Flow",
+  "eyebrow": "Reference · Backend",
+  "subtitle": "How JWT tokens are issued and validated across all services.",
+  "sections": [
+    {
+      "id": "sec-0",
+      "heading": "Overview",
+      "icon": "🔐",
+      "content": "<p>Body HTML for this section. Use classes defined in the template.</p>"
+    },
+    {
+      "id": "sec-1",
+      "heading": "Token Format",
+      "content": "<table><thead><tr><th>Claim</th><th>Value</th></tr></thead><tbody><tr><td><code>sub</code></td><td>user ID string</td></tr></tbody></table>"
+    }
+  ]
+}
 \`\`\`
 
-## Rules
+Each section becomes a \`<div class="section" id="...">\` with an \`<h2 class="section-title">\` heading. If \`id\` is omitted it is auto-assigned as \`sec-0\`, \`sec-1\`, etc.
 
-- **No body/wrapper CSS** — writing \`body { display: flex }\` or \`body { padding }\` will conflict with the template.
-- **\`#hash\` links** scroll to the named anchor natively.
-- **\`<script>\`** blocks run after DOM is ready (re-injected at bottom of body).
-- **Inline handlers** (\`onclick="..."\`) also work.
-- **\`.desk\` links** navigate inside the viewer; **\`https://\` links** open in the browser.
-- **CDN scripts are blocked by CSP** — use installed page libraries instead. Call \`list_libraries\` to see what is available; installed libraries are auto-injected into every page viewer (CSS in \`<head>\`, JS before page scripts).
+## Updating a page
+
+- **With \`sections\`**: body is fully rebuilt from the template + new sections (also updates title/eyebrow/subtitle if provided).
+- **Without \`sections\`**: only \`title\` is updated; body and styles are kept as-is.
+
+\`\`\`json
+{ "filename": "auth-flow.desk", "title": "New Title" }
+\`\`\`
 
 ## Theme CSS variables
+
+These are defined by the template. Use them in section \`content\` via inline styles or the template's pre-defined classes.
 
 | Variable | Usage |
 |----------|-------|
@@ -218,54 +209,31 @@ Content is automatically wrapped in a centred \`.page-content\` container (max-w
 | \`--accent2\` | Links, inline code, tips |
 | \`--radius\` | Border radius (10px) |
 
-## Built-in element styles (no CSS needed)
+## Built-in element styles (no extra CSS needed)
 
-These render correctly out of the box: \`h1\`–\`h3\` (sized + coloured), \`p\` \`ul\` \`ol\`, \`a\` (teal underline-on-hover), \`code\` (teal inline), \`pre code\` (block), \`table\` th/td (hover rows), \`blockquote\`, \`hr\`, \`strong\`, \`em\`.
+These render correctly using template styles: \`h1\`–\`h3\`, \`p\` \`ul\` \`ol\`, \`a\`, \`code\`, \`pre code\`, \`table\` th/td, \`blockquote\`, \`hr\`, \`strong\`, \`em\`.
 
-## Built-in callout classes
+## Rules
 
-\`\`\`html
-<div class="callout">neutral aside</div>
-<div class="callout tip">tip — accent2 left border</div>
-<div class="callout warn">warning — yellow left border</div>
-<div class="callout danger">danger — red left border</div>
-\`\`\`
-
-## Card grid pattern
-
-\`\`\`html
-<style>
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 24px 0; }
-  .card  { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
-  .card h3 { margin-top: 0; }
-</style>
-<div class="cards">
-  <div class="card"><h3>Title</h3><p>Description.</p></div>
-  <div class="card"><h3>Title</h3><p>Description.</p></div>
-</div>
-\`\`\`
+- **No \`<style>\` in content** — template styles are injected automatically; extra style blocks are stripped.
+- **\`#hash\` links** scroll to the named anchor natively.
+- **\`<script>\`** blocks run after DOM is ready (re-injected at bottom of body).
+- **Inline handlers** (\`onclick="..."\`) also work.
+- **\`.desk\` links** navigate inside the viewer; **\`https://\` links** open in the browser.
+- **CDN scripts are blocked by CSP** — use installed page libraries instead.
 
 ## Page libraries (highlight.js, tocbot)
 
-Libraries are installed globally via the sidebar or MCP and auto-injected into every page. Guard with \`typeof\` checks so the page works even when libraries are not yet installed.
+Installed libraries are auto-injected. Use \`typeof\` guards in section \`content\`:
 
 \`\`\`html
-<!-- Syntax highlighting (highlight library) -->
 <pre><code class="language-python">def hello(): return "world"</code></pre>
 <script>
   if (typeof hljs !== 'undefined') hljs.highlightAll();
 </script>
-
-<!-- Auto table of contents (tocbot library) -->
-<div id="toc"></div>
-<script>
-  if (typeof tocbot !== 'undefined') {
-    tocbot.init({ tocSelector: '#toc', contentSelector: '.page-content', headingSelector: 'h2, h3' });
-  }
-</script>
 \`\`\`
 
-Call \`list_libraries\` to see what is installed. If a library shows \`installed: false\`, ask the user to click **Sync all** in the Libraries sidebar panel.
+Call \`list_libraries\` to see what is installed.
 `,
 
   'desk://guide/skill-format': `# Desk Skill Format

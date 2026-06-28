@@ -459,3 +459,148 @@ describe('McpServer — library tools', () => {
     expect(res.error.message).toContain('Library not found');
   });
 });
+
+describe('McpServer — page tools (sections-based)', () => {
+  let server: McpServer;
+  const PORT = 13338;
+
+  const mockPageReader = {
+    list: jest.fn().mockReturnValue([]),
+    read: jest.fn(),
+    write: jest.fn(),
+    delete: jest.fn(),
+    dir: jest.fn().mockReturnValue('/tmp/desk-pages-test'),
+    filePath: jest.fn((f: string) => `/tmp/desk-pages-test/${f}`),
+  };
+
+  const localDataService = {
+    ...mockDataService,
+    getPageTemplate: jest.fn().mockReturnValue(
+      '<desk-page title="T"><style>\n  h1 { color: red; }\n</style>\n<h1>hi</h1>\n</desk-page>'
+    ),
+  };
+
+  beforeEach(done => {
+    jest.clearAllMocks();
+    localDataService.getPageTemplate.mockReturnValue(
+      '<desk-page title="T"><style>\n  h1 { color: red; }\n</style>\n<h1>hi</h1>\n</desk-page>'
+    );
+    server = new McpServer(
+      localDataService as any,
+      null, null, null, localDataService as any,
+      mockPageReader as any,
+      null, null,
+      mockProvider as any,
+      mockFaviconService as any,
+    );
+    server.start(PORT);
+    setTimeout(done, 30);
+  });
+
+  afterEach(done => {
+    server.stop();
+    setTimeout(done, 30);
+  });
+
+  it('create_page assembles body from sections and passes template styles to pageReader.write', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'create_page',
+        arguments: {
+          filename: 'test.desk',
+          title: 'Test Page',
+          eyebrow: 'Ref · Test',
+          subtitle: 'A test page.',
+          sections: [
+            { id: 'sec-0', heading: 'Intro', icon: '🔧', content: '<p>hello</p>' },
+          ],
+        },
+      },
+      id: 1,
+    });
+
+    expect(res.result).toBeDefined();
+    expect(mockPageReader.write).toHaveBeenCalledTimes(1);
+    const [filename, title, bodyHtml, customStyles] = mockPageReader.write.mock.calls[0];
+    expect(filename).toBe('test.desk');
+    expect(title).toBe('Test Page');
+    expect(bodyHtml).toContain('<div class="eyebrow">Ref · Test</div>');
+    expect(bodyHtml).toContain('<h1>Test Page</h1>');
+    expect(bodyHtml).toContain('<p style="color:var(--muted)">A test page.</p>');
+    expect(bodyHtml).toContain('id="sec-0"');
+    expect(bodyHtml).toContain('class="section-title"');
+    expect(bodyHtml).toContain('<span class="icon">🔧</span>');
+    expect(bodyHtml).toContain('<p>hello</p>');
+    expect(customStyles).toContain('h1 { color: red; }');
+  });
+
+  it('create_page uses empty styles when template returns null', async () => {
+    localDataService.getPageTemplate.mockReturnValue(null);
+    await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'create_page',
+        arguments: { filename: 'no-tmpl.desk', title: 'X', sections: [{ heading: 'H', content: '<p>c</p>' }] },
+      },
+      id: 2,
+    });
+    const [, , , customStyles] = mockPageReader.write.mock.calls[0];
+    expect(customStyles).toBe('');
+  });
+
+  it('update_page with sections rebuilds body and updates title', async () => {
+    mockPageReader.read.mockReturnValue({
+      filename: 'existing.desk',
+      title: 'Old Title',
+      customStyles: 'old { }',
+      bodyHtml: '<p>old body</p>',
+      pageScripts: [],
+    });
+
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'update_page',
+        arguments: {
+          filename: 'existing.desk',
+          title: 'New Title',
+          sections: [{ heading: 'New Section', content: '<p>new</p>' }],
+        },
+      },
+      id: 3,
+    });
+
+    expect(res.result).toBeDefined();
+    const [filename, title, bodyHtml, customStyles] = mockPageReader.write.mock.calls[0];
+    expect(filename).toBe('existing.desk');
+    expect(title).toBe('New Title');
+    expect(bodyHtml).toContain('New Section');
+    expect(bodyHtml).toContain('<p>new</p>');
+    expect(customStyles).toContain('h1 { color: red; }');
+  });
+
+  it('update_page without sections keeps existing body and styles', async () => {
+    mockPageReader.read.mockReturnValue({
+      filename: 'existing.desk',
+      title: 'Old Title',
+      customStyles: 'old { }',
+      bodyHtml: '<p>old body</p>',
+      pageScripts: [],
+    });
+
+    await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'update_page',
+        arguments: { filename: 'existing.desk', title: 'Updated Title' },
+      },
+      id: 4,
+    });
+
+    const [, title, bodyHtml, customStyles] = mockPageReader.write.mock.calls[0];
+    expect(title).toBe('Updated Title');
+    expect(bodyHtml).toBe('<p>old body</p>');
+    expect(customStyles).toBe('old { }');
+  });
+});
