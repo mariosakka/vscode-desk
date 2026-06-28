@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.1](https://github.com/mariosakka/vscode-desk/compare/v0.7.0...v0.7.1) (2026-06-28)
+
+
+### Bug Fixes
+
+* correct LibrariesPanel EmptyState prop and update e2e + library docs ([63412f3](https://github.com/mariosakka/vscode-desk/commit/63412f37c45fd73866a74058bf890d7bb28ab628))
+* correct LibrariesPanel EmptyState prop and update e2e + library docs ([0678352](https://github.com/mariosakka/vscode-desk/commit/0678352f758f26b5c7424a5d103d7710f7b96fad))
+
 ## [0.7.0](https://github.com/mariosakka/vscode-desk/compare/v0.6.0...v0.7.0) (2026-06-28)
 
 
