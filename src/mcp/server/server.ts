@@ -6,6 +6,7 @@ import { PageReader } from '../../pages/pageReader';
 import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from '../../services/skillRegistry/skillRegistry';
 import { AgentAdapter } from '../../agents/agentAdapter';
+import { LibraryService } from '../../services/libraryService/libraryService';
 import { TOOLS } from '../toolSchemas';
 import { RESOURCES, RESOURCE_CONTENT } from '../resources';
 
@@ -28,6 +29,7 @@ export class McpServer {
     private readonly onSkillSubmitted: ((scope: string) => void) | null = null,
     private readonly workspaceName: string | null = null,
     private readonly workspacePath: string | null = null,
+    private readonly libraryService: LibraryService | null = null,
   ) {}
 
   start(port: number): Promise<number> {
@@ -278,6 +280,28 @@ export class McpServer {
       case 'set_page_template': {
         this.globalDataService.setPageTemplate(args.content);
         return { content: [{ type: 'text', text: JSON.stringify({ status: 'saved' }) }] };
+      }
+
+      // ── Library tools ─────────────────────────────────────────────────────
+      case 'list_libraries': {
+        if (!this.libraryService) throw new Error('LibraryService not available');
+        const libs = this.libraryService.list().map(l => ({
+          ...l,
+          installed: this.libraryService!.isInstalled(l.name),
+        }));
+        return { content: [{ type: 'text', text: JSON.stringify(libs) }] };
+      }
+
+      case 'add_library': {
+        if (!this.libraryService) throw new Error('LibraryService not available');
+        this.libraryService.add({ name: args.name, description: args.description, files: args.files });
+        return { content: [{ type: 'text', text: JSON.stringify({ status: 'added', name: args.name }) }] };
+      }
+
+      case 'remove_library': {
+        if (!this.libraryService) throw new Error('LibraryService not available');
+        this.libraryService.remove(args.name);
+        return { content: [{ type: 'text', text: JSON.stringify({ removed: args.name }) }] };
       }
 
       default:

@@ -2,12 +2,18 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PageReader, PageContent } from './pageReader';
+import { LibraryService } from '../services/libraryService/libraryService';
 
 export class PageViewPanel {
   private static _current: PageViewPanel | undefined;
+  private static _libraryService: LibraryService | null = null;
 
   private readonly _panel: vscode.WebviewPanel;
   private _history: string[] = [];
+
+  static setup(libraryService: LibraryService): void {
+    PageViewPanel._libraryService = libraryService;
+  }
 
   static open(extensionUri: vscode.Uri, pageReader: PageReader, filename: string): void {
     if (PageViewPanel._current) {
@@ -23,13 +29,17 @@ export class PageViewPanel {
     private readonly _pageReader: PageReader,
     filename: string,
   ) {
+    const localRoots: vscode.Uri[] = [_extensionUri];
+    const libCacheDir = PageViewPanel._libraryService?.libCacheDir;
+    if (libCacheDir) localRoots.push(vscode.Uri.file(libCacheDir));
+
     this._panel = vscode.window.createWebviewPanel(
       'desk.pageView',
       'Desk Page',
       vscode.ViewColumn.One,
       {
         enableScripts: true,
-        localResourceRoots: [_extensionUri],
+        localResourceRoots: localRoots,
         retainContextWhenHidden: true,
       },
     );
@@ -91,6 +101,16 @@ export class PageViewPanel {
       .map(s => `<script nonce="${nonce}">${s}</script>`)
       .join('\n');
 
+    const libFiles = PageViewPanel._libraryService?.getInstalledFiles() ?? [];
+    const libraryStyles = libFiles
+      .filter(f => f.type === 'style')
+      .map(f => `<link rel="stylesheet" href="${webview.asWebviewUri(vscode.Uri.file(f.filePath)).toString()}">`)
+      .join('\n');
+    const libraryScripts = libFiles
+      .filter(f => f.type === 'script')
+      .map(f => `<script src="${webview.asWebviewUri(vscode.Uri.file(f.filePath)).toString()}"></script>`)
+      .join('\n');
+
     const templatePath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'page', 'index.html');
     const template = fs.readFileSync(templatePath, 'utf-8');
 
@@ -103,6 +123,8 @@ export class PageViewPanel {
       .replace(/\$\{scriptUri\}/g, scriptUri.toString())
       .replace(/\$\{title\}/g, escHtml(page.title))
       .replace(/\$\{customStyles\}/g, page.customStyles)
+      .replace(/\$\{libraryStyles\}/g, libraryStyles)
+      .replace(/\$\{libraryScripts\}/g, libraryScripts)
       .replace(/\$\{pageScripts\}/g, pageScripts)
       .replace(/\$\{content\}/g, page.bodyHtml)
       .replace(/\$\{hasBack\}/g, hasBack ? 'true' : 'false');

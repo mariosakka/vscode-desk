@@ -43,6 +43,7 @@ A VS Code extension with four features:
 **PageReader** reads and writes `.desk` files. No other class touches the `desk-pages/` directory.  
 **WorkflowConfigService** owns `workflow.json` and pending review state. No other class reads or writes workflow config directly.  
 **SkillRegistry** owns `skills.json`, validates skill frontmatter, and drives installation via `AgentAdapter`. No other class installs skill files directly.  
+**LibraryService** owns `libraries.json` (global only) and downloads JS/CSS bundles to `~/.desk/lib/<name>/`. `PageViewPanel` calls `getInstalledFiles()` to auto-inject libraries into every page. No other class touches library files directly.  
 **McpServer** has no business logic — it parses JSON-RPC and delegates to the services above.
 
 ---
@@ -74,6 +75,9 @@ src/
     skillRegistry/
       skillRegistry.ts          Skill storage + agent-format installation
       skillRegistry.test.ts
+    libraryService/
+      libraryService.ts         Library config (libraries.json) + file download/cache (~/.desk/lib/)
+      libraryService.test.ts
   mcp/
     server/
       server.ts                 JSON-RPC 2.0 HTTP server
@@ -163,6 +167,9 @@ src/
         PageTemplatePanel/
           PageTemplatePanel.tsx  CollapsibleSection for the global page template (set/edit/clear)
           PageTemplatePanel.module.css
+        LibrariesPanel/
+          LibrariesPanel.tsx     CollapsibleSection listing page libraries with install status, sync, and remove
+          LibrariesPanel.module.css
     page/
       index.html                Page viewer template
       index.css                 VS Code theme token mapping + doc layout
@@ -272,6 +279,8 @@ All data lives in plain JSON files under `~/.desk/`, written by the service laye
 | `~/.desk/global/skills.json` | `Skill[]` | Global workflow skills |
 | `~/.desk/workspaces/<slug>/skills.json` | `Skill[]` | Workspace-scoped skills |
 | `~/.desk/global/page-template.desk` | text | Global page template — shared `<style>` block / HTML skeleton agents use when creating new pages |
+| `~/.desk/global/libraries.json` | `Library[]` | Curated library config (name, description, files[]); managed by `LibraryService` |
+| `~/.desk/lib/<name>/<file>` | binary | Downloaded JS/CSS files; auto-injected into every page viewer by `PageViewPanel` |
 | `desk.favicon-cache` (globalState) | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
 | `<workspace>/desk-pages/*.desk` | XML | Page files managed by `PageReader` |
 
@@ -330,6 +339,8 @@ All Webview → Host messages include a `scope: 'workspace' | 'global'` field un
 | Webview → Host | `saveWorkflow` | `config: WorkflowConfig` |
 | Webview → Host | `editPageTemplate` | — (no scope) — creates starter file if absent, opens in VS Code editor |
 | Webview → Host | `clearPageTemplate` | — (no scope) — deletes `~/.desk/global/page-template.desk` |
+| Webview → Host | `syncLibraries` | — (no scope) — calls `LibraryService.installAll()` and refreshes |
+| Webview → Host | `removeLibrary` | `name: string` (no scope) — removes library from config and deletes cache |
 
 **Page viewer (PageViewPanel ↔ `src/webview/page/index.js`)**
 
@@ -350,7 +361,7 @@ The page viewer has no host→webview messages — navigation replaces the entir
 - **Capabilities:** `{ tools: {}, resources: {} }`
 - **HTTP status:** always `200` for valid JSON-RPC. Errors arrive as `{ error: { code, message } }` in the response body.
 
-**16 tools:**
+**19 tools:**
 
 | Tool | R/W | Required args |
 |------|-----|---------------|
@@ -370,15 +381,20 @@ The page viewer has no host→webview messages — navigation replaces the entir
 | `remove_skill` | W | `name` |
 | `get_page_template` | R | — |
 | `set_page_template` | W | `content` |
+| `list_libraries` | R | — |
+| `add_library` | W | `name`, `files` |
+| `remove_library` | W | `name` |
 
-**3 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
+**4 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
 - `desk://guide/quick-start`
 - `desk://guide/desk-page-format`
 - `desk://guide/skill-format`
+- `desk://workspace/current`
 
 Page tools return an error when VS Code has no workspace folder open.  
 `submit_workflow_config` and `add_skill` queue for user confirmation and return `{ status: "submitted" }` immediately — they do not block.  
-`get_page_template` / `set_page_template` are always global (no scope arg) — stored at `~/.desk/global/page-template.desk`.
+`get_page_template` / `set_page_template` are always global (no scope arg) — stored at `~/.desk/global/page-template.desk`.  
+`list_libraries` / `add_library` / `remove_library` are always global — stored at `~/.desk/global/libraries.json`, files cached at `~/.desk/lib/<name>/`.
 
 ---
 
@@ -402,7 +418,7 @@ Tests run in Node via Jest. The `vscode` module is mocked at `src/__mocks__/vsco
 
 ### Unit tests
 
-Current test count: **141 total**
+Current test count: **164 total**
 
 | File | Count |
 |------|-------|
@@ -410,7 +426,8 @@ Current test count: **141 total**
 | `services/faviconService/faviconService.test.ts` | 7 |
 | `services/workflowConfigService/workflowConfigService.test.ts` | 6 |
 | `services/skillRegistry/skillRegistry.test.ts` | 15 |
-| `mcp/server/server.test.ts` | 24 |
+| `services/libraryService/libraryService.test.ts` | 16 |
+| `mcp/server/server.test.ts` | 34 |
 | `agents/jsonFileAdapter/jsonFileAdapter.test.ts` | 15 |
 | `agents/adapters/claudeCode/claudeCode.test.ts` | 14 |
 | `agents/adapters/cursor/cursor.test.ts` | 10 |
