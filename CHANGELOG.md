@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0](https://github.com/mariosakka/vscode-desk/compare/v0.6.0...v0.7.0) (2026-06-28)
+
+
+### Features
+
+* add page libraries feature with auto-injection into page viewer ([aed267d](https://github.com/mariosakka/vscode-desk/commit/aed267de8934ef5eb4a97df1ccbe96659d6bac40))
+* add page libraries with auto-injection into page viewer ([6e2fd26](https://github.com/mariosakka/vscode-desk/commit/6e2fd26a7483f6d35fbcde3e40b0bcea1396340f))
+
 ## [0.6.0](https://github.com/mariosakka/vscode-desk/compare/v0.5.0...v0.6.0) (2026-06-27)
 
 
