@@ -202,7 +202,7 @@ Content is automatically wrapped in a centred \`.page-content\` container (max-w
 - **\`<script>\`** blocks run after DOM is ready (re-injected at bottom of body).
 - **Inline handlers** (\`onclick="..."\`) also work.
 - **\`.desk\` links** navigate inside the viewer; **\`https://\` links** open in the browser.
-- **CDN scripts are blocked by CSP** — use installed page libraries instead. Call \`list_libraries\` to see what is available; installed libraries are auto-injected into every page.
+- **CDN scripts are blocked by CSP** — use installed page libraries instead. Call \`list_libraries\` to see what is available; installed libraries are auto-injected into every page viewer (CSS in \`<head>\`, JS before page scripts).
 
 ## Theme CSS variables
 
@@ -244,6 +244,28 @@ These render correctly out of the box: \`h1\`–\`h3\` (sized + coloured), \`p\`
   <div class="card"><h3>Title</h3><p>Description.</p></div>
 </div>
 \`\`\`
+
+## Page libraries (highlight.js, tocbot)
+
+Libraries are installed globally via the sidebar or MCP and auto-injected into every page. Guard with \`typeof\` checks so the page works even when libraries are not yet installed.
+
+\`\`\`html
+<!-- Syntax highlighting (highlight library) -->
+<pre><code class="language-python">def hello(): return "world"</code></pre>
+<script>
+  if (typeof hljs !== 'undefined') hljs.highlightAll();
+</script>
+
+<!-- Auto table of contents (tocbot library) -->
+<div id="toc"></div>
+<script>
+  if (typeof tocbot !== 'undefined') {
+    tocbot.init({ tocSelector: '#toc', contentSelector: '.page-content', headingSelector: 'h2, h3' });
+  }
+</script>
+\`\`\`
+
+Call \`list_libraries\` to see what is installed. If a library shows \`installed: false\`, ask the user to click **Sync all** in the Libraries sidebar panel.
 `,
 
   'desk://guide/skill-format': `# Desk Skill Format

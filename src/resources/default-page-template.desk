@@ -116,9 +116,25 @@
     </div>
   </div>
 
-  === Code block ===
+  === Code block (plain) ===
   <pre><code>def example():
       return "hello"</code></pre>
+
+  === Syntax-highlighted code block (requires highlight library installed + synced) ===
+  <pre><code class="language-python">def example():
+      return "hello"</code></pre>
+  <script>
+    if (typeof hljs !== 'undefined') hljs.highlightAll();
+  </script>
+
+  === Auto TOC sidebar (requires tocbot library installed + synced) ===
+  <!-- Add id attributes to your h2/h3 headings, then: -->
+  <div id="toc"></div>
+  <script>
+    if (typeof tocbot !== 'undefined') {
+      tocbot.init({ tocSelector: '#toc', contentSelector: '.page-content', headingSelector: 'h2, h3' });
+    }
+  </script>
 
   === Table ===
   <table>

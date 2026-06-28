@@ -21,7 +21,7 @@ export function LibrariesPanel({ libraries, onSync, onRemove }: Props) {
     >
       <div className={styles.body}>
         {libraries.length === 0 ? (
-          <EmptyState>No libraries configured.</EmptyState>
+          <EmptyState message="No libraries configured." />
         ) : (
           <div className={styles.list}>
             {libraries.map(lib => (
