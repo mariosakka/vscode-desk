@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.0](https://github.com/mariosakka/vscode-desk/compare/v0.8.0...v0.9.0) (2026-06-30)
+
+
+### Features
+
+* sidebar TOC layout, template script injection, and page refresh ([d2561d3](https://github.com/mariosakka/vscode-desk/commit/d2561d34c7f20703d85dafade8a19c5cb933f55d))
+* sidebar TOC layout, template script injection, and page refresh ([3087998](https://github.com/mariosakka/vscode-desk/commit/3087998bf3f9ab537faa1c373780350ae268f4a7))
+
 ## [0.8.0](https://github.com/mariosakka/vscode-desk/compare/v0.7.1...v0.8.0) (2026-06-28)
 
 
