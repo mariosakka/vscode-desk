@@ -70,17 +70,13 @@ export function extractStyleFromTemplate(templateRaw: string): string {
   return m ? m[1] : '';
 }
 
+export function extractScriptFromTemplate(templateRaw: string): string {
+  const m = templateRaw.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+  return m ? m[1] : '';
+}
+
 export function assembleSections(args: AssembleArgs): string {
   const { title, eyebrow, subtitle, sections } = args;
-  const headerLines: string[] = [
-    '<section class="page-intro">',
-    ...(eyebrow ? [`  <div class="eyebrow">${eyebrow}</div>`] : []),
-    `  <h1>${title}</h1>`,
-    ...(subtitle ? [`  <p style="color:var(--muted)">${subtitle}</p>`] : []),
-    '</section>',
-    '',
-    '<hr/>',
-  ];
   const sectionBlocks = sections.map((s, i) => {
     const id = s.id ?? `sec-${i}`;
     const iconHtml = s.icon ? `<span class="icon">${s.icon}</span> ` : '';
@@ -91,5 +87,29 @@ export function assembleSections(args: AssembleArgs): string {
       '</div>',
     ].join('\n');
   });
-  return [...headerLines, '', ...sectionBlocks].join('\n');
+
+  const sidebar = [
+    '<nav id="sidebar">',
+    '  <div class="sidebar-top">',
+    `    <span class="sidebar-logo">${eyebrow ?? title}</span>`,
+    '  </div>',
+    '  <div id="toc-links"></div>',
+    '</nav>',
+  ].join('\n');
+
+  const mainContent = [
+    '<main>',
+    '<section class="page-intro">',
+    ...(eyebrow ? [`  <div class="eyebrow">${eyebrow}</div>`] : []),
+    `  <h1>${title}</h1>`,
+    ...(subtitle ? [`  <p>${subtitle}</p>`] : []),
+    '</section>',
+    '',
+    '<hr/>',
+    '',
+    ...sectionBlocks,
+    '</main>',
+  ].join('\n');
+
+  return [sidebar, mainContent].join('\n');
 }
