@@ -527,7 +527,7 @@ describe('McpServer — page tools (sections-based)', () => {
     expect(title).toBe('Test Page');
     expect(bodyHtml).toContain('<div class="eyebrow">Ref · Test</div>');
     expect(bodyHtml).toContain('<h1>Test Page</h1>');
-    expect(bodyHtml).toContain('<p style="color:var(--muted)">A test page.</p>');
+    expect(bodyHtml).toContain('<p>A test page.</p>');
     expect(bodyHtml).toContain('id="sec-0"');
     expect(bodyHtml).toContain('class="section-title"');
     expect(bodyHtml).toContain('<span class="icon">🔧</span>');

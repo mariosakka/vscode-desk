@@ -18,7 +18,7 @@ describe('assembleSections', () => {
     expect(html).toContain('<section class="page-intro">');
     expect(html).toContain('<div class="eyebrow">Cat · Sub</div>');
     expect(html).toContain('<h1>My Page</h1>');
-    expect(html).toContain('<p style="color:var(--muted)">A summary.</p>');
+    expect(html).toContain('<p>A summary.</p>');
     expect(html).toContain('<hr/>');
   });
   it('omits eyebrow div when eyebrow is not provided', () => {
@@ -27,7 +27,7 @@ describe('assembleSections', () => {
   });
   it('omits subtitle p when subtitle is not provided', () => {
     const html = assembleSections({ title: 'T', sections: [] });
-    expect(html).not.toContain('var(--muted)');
+    expect(html).not.toContain('<p>');
   });
   it('renders sections with explicit id', () => {
     const html = assembleSections({ title: 'T', sections: [{ id: 'custom-id', heading: 'Section A', content: '<p>body</p>' }] });

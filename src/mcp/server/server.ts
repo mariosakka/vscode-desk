@@ -3,7 +3,7 @@ import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
 import { SidebarViewProvider } from '../../sidebarViewProvider';
 import { PageReader } from '../../pages/pageReader';
-import { extractStyleFromTemplate, assembleSections, PageSection } from '../../pages/pageFormat';
+import { extractStyleFromTemplate, extractScriptFromTemplate, assembleSections, PageSection } from '../../pages/pageFormat';
 import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from '../../services/skillRegistry/skillRegistry';
 import { AgentAdapter } from '../../agents/agentAdapter';
@@ -203,14 +203,17 @@ export class McpServer {
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const templateRaw = this.globalDataService.getPageTemplate() ?? '';
         const customStyles = extractStyleFromTemplate(templateRaw);
-        const bodyHtml = assembleSections({
+        const templateScript = extractScriptFromTemplate(templateRaw);
+        let bodyHtml = assembleSections({
           title: args.title,
           eyebrow: args.eyebrow,
           subtitle: args.subtitle,
           sections: (args.sections as PageSection[]) ?? [],
         });
+        if (templateScript) bodyHtml += `\n<script>\n${templateScript}\n</script>`;
         pageReader.write(args.filename, args.title, bodyHtml, customStyles);
-        return { content: [{ type: 'text', text: `created ${args.filename}` }] };
+        this.provider.refresh();
+        return { content: [{ type: 'text', text: `created ${args.filename} in workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
       case 'update_page': {
         const { pageReader } = this._resolveScope(args);
@@ -221,6 +224,7 @@ export class McpServer {
         let newCustomStyles: string;
         if (args.sections !== undefined) {
           const templateRaw = this.globalDataService.getPageTemplate() ?? '';
+          const templateScript = extractScriptFromTemplate(templateRaw);
           newCustomStyles = extractStyleFromTemplate(templateRaw);
           newBodyHtml = assembleSections({
             title: newTitle,
@@ -228,18 +232,21 @@ export class McpServer {
             subtitle: args.subtitle,
             sections: args.sections as PageSection[],
           });
+          if (templateScript) newBodyHtml += `\n<script>\n${templateScript}\n</script>`;
         } else {
           newBodyHtml = existing.bodyHtml;
           newCustomStyles = existing.customStyles;
         }
         pageReader.write(args.filename, newTitle, newBodyHtml, newCustomStyles);
-        return { content: [{ type: 'text', text: `updated ${args.filename}` }] };
+        this.provider.refresh();
+        return { content: [{ type: 'text', text: `updated ${args.filename} in workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
       case 'delete_page': {
         const { pageReader } = this._resolveScope(args);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         pageReader.delete(args.filename);
-        return { content: [{ type: 'text', text: `deleted ${args.filename}` }] };
+        this.provider.refresh();
+        return { content: [{ type: 'text', text: `deleted ${args.filename} from workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
 
       // ── Workflow tools ────────────────────────────────────────────────────
