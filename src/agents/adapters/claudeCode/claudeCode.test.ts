@@ -5,10 +5,12 @@ import * as childProcess from 'child_process';
 
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
+  lstatSync: jest.fn(),
   readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
   mkdirSync: jest.fn(),
   unlinkSync: jest.fn(),
+  symlinkSync: jest.fn(),
 }));
 jest.mock('child_process', () => ({ execSync: jest.fn() }));
 
@@ -140,37 +142,44 @@ describe('skill methods', () => {
     expect(adapter.skillInstallPath).toContain('skills');
   });
 
-  it('isSkillInstalled returns true when file exists', async () => {
-    (fs.existsSync as jest.Mock).mockReturnValue(true);
+  it('isSkillInstalled returns true when symlink/dir exists', async () => {
+    (fs.lstatSync as jest.Mock).mockReturnValue({});
     expect(await new ClaudeCodeAdapter().isSkillInstalled('dev-flow')).toBe(true);
   });
 
-  it('isSkillInstalled returns false when file missing', async () => {
-    (fs.existsSync as jest.Mock).mockReturnValue(false);
+  it('isSkillInstalled returns false when missing', async () => {
+    (fs.lstatSync as jest.Mock).mockImplementation(() => { throw new Error('ENOENT'); });
     expect(await new ClaudeCodeAdapter().isSkillInstalled('dev-flow')).toBe(false);
   });
 
-  it('installSkill writes <name>.md to skillInstallPath', async () => {
+  it('installSkill writes SKILL.md to my-agent-skills dir and creates symlink', async () => {
     (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
     (fs.writeFileSync as jest.Mock).mockReturnValue(undefined);
+    (fs.unlinkSync as jest.Mock).mockImplementation(() => { throw new Error('ENOENT'); });
+    (fs.symlinkSync as jest.Mock).mockReturnValue(undefined);
     await new ClaudeCodeAdapter().installSkill('dev-flow', 'body content');
+    const skillDir = path.join(os.homedir(), '.my-agent-skills', 'dev-flow');
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      expect.stringContaining('dev-flow.md'),
+      path.join(skillDir, 'SKILL.md'),
       'body content',
       'utf-8',
     );
+    expect(fs.symlinkSync).toHaveBeenCalledWith(
+      skillDir,
+      path.join(os.homedir(), '.claude', 'skills', 'dev-flow'),
+    );
   });
 
-  it('uninstallSkill deletes the file when it exists', async () => {
-    (fs.existsSync as jest.Mock).mockReturnValue(true);
+  it('uninstallSkill removes symlink and old flat .md', async () => {
     (fs.unlinkSync as jest.Mock).mockReturnValue(undefined);
     await new ClaudeCodeAdapter().uninstallSkill('dev-flow');
-    expect(fs.unlinkSync).toHaveBeenCalledWith(expect.stringContaining('dev-flow.md'));
+    expect(fs.unlinkSync).toHaveBeenCalledWith(
+      path.join(os.homedir(), '.claude', 'skills', 'dev-flow'),
+    );
   });
 
-  it('uninstallSkill does nothing when file missing', async () => {
-    (fs.existsSync as jest.Mock).mockReturnValue(false);
-    await new ClaudeCodeAdapter().uninstallSkill('dev-flow');
-    expect(fs.unlinkSync).not.toHaveBeenCalled();
+  it('uninstallSkill does not throw when paths are missing', async () => {
+    (fs.unlinkSync as jest.Mock).mockImplementation(() => { throw new Error('ENOENT'); });
+    await expect(new ClaudeCodeAdapter().uninstallSkill('dev-flow')).resolves.toBeUndefined();
   });
 });

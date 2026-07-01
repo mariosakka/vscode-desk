@@ -4,6 +4,7 @@ package-lock.json
 *.vsix
 docs/superpowers/*
 !docs/superpowers/specs/
+!docs/superpowers/plans/
 SPEC.md
 playwright-report/
 test-results
