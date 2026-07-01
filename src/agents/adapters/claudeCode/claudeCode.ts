@@ -71,16 +71,22 @@ export class ClaudeCodeAdapter extends JsonFileAdapter {
   }
 
   async isSkillInstalled(skillName: string): Promise<boolean> {
-    return fs.existsSync(path.join(this.skillInstallPath, `${skillName}.md`));
+    try { fs.lstatSync(path.join(this.skillInstallPath, skillName)); return true; } catch { return false; }
   }
 
   async installSkill(skillName: string, content: string): Promise<void> {
+    const skillDir = path.join(os.homedir(), '.my-agent-skills', skillName);
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), content, 'utf-8');
     fs.mkdirSync(this.skillInstallPath, { recursive: true });
-    fs.writeFileSync(path.join(this.skillInstallPath, `${skillName}.md`), content, 'utf-8');
+    const linkPath = path.join(this.skillInstallPath, skillName);
+    try { fs.unlinkSync(linkPath); } catch {}
+    try { fs.unlinkSync(path.join(this.skillInstallPath, `${skillName}.md`)); } catch {}
+    fs.symlinkSync(skillDir, linkPath);
   }
 
   async uninstallSkill(skillName: string): Promise<void> {
-    const p = path.join(this.skillInstallPath, `${skillName}.md`);
-    if (fs.existsSync(p)) fs.unlinkSync(p);
+    try { fs.unlinkSync(path.join(this.skillInstallPath, skillName)); } catch {}
+    try { fs.unlinkSync(path.join(this.skillInstallPath, `${skillName}.md`)); } catch {}
   }
 }
