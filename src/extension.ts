@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 import { DataService } from './services/dataService/dataService';
 import { FaviconService } from './services/faviconService/faviconService';
 import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
@@ -106,6 +108,29 @@ export function activate(context: vscode.ExtensionContext): void {
     resolvedPort = actualPort;
     context.subscriptions.push({ dispose: () => mcpServer.stop() });
     agentRegistry.showSetupPrompt(actualPort).then(() => agentRegistry.showSkillInstallPrompt()).catch(() => {});
+
+    if (workspaceRoot) {
+      const slug = (workspaceName ?? path.basename(workspaceRoot))
+        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'default';
+      const registryPath = path.join(os.homedir(), '.desk', 'mcp-ports.json');
+      const writeRegistry = () => {
+        let reg: Record<string, { port: number; path: string }> = {};
+        try { reg = JSON.parse(fs.readFileSync(registryPath, 'utf-8')); } catch {}
+        reg[slug] = { port: actualPort, path: workspaceRoot! };
+        fs.writeFileSync(registryPath, JSON.stringify(reg, null, 2));
+      };
+      writeRegistry();
+      context.subscriptions.push({
+        dispose: () => {
+          try {
+            let reg: Record<string, { port: number; path: string }> = {};
+            try { reg = JSON.parse(fs.readFileSync(registryPath, 'utf-8')); } catch {}
+            delete reg[slug];
+            fs.writeFileSync(registryPath, JSON.stringify(reg, null, 2));
+          } catch {}
+        },
+      });
+    }
   }).catch(() => {});
 
   async function pickScope(): Promise<'workspace' | 'global' | undefined> {
