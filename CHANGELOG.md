@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/mariosakka/vscode-desk/compare/v0.9.0...v0.10.0) (2026-07-01)
+
+
+### Features
+
+* workspace-aware MCP port registry and stdio proxy ([b0f5cb2](https://github.com/mariosakka/vscode-desk/commit/b0f5cb2500aac2735b983c6a2ed05a073875d0a6))
+* workspace-aware MCP port registry and stdio proxy ([8af508b](https://github.com/mariosakka/vscode-desk/commit/8af508bca3dc5bfd1daef380ae766f4fd33c4e02))
+
 ## [0.9.0](https://github.com/mariosakka/vscode-desk/compare/v0.8.0...v0.9.0) (2026-06-30)
 
 
