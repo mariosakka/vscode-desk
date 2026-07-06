@@ -2,11 +2,12 @@
 
 ## Overview
 
-Three coordinated additions to Desk's `.desk` page system:
+Four coordinated additions to Desk's `.desk` page system:
 
 1. **Collapsible TOC sidebar** — tocbot-powered navigation baked into the default page template, collapsed by default, auto-built from h2/h3 headings.
 2. **Section & list CRUD MCP tools** — 9 new tools for surgical edits on existing pages (add/remove/update individual sections and list items) without replacing the whole page body.
 3. **Section type registry** — a named-template system where agents pick a type (`steps`, `cards`, `callout`, etc.) and pass structured data; the server renders the HTML. Includes built-in types plus user-registerable custom types.
+4. **Books** — multi-page documents stored as a folder of pages plus a manifest, with chapter structure, a book navigation sidebar, prev/next navigation, and full CRUD via MCP tools, VS Code commands, and sidebar UI.
 
 ---
 
@@ -197,7 +198,83 @@ Built-in types cannot be removed. Custom types can overwrite a built-in name —
 ### Storage
 A new `SectionTypeService` (at `src/services/sectionTypeService/sectionTypeService.ts`) owns `~/.desk/global/section-types.json`. No other class reads or writes this file. `McpServer` delegates to it for the three registry tools.
 
-### Total MCP tool count after this feature: 31 (19 existing + 12 new)
+---
+
+## Section 4 — Books
+
+### Storage model
+
+A book is a subfolder of `desk-pages/`: `desk-pages/<book-slug>/` containing ordinary `.desk` pages plus a `book.json` manifest:
+
+```json
+{
+  "title": "Backend Onboarding",
+  "chapters": [
+    { "title": "Getting Started", "pages": ["intro.desk", "setup.desk"] },
+    { "title": "Architecture", "pages": ["services.desk"] }
+  ]
+}
+```
+
+- Chapter order and page order come from the manifest, not the filesystem.
+- `<book-slug>` is derived from the title the same way workspace slugs are (lowercase, non-alphanumeric runs → `-`).
+- A new **`BookService`** (at `src/services/bookService/bookService.ts`) owns all `book.json` reads and writes. No other class touches manifests.
+- `PageReader` is extended to accept exactly one level of subdirectory in filenames (`my-book/intro.desk`). Every existing and new page tool (`update_page`, section/list CRUD, `open`, `edit`) works on book pages unchanged via the prefixed path. Path traversal outside `desk-pages/` remains rejected.
+
+### Viewer behaviour
+
+When `PageViewPanel` opens a page whose path is inside a book folder, it loads the manifest via `BookService` and renders:
+
+- **Book sidebar** — same collapsible fixed panel pattern as Section 1: chapter titles with their pages nested beneath. The current page is highlighted and expands to show its own h2/h3 headings (tocbot when installed, plain anchor links otherwise). Clicking a page sends the existing `navigate` message with the book-relative path.
+- **Prev/next footer** — at the bottom of the content, following the flattened manifest order: `← Setup` / `Services →`. Hidden at the respective ends of the book.
+
+Standalone pages keep the plain tocbot sidebar from Section 1. Book pages get the book sidebar instead — one sidebar, never two.
+
+### MCP tools (8 new)
+
+| Tool | Required args | Optional args | Effect |
+|------|--------------|---------------|--------|
+| `create_book` | `title` | `slug` | Creates folder + empty manifest |
+| `list_books` | — | — | Returns `{ slug, title, pageCount }[]` |
+| `get_book` | `slug` | — | Full chapter/page tree |
+| `delete_book` | `slug` | — | Removes folder, manifest, and all pages |
+| `add_chapter` | `slug, title` | `position` | Adds a chapter |
+| `rename_chapter` | `slug, chapter_index, title` | — | Renames a chapter |
+| `remove_chapter` | `slug, chapter_index` | — | Removes chapter and deletes its page files |
+| `move_page` | `slug, filename, to_chapter` | `position` | Reorders or re-chapters a page |
+
+Adding a page to a book = `create_page` with `filename: "book-slug/page.desk"` plus a required `chapter` arg when the path is inside a book (the server appends it to the manifest). `delete_page` on a book path also removes the manifest entry.
+
+Errors: unknown slug → `book "x" not found`; chapter index out of range → clear message; `create_page` into a book without `chapter` → error listing available chapters.
+
+### VS Code commands
+
+Registered in `package.json` + `src/extension.ts`, following the existing QuickPick/input-box pattern:
+
+| Command ID | Title | Flow |
+|---|---|---|
+| `desk.newBook` | Desk: New Book | Input box for title → creates folder + manifest |
+| `desk.openBook` | Desk: Open Book | QuickPick of books → opens first page in the viewer |
+| `desk.deleteBook` | Desk: Delete Book | QuickPick of books → confirmation → deletes |
+| `desk.addChapter` | Desk: Add Chapter | QuickPick book → input box for chapter title |
+| `desk.renameChapter` | Desk: Rename Chapter | QuickPick book → QuickPick chapter → input box |
+| `desk.removeChapter` | Desk: Remove Chapter | QuickPick book → QuickPick chapter → confirmation |
+| `desk.newBookPage` | Desk: New Book Page | QuickPick book → QuickPick chapter → input title → creates page + opens editor |
+| `desk.moveBookPage` | Desk: Move Book Page | QuickPick book → QuickPick page → QuickPick target chapter/position |
+
+### Sidebar UI (PagesPanel)
+
+- **"New Book"** action next to the existing "New Page" button (shared `SectionBtn` style).
+- Book rows are **expandable** (reusing the `CollapsibleSection` chevron pattern): book → chapters → pages.
+- Hover actions via `HoverIconButton`:
+  - **book row**: add chapter (+), rename (pencil), delete (trash with `ConfirmButtons`)
+  - **chapter row**: add page (+), rename (pencil), delete (trash)
+  - **page row**: open, edit source, delete — same as standalone pages today
+- New webview→host messages, all carrying `scope`: `newBook`, `deleteBook`, `addChapter`, `renameChapter`, `removeChapter`, `newBookPage`, `moveBookPage`.
+
+Every book operation is reachable three ways — MCP tool (agents), command palette, sidebar UI — matching how bookmarks, pages, and skills already work. The section/list CRUD tools from Section 2 stay MCP-only: for humans, editing the `.desk` file directly via the existing pencil action is the natural equivalent.
+
+### Total MCP tool count after this feature: 39 (19 existing + 12 sections/types + 8 books)
 
 ---
 
@@ -209,15 +286,23 @@ New files:
   src/services/sectionTypeService/
     sectionTypeService.ts             Custom type CRUD (~/.desk/global/section-types.json)
     sectionTypeService.test.ts
+  src/services/bookService/
+    bookService.ts                    Book manifest CRUD (desk-pages/<slug>/book.json)
+    bookService.test.ts
 
 Modified files:
   src/resources/default-page-template.desk  TOC sidebar + toggle + list examples
   src/pages/pageFormat.ts                   Section/list parse+mutate helpers
-  src/mcp/toolSchemas.ts                    12 new tool schemas
-  src/mcp/server/server.ts                  12 new tool cases
+  src/pages/pageReader.ts                   One-level subdirectory support for book pages
+  src/pages/pageViewPanel.ts                Book sidebar + prev/next footer rendering
+  src/mcp/toolSchemas.ts                    20 new tool schemas
+  src/mcp/server/server.ts                  20 new tool cases
   src/mcp/server/server.test.ts             Round-trip tests for all new tools
-  src/mcp/resources.ts                      Updated desk-page-format guide + quick-start table
-  src/extension.ts                          Wire SectionTypeService into McpServer
+  src/mcp/resources.ts                      Updated guides + quick-start table
+  src/extension.ts                          Wire new services + 8 book commands
+  package.json                              8 new command contributions
+  src/webview/sidebar/SidebarApp.tsx        Book message handling
+  src/webview/sidebar/components/PagesPanel/PagesPanel.tsx  Expandable book rows + actions
 ```
 
 ---
@@ -227,7 +312,9 @@ Modified files:
 - `src/pages/pageFormat.ts` helpers: unit tests alongside existing pageFormat tests
 - `src/pages/sectionTypes.ts` renderers: unit tests in `src/pages/sectionTypes.test.ts`
 - `src/services/sectionTypeService/sectionTypeService.test.ts`: CRUD + persistence
-- `src/mcp/server/server.test.ts`: round-trip for all 12 new tools (minimum 1 test each; section/list tools need a "section not found" error case)
+- `src/services/bookService/bookService.test.ts`: manifest CRUD, slug derivation, chapter/page ordering
+- `src/pages/pageReader` tests: subdirectory paths accepted, traversal outside desk-pages/ rejected
+- `src/mcp/server/server.test.ts`: round-trip for all 20 new tools (minimum 1 test each; section/list tools need a "section not found" error case, book tools need an "unknown slug" error case)
 - Default template change: no automated test (visual only)
 
 ---
@@ -237,6 +324,11 @@ Modified files:
 1. Default template changes (standalone, no code dependencies)
 2. `pageFormat.ts` helpers + `sectionTypes.ts` renderers (pure functions, testable in isolation)
 3. `SectionTypeService` + tests
-4. MCP tool schemas + server cases + tests
+4. Section/list/type MCP tool schemas + server cases + tests
 5. Wire `SectionTypeService` into `McpServer` constructor + `extension.ts`
-6. Update MCP resource guides
+6. `BookService` + `PageReader` subdirectory support + tests
+7. Book MCP tools + tests
+8. `PageViewPanel` book sidebar + prev/next footer
+9. Book VS Code commands (`package.json` + `extension.ts`)
+10. PagesPanel expandable book rows + webview messages
+11. Update MCP resource guides
