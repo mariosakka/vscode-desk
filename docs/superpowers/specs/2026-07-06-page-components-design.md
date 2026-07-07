@@ -2,12 +2,14 @@
 
 ## Overview
 
-Four coordinated additions to Desk's `.desk` page system:
+Six coordinated additions to Desk:
 
 1. **Collapsible TOC sidebar** — tocbot-powered navigation baked into the default page template, collapsed by default, auto-built from h2/h3 headings.
 2. **Section & list CRUD MCP tools** — 9 new tools for surgical edits on existing pages (add/remove/update individual sections and list items) without replacing the whole page body.
 3. **Section type registry** — a named-template system where agents pick a type (`steps`, `cards`, `callout`, etc.) and pass structured data; the server renders the HTML. Includes built-in types plus user-registerable custom types.
 4. **Books** — multi-page documents stored as a folder of pages plus a manifest, with chapter structure, a book navigation sidebar, prev/next navigation, and full CRUD via MCP tools, VS Code commands, and sidebar UI.
+5. **Skill-defined MCP tools** — skills stored in the extension (workspace or global) can declare executable tools in their frontmatter; the Desk MCP server exposes them dynamically and runs their shell commands when called.
+6. **Worktree–workspace linking** — a VS Code window opened on a linked git worktree resolves to the same Desk workspace as the main checkout, sharing bookmarks, skills, workflow config, and pages.
 
 ---
 
@@ -278,6 +280,100 @@ Every book operation is reachable three ways — MCP tool (agents), command pale
 
 ---
 
+## Section 5 — Skill-defined MCP tools
+
+### Declaration
+
+Skill frontmatter gains an optional `tools:` block:
+
+```yaml
+---
+name: eod-weekly-log
+description: Manages EOD and weekly work logs.
+tools:
+  - name: log_add
+    description: Add an item to the daily log.
+    command: "~/.desk/daily-log add {section} {text}"
+    args:
+      - { name: section, type: string, required: true, description: "focus | blockers | help" }
+      - { name: text, type: string, required: true }
+  - name: log_show
+    description: Print the formatted daily log.
+    command: "~/.desk/daily-log show"
+---
+```
+
+### Validation & storage
+
+`SkillRegistry` (which already validates frontmatter) additionally validates the `tools` block:
+
+- Tool names: kebab-case or snake_case, must not collide with any built-in tool name.
+- Every `{placeholder}` in `command` must match a declared arg name; every declared arg must appear in the command (except boolean-style flags are out of scope — args are strings only).
+- `args[].type` is always `string` in v1.
+
+Skills stay where they already live — `skills.json` per scope. Workspace skills contribute workspace tools; global skills contribute global tools. On name collision between scopes, workspace wins.
+
+### Exposure
+
+`McpServer` computes the tool list fresh on every `tools/list` request: built-ins + dynamic tools from both skill registries. No caching, so newly approved skills appear immediately and removed skills disappear immediately. Each dynamic tool's JSON schema is generated from its declared args; the description is prefixed with the owning skill's name (e.g. `[eod-weekly-log] Add an item to the daily log.`).
+
+### Execution
+
+On `tools/call` for a dynamic tool the server:
+
+1. Validates required args are present (JSON-RPC error listing missing args otherwise).
+2. Substitutes `{placeholders}` with shell-escaped values (single-quote escaping — arg values cannot inject shell syntax).
+3. Runs the command with `child_process`, cwd = workspace root for workspace skills / home dir for global skills, 30-second timeout.
+4. Returns stdout as the tool result text. Non-zero exit or timeout → JSON-RPC error containing stderr and the exit code.
+
+### Approval model
+
+Approve once at skill install. The existing `add_skill` confirmation flow is extended: the confirmation dialog lists any declared tools with their full command templates, so the user sees exactly what they authorize. After approval the tools are callable without further prompts. Removing the skill removes its tools.
+
+No new MCP tools are needed for this feature — it rides on `add_skill` / `remove_skill`.
+
+---
+
+## Section 6 — Worktree–workspace linking
+
+### Problem
+
+The workspace slug is currently derived from the VS Code workspace folder name. A linked git worktree (`~/work/platform-feature-x` for main checkout `~/work/platform`) gets its own slug and therefore its own empty `~/.desk/workspaces/<slug>/` bucket, even though it is the same project.
+
+### Resolution via git common dir
+
+On activation, before deriving the slug, the extension runs `git rev-parse --git-common-dir` in the workspace folder:
+
+- If it resolves to a `.git` directory **outside** the current folder → this is a linked worktree. The slug is derived from the **main worktree's** folder name (the parent of the resolved common dir), and the main worktree's path is recorded as the workspace root for data purposes.
+- If it resolves inside the current folder, or the folder is not a git repo, or git is not installed → today's behavior, slug from the current folder name.
+
+Result: opening a worktree window loads the same `~/.desk/workspaces/<slug>/` data — bookmarks, skills, workflow config — as the main checkout. Zero configuration.
+
+### mcp-ports.json changes
+
+The main window and a worktree window can be open simultaneously — two ports sharing one slug. The registry becomes keyed by **workspace path** instead of slug:
+
+```json
+{
+  "/home/user/work/platform":            { "port": 3334, "slug": "platform" },
+  "/home/user/work/platform-feature-x":  { "port": 3335, "slug": "platform" }
+}
+```
+
+`desk-proxy.js` continues matching `$PWD` by longest path prefix and lands on the correct window's port. Both windows read and write the same workspace data directory. Entries are still cleaned up on deactivate.
+
+### desk-pages/ redirection
+
+`PageReader` (and by extension books) always resolves `desk-pages/` relative to the **main worktree's** root. All worktrees see one live set of pages and books regardless of checked-out branch — consistent with how bookmarks and skills expand across worktrees. Pages committed to git in the main worktree behave exactly as before.
+
+### Testing
+
+- Slug resolution: unit tests with mocked `git rev-parse` output — linked worktree, main checkout, non-git folder, git missing.
+- Registry: two entries with the same slug, different paths; cleanup removes only its own path.
+- `PageReader` root redirection: worktree root in, main-worktree `desk-pages/` path out.
+
+---
+
 ## Architecture summary
 
 ```
@@ -293,13 +389,19 @@ New files:
 Modified files:
   src/resources/default-page-template.desk  TOC sidebar + toggle + list examples
   src/pages/pageFormat.ts                   Section/list parse+mutate helpers
-  src/pages/pageReader.ts                   One-level subdirectory support for book pages
+  src/pages/pageReader.ts                   One-level subdirectory support for book pages;
+                                            root redirected to main worktree
   src/pages/pageViewPanel.ts                Book sidebar + prev/next footer rendering
   src/mcp/toolSchemas.ts                    20 new tool schemas
-  src/mcp/server/server.ts                  20 new tool cases
+  src/mcp/server/server.ts                  20 new tool cases + dynamic skill-tool
+                                            listing/execution
   src/mcp/server/server.test.ts             Round-trip tests for all new tools
   src/mcp/resources.ts                      Updated guides + quick-start table
-  src/extension.ts                          Wire new services + 8 book commands
+  src/services/skillRegistry/skillRegistry.ts  tools block validation; confirmation
+                                            dialog lists declared tools + commands
+  src/extension.ts                          Wire new services + 8 book commands;
+                                            worktree-aware slug + path-keyed mcp-ports.json
+  ~/.desk/desk-proxy.js                     Path-keyed registry format
   package.json                              8 new command contributions
   src/webview/sidebar/SidebarApp.tsx        Book message handling
   src/webview/sidebar/components/PagesPanel/PagesPanel.tsx  Expandable book rows + actions
@@ -315,6 +417,8 @@ Modified files:
 - `src/services/bookService/bookService.test.ts`: manifest CRUD, slug derivation, chapter/page ordering
 - `src/pages/pageReader` tests: subdirectory paths accepted, traversal outside desk-pages/ rejected
 - `src/mcp/server/server.test.ts`: round-trip for all 20 new tools (minimum 1 test each; section/list tools need a "section not found" error case, book tools need an "unknown slug" error case)
+- Skill-defined tools: `skillRegistry` tests for tools-block validation (bad names, placeholder/arg mismatch, built-in collision); server tests for dynamic listing, arg substitution/escaping, exec success, non-zero exit, missing required arg
+- Worktree linking: slug resolution tests (mocked git output), path-keyed registry read/write/cleanup, `PageReader` root redirection
 - Default template change: no automated test (visual only)
 
 ---
@@ -331,4 +435,6 @@ Modified files:
 8. `PageViewPanel` book sidebar + prev/next footer
 9. Book VS Code commands (`package.json` + `extension.ts`)
 10. PagesPanel expandable book rows + webview messages
-11. Update MCP resource guides
+11. Skill tools-block validation in `SkillRegistry` + dynamic tool listing/execution in `McpServer`
+12. Worktree-aware slug resolution + path-keyed `mcp-ports.json` + proxy update + `PageReader` redirection
+13. Update MCP resource guides
