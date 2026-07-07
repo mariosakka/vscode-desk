@@ -10,6 +10,7 @@ Six coordinated additions to Desk:
 4. **Books** — multi-page documents stored as a folder of pages plus a manifest, with chapter structure, a book navigation sidebar, prev/next navigation, and full CRUD via MCP tools, VS Code commands, and sidebar UI.
 5. **Skill-defined MCP tools** — skills stored in the extension (workspace or global) can declare executable tools in their frontmatter; the Desk MCP server exposes them dynamically and runs their shell commands when called.
 6. **Worktree–workspace linking** — a VS Code window opened on a linked git worktree resolves to the same Desk workspace as the main checkout, sharing bookmarks, skills, workflow config, and pages.
+7. **Multi-tab page viewer + link fixes** — pages open as independent tabs (one panel per page, multiple open at once); external links open once, inside VS Code's Simple Browser, fixing the current double-open-in-system-browser bug.
 
 ---
 
@@ -374,6 +375,43 @@ The main window and a worktree window can be open simultaneously — two ports s
 
 ---
 
+## Section 7 — Multi-tab page viewer + link handling fixes
+
+### Bug: external links open twice, in the system browser
+
+Today, clicking an `https://` link in a page fires the `openUrl` message and `PageViewPanel` calls `vscode.env.openExternal` — the system browser. Additionally the link opens **twice** (double-wired handling between the webview's click listener and default anchor behavior — root cause to be confirmed during implementation).
+
+**Expected behavior after the fix:**
+- An external link click opens the URL **exactly once**.
+- It opens **inside VS Code** via the Simple Browser (`simpleBrowser.show`), matching how the sidebar's `openUrl` already behaves. `vscode.env.openExternal` is no longer used by the page viewer.
+- The webview click handler must `preventDefault()` and stop propagation so no default navigation or duplicate handler fires.
+
+### Multi-tab page viewer
+
+`PageViewPanel` drops its singleton (`_current`) design:
+
+- **One panel per page file.** A static `Map<filename, PageViewPanel>` tracks open panels. Opening a page that is already open reveals its existing tab; otherwise a new `WebviewPanel` is created. Multiple different pages can be open side by side in the same workspace.
+- **Every `.desk` link opens a new tab.** Clicking a `.desk` link inside a page opens that page in its own tab (or reveals it if already open). There is no in-tab navigation.
+- **History and the back button are removed.** With one page per tab, VS Code's own tab management replaces the internal `_history` stack and the fixed back-button overlay. The `back` webview message and `data-has-back` nav state are deleted.
+- **Book prev/next** (Section 4) follows the same rule: the footer links open the previous/next page's tab (reveal if open).
+- Panel disposal removes the entry from the map.
+- The panel title remains the page title; each tab is independently closable.
+
+### Webview message protocol changes
+
+| Message | Change |
+|---|---|
+| `navigate` | Unchanged shape (`filename`), but the host now opens/reveals a separate panel instead of replacing the current panel's HTML |
+| `back` | **Removed** |
+| `openUrl` | Host opens via Simple Browser instead of `openExternal` |
+
+### Testing
+
+- e2e (`page-viewer.spec.ts`): external link click posts exactly one `openUrl` message; `.desk` link posts `navigate`; no `back` message wiring remains.
+- Unit: panel map — open twice → one panel revealed not recreated; dispose removes map entry. (Panel behavior is thin over the VS Code API; keep tests to what the mock supports.)
+
+---
+
 ## Architecture summary
 
 ```
@@ -391,7 +429,11 @@ Modified files:
   src/pages/pageFormat.ts                   Section/list parse+mutate helpers
   src/pages/pageReader.ts                   One-level subdirectory support for book pages;
                                             root redirected to main worktree
-  src/pages/pageViewPanel.ts                Book sidebar + prev/next footer rendering
+  src/pages/pageViewPanel.ts                Book sidebar + prev/next footer; multi-tab
+                                            panel map; Simple Browser for openUrl;
+                                            history/back removed
+  src/webview/page/index.js                 Single-fire link handling; back wiring removed
+  src/webview/page/index.html + index.css   Back button removed
   src/mcp/toolSchemas.ts                    20 new tool schemas
   src/mcp/server/server.ts                  20 new tool cases + dynamic skill-tool
                                             listing/execution
@@ -437,4 +479,5 @@ Modified files:
 10. PagesPanel expandable book rows + webview messages
 11. Skill tools-block validation in `SkillRegistry` + dynamic tool listing/execution in `McpServer`
 12. Worktree-aware slug resolution + path-keyed `mcp-ports.json` + proxy update + `PageReader` redirection
-13. Update MCP resource guides
+13. Link handling fix + multi-tab page viewer (independent of the rest; can be done early)
+14. Update MCP resource guides
