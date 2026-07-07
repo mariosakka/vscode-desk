@@ -11,6 +11,7 @@ Six coordinated additions to Desk:
 5. **Skill-defined MCP tools** — skills stored in the extension (workspace or global) can declare executable tools in their frontmatter; the Desk MCP server exposes them dynamically and runs their shell commands when called.
 6. **Worktree–workspace linking** — a VS Code window opened on a linked git worktree resolves to the same Desk workspace as the main checkout, sharing bookmarks, skills, workflow config, and pages.
 7. **Multi-tab page viewer + link fixes** — pages open as independent tabs (one panel per page, multiple open at once); external links open once, inside VS Code's Simple Browser, fixing the current double-open-in-system-browser bug.
+8. **Page zoom + user customization** — zoom controls in the page viewer (wheel, keys, nav-bar buttons, persisted), plus VS Code settings and commands so users can customize the behavior of every feature above.
 
 ---
 
@@ -412,6 +413,48 @@ Today, clicking an `https://` link in a page fires the `openUrl` message and `Pa
 
 ---
 
+## Section 8 — Page zoom + user customization
+
+### Zoom in the page viewer
+
+Webviews do not inherit VS Code's editor zoom, so the page viewer implements its own:
+
+- **Inputs:** Ctrl/Cmd + scroll wheel, Ctrl/Cmd + `=` / `-` / `0` (reset) inside the page, and **`+` / `−` buttons in the fixed nav bar** showing the current percentage (e.g. `110%`).
+- **Mechanism:** a zoom factor applied as font-size scaling on the content root (`html { font-size: calc(15px * factor) }`-style) — not CSS `zoom` — so rem-based layout scales crisply.
+- **Range:** 50%–300% in 10% steps.
+- **Persistence:** one global zoom level in VS Code `globalState` under `desk.page-zoom`; applied on every panel open, survives restarts.
+- **New webview→host message** `setZoom { level }` for persistence; the stored level is injected into the HTML on render.
+- **Commands:** `desk.zoomIn`, `desk.zoomOut`, `desk.zoomReset` (Desk: Zoom In / Zoom Out / Reset Zoom) act on the active page panel, so users can bind their own keys.
+
+### User-facing settings (`contributes.configuration`)
+
+Every behavioral choice made in this spec gets a setting so users can override it:
+
+| Setting | Type / default | Controls |
+|---|---|---|
+| `desk.mcpPort` | number, `3333` | (existing) MCP server port |
+| `desk.pageViewer.defaultZoom` | number, `100` | Initial zoom % when no persisted value exists |
+| `desk.pageViewer.tocCollapsed` | boolean, `true` | Whether the TOC/book sidebar starts collapsed (Sections 1, 4) |
+| `desk.pageViewer.openLinksIn` | `"simpleBrowser"` \| `"externalBrowser"`, `"simpleBrowser"` | Where external links open (Section 7) |
+| `desk.pageViewer.singleTab` | boolean, `false` | Opt back into single-panel behavior: `.desk` links navigate in-tab instead of opening new tabs (Section 7) |
+| `desk.skillTools.enabled` | boolean, `true` | Expose skill-defined MCP tools at all (Section 5) |
+| `desk.skillTools.timeoutSeconds` | number, `30` | Exec timeout for skill-defined tools (Section 5) |
+| `desk.worktreeLinking.enabled` | boolean, `true` | Resolve worktrees to the main checkout's workspace (Section 6) |
+
+Settings are read live where cheap (link target, zoom, timeouts) and on activation where structural (worktree linking, skill tools exposure).
+
+### Command coverage check
+
+All user-invokable operations across the spec have commands: 8 book commands (Section 4), 3 zoom commands, plus a `desk.toggleToc` command (Desk: Toggle Page Sidebar) that collapses/expands the TOC/book sidebar in the active page panel. Section/list CRUD stays MCP-only by design (Section 4b rationale).
+
+### Testing
+
+- Zoom clamp/step logic: unit test if extracted as a pure helper; otherwise covered in e2e.
+- e2e (`page-viewer.spec.ts`): zoom buttons change the root font-size variable; `setZoom` message posted.
+- Settings: covered indirectly through the services/panels that read them (mock `workspace.getConfiguration`).
+
+---
+
 ## Architecture summary
 
 ```
@@ -444,7 +487,9 @@ Modified files:
   src/extension.ts                          Wire new services + 8 book commands;
                                             worktree-aware slug + path-keyed mcp-ports.json
   ~/.desk/desk-proxy.js                     Path-keyed registry format
-  package.json                              8 new command contributions
+  package.json                              12 new command contributions + settings
+                                            (zoom, toggle TOC, link target, skill tools,
+                                            worktree linking)
   src/webview/sidebar/SidebarApp.tsx        Book message handling
   src/webview/sidebar/components/PagesPanel/PagesPanel.tsx  Expandable book rows + actions
 ```
@@ -480,4 +525,5 @@ Modified files:
 11. Skill tools-block validation in `SkillRegistry` + dynamic tool listing/execution in `McpServer`
 12. Worktree-aware slug resolution + path-keyed `mcp-ports.json` + proxy update + `PageReader` redirection
 13. Link handling fix + multi-tab page viewer (independent of the rest; can be done early)
-14. Update MCP resource guides
+14. Zoom + settings + remaining commands (`desk.zoomIn/Out/Reset`, `desk.toggleToc`, `contributes.configuration`)
+15. Update MCP resource guides
