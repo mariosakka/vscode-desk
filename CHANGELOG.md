@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.12.0](https://github.com/mariosakka/vscode-desk/compare/v0.11.0...v0.12.0) (2026-07-08)
+
+
+### Features
+
+* add book MCP tools ([00b2bdc](https://github.com/mariosakka/vscode-desk/commit/00b2bdcfb004455622487d1b342c7c19b254c729))
+* add book MCP tools ([f5b3afe](https://github.com/mariosakka/vscode-desk/commit/f5b3afe839e0db4088f96833d27c434a980999b8))
+* add book VS Code commands and worktree-aware workspace linking ([6605c44](https://github.com/mariosakka/vscode-desk/commit/6605c443c3fb9a6d0c653a364705e9ec30639b78))
+* add BookService ([9b8c272](https://github.com/mariosakka/vscode-desk/commit/9b8c272e4b6a7b3c460155e91bb32e04e5997688))
+* add built-in section type renderers ([43c2ed6](https://github.com/mariosakka/vscode-desk/commit/43c2ed6e856539e64f73124b6c7ff819e30a899b))
+* add dynamic skill-defined MCP tools ([3dc42fa](https://github.com/mariosakka/vscode-desk/commit/3dc42faa64f46548850a6348511676fc6ccdf748))
+* add expandable book rows to sidebar PagesPanel ([5369ee6](https://github.com/mariosakka/vscode-desk/commit/5369ee618821c5ef358eaec8ba13f3a6ccc3b046))
+* add section, list, and section-type MCP tools ([6f9444b](https://github.com/mariosakka/vscode-desk/commit/6f9444bce3a41cd59e2dd54be47937ca7f2c8402))
+* add section/list parse+mutate helpers to pageFormat ([5ff9558](https://github.com/mariosakka/vscode-desk/commit/5ff95587ae5477179a241abf7eed1abd974da2c0))
+* add SectionTypeService ([6418f83](https://github.com/mariosakka/vscode-desk/commit/6418f83851db396845bdd45265a5a90c10dc0211))
+* add tools-block parsing and validation to SkillRegistry ([00ed854](https://github.com/mariosakka/vscode-desk/commit/00ed85423c9ac4f025e89136f50fcc583dfc50ed))
+* add worktree resolver utility ([bdf29fb](https://github.com/mariosakka/vscode-desk/commit/bdf29fb19322e08a9f34896c6eb5d5c3b48b6c3f))
+* add zoom controls to page viewer nav bar and remove back button ([0d1eb43](https://github.com/mariosakka/vscode-desk/commit/0d1eb430a59afc53e432ebf1b4fc84a68db1055d))
+* add zoom/toc commands and user settings for page viewer ([5c5d5f1](https://github.com/mariosakka/vscode-desk/commit/5c5d5f1d6b2817f07e2f74e8c06e902c94ead3de))
+* expose skill-defined tools via McpServer dynamic tool dispatch ([c655e53](https://github.com/mariosakka/vscode-desk/commit/c655e53a57f6170e5ba3dfe14c7b8b8d5178e4ff))
+* extend PageReader to accept one subdirectory level for book pages ([4ad70b0](https://github.com/mariosakka/vscode-desk/commit/4ad70b0187dca8d0c27aa455dbd79ac690d5e8ea))
+* multi-tab page viewer with book nav and zoom persistence ([b287b6b](https://github.com/mariosakka/vscode-desk/commit/b287b6b7a3bfd9fd4f4d438f8a8468d174621013))
+* page components — sections, books, multi-tab viewer, zoom, skill tools, worktree linking ([6727581](https://github.com/mariosakka/vscode-desk/commit/67275814246fc6b3f88dc517210632acad5f3560))
+
+
+### Bug Fixes
+
+* shell-quote skill tool arg values to prevent injection ([f724423](https://github.com/mariosakka/vscode-desk/commit/f724423f8b7353fbcbac0a757ed01c6105d8acb8))
+* single-fire link handling and add zoom controls to page viewer webview ([5956268](https://github.com/mariosakka/vscode-desk/commit/59562687c03fb928741889fe92a7a87d851024ea))
+* use typed PageViewPanel static methods for zoom commands ([c7fffd8](https://github.com/mariosakka/vscode-desk/commit/c7fffd87357795d119ee909b750af9ce751cfcd3))
+* wire bookService to SidebarViewProvider, McpServer, and PageViewPanel; fix workspacePageReader path ([2cbc7ff](https://github.com/mariosakka/vscode-desk/commit/2cbc7ff225873b1f5c7532c4f29408f7f88ed0c9))
+
 ## [0.11.0](https://github.com/mariosakka/vscode-desk/compare/v0.10.0...v0.11.0) (2026-07-01)
 
 
