@@ -9,12 +9,18 @@ import { WorkflowConfigService } from './services/workflowConfigService/workflow
 import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { AgentAdapter } from './agents/agentAdapter';
 import { LibraryService } from './services/libraryService/libraryService';
+import { BookService } from './services/bookService/bookService';
+
+interface BookPageMeta { filename: string; title: string; }
+interface BookChapterMeta { title: string; pages: BookPageMeta[]; }
+interface BookSummary { slug: string; title: string; chapters: BookChapterMeta[]; }
 
 interface ScopedData {
   data: import('./models').DeskData;
   pages: import('./pages/pageFormat').PageMeta[];
   workflow: import('./services/workflowConfigService/workflowConfigService').WorkflowConfig | null;
   skills: Omit<import('./services/skillRegistry/skillRegistry').Skill, 'content'>[];
+  books: BookSummary[];
 }
 
 interface SidebarData {
@@ -43,6 +49,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
     private readonly _faviconService: FaviconService | null = null,
     private readonly _adapters: AgentAdapter[] = [],
     private readonly _libraryService: LibraryService | null = null,
+    private readonly _bookService: BookService | null = null,
   ) {}
 
   private _resolveScope(scope: 'workspace' | 'global' = 'workspace'): {
@@ -223,6 +230,27 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           }
           break;
         }
+        case 'newBook':
+          vscode.commands.executeCommand('desk.newBook');
+          break;
+        case 'deleteBook':
+          vscode.commands.executeCommand('desk.deleteBook', message.slug);
+          break;
+        case 'addChapter':
+          vscode.commands.executeCommand('desk.addChapter', message.slug);
+          break;
+        case 'renameChapter':
+          vscode.commands.executeCommand('desk.renameChapter', message.slug, message.chapterIndex);
+          break;
+        case 'removeChapter':
+          vscode.commands.executeCommand('desk.removeChapter', message.slug, message.chapterIndex);
+          break;
+        case 'newBookPage':
+          vscode.commands.executeCommand('desk.newBookPage', message.slug, message.chapterIndex);
+          break;
+        case 'moveBookPage':
+          vscode.commands.executeCommand('desk.moveBookPage', message.slug, message.filename, message.toChapter);
+          break;
       }
     });
   }
@@ -230,16 +258,42 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
   refresh(): void {
     if (!this._view) return;
 
+    const buildBooks = (ps: PageReader | null): BookSummary[] => {
+      if (!this._bookService || !ps) return [];
+      return this._bookService.list().flatMap(b => {
+        try {
+          const manifest = this._bookService!.get(b.slug);
+          return [{
+            slug: b.slug,
+            title: manifest.title,
+            chapters: manifest.chapters.map(ch => ({
+              title: ch.title,
+              pages: ch.pages.map(p => {
+                try {
+                  const content = ps.read(`${b.slug}/${p}`);
+                  return { filename: p, title: content.title };
+                } catch {
+                  return { filename: p, title: p.replace(/\.desk$/, '') };
+                }
+              }),
+            })),
+          }];
+        } catch { return []; }
+      });
+    };
+
     const buildScoped = (
       ds: DataService,
       ps: PageReader | null,
       wf: WorkflowConfigService | null,
       sr: SkillRegistry | null,
+      includeBooks = false,
     ): ScopedData => ({
       data: ds.get(),
       pages: ps ? ps.list() : [],
       workflow: wf?.get() ?? null,
       skills: sr ? sr.list() : [],
+      books: includeBooks ? buildBooks(ps) : [],
     });
 
     const sidebarData: SidebarData = {
@@ -250,6 +304,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
             this._workspacePageReader,
             this._workspaceWorkflowService,
             this._workspaceSkillRegistry,
+            true,
           )
         : null,
       global: buildScoped(

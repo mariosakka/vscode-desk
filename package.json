@@ -107,7 +107,19 @@
       {
         "command": "desk.viewWorkflow",
         "title": "Desk: View Workflow Config"
-      }
+      },
+      { "command": "desk.newBook",       "title": "Desk: New Book" },
+      { "command": "desk.openBook",      "title": "Desk: Open Book" },
+      { "command": "desk.deleteBook",    "title": "Desk: Delete Book" },
+      { "command": "desk.addChapter",    "title": "Desk: Add Chapter" },
+      { "command": "desk.renameChapter", "title": "Desk: Rename Chapter" },
+      { "command": "desk.removeChapter", "title": "Desk: Remove Chapter" },
+      { "command": "desk.newBookPage",   "title": "Desk: New Book Page" },
+      { "command": "desk.moveBookPage",  "title": "Desk: Move Book Page" },
+      { "command": "desk.zoomIn",        "title": "Desk: Zoom In" },
+      { "command": "desk.zoomOut",       "title": "Desk: Zoom Out" },
+      { "command": "desk.zoomReset",     "title": "Desk: Reset Zoom" },
+      { "command": "desk.toggleToc",     "title": "Desk: Toggle Page Sidebar" }
     ],
     "configuration": {
       "title": "Desk",
@@ -116,6 +128,42 @@
           "type": "number",
           "default": 3333,
           "description": "Port for the embedded MCP HTTP server"
+        },
+        "desk.pageViewer.defaultZoom": {
+          "type": "number",
+          "default": 100,
+          "description": "Initial zoom percentage when no persisted zoom exists (50–300)."
+        },
+        "desk.pageViewer.tocCollapsed": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the TOC/book sidebar starts collapsed when opening a page."
+        },
+        "desk.pageViewer.openLinksIn": {
+          "type": "string",
+          "enum": ["simpleBrowser", "externalBrowser"],
+          "default": "simpleBrowser",
+          "description": "Where external links in pages open: VS Code Simple Browser or the system browser."
+        },
+        "desk.pageViewer.singleTab": {
+          "type": "boolean",
+          "default": false,
+          "description": "Navigate .desk links in the same tab instead of opening new tabs."
+        },
+        "desk.skillTools.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Expose skill-defined MCP tools via the Desk MCP server."
+        },
+        "desk.skillTools.timeoutSeconds": {
+          "type": "number",
+          "default": 30,
+          "description": "Execution timeout in seconds for skill-defined MCP tool commands."
+        },
+        "desk.worktreeLinking.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, a VS Code window opened on a linked git worktree resolves to the same Desk workspace as the main checkout."
         }
       }
     }

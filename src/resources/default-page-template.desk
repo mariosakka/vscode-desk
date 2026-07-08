@@ -69,6 +69,30 @@
     .page-intro { margin-bottom: 2rem; }
     .eyebrow { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
 
+    /* ── TOC sidebar */
+    .toc-panel {
+      position: fixed; left: 0; top: 44px;
+      width: 220px; height: calc(100vh - 44px);
+      overflow-y: auto;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 1rem 0.75rem;
+      transition: transform .25s ease;
+      z-index: 99;
+    }
+    .toc-panel.collapsed { transform: translateX(-100%); }
+    .toc-toggle {
+      position: fixed; left: 8px; top: 50px; z-index: 100;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 4px 10px;
+      cursor: pointer; color: var(--muted);
+      transition: left .25s ease;
+    }
+    body.toc-open .toc-toggle { left: 228px; }
+    body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px); }
+    .toc-panel ol, .toc-panel ul { padding-left: 0.75rem; list-style: none; }
+    .toc-panel a { color: var(--muted); text-decoration: none; font-size: 0.82rem; line-height: 1.8; display: block; }
+    .toc-panel a:hover, .toc-panel .is-active-link { color: var(--accent2); }
+
     /* ── Links */
     a { color: var(--accent2); }
   </style>
@@ -152,6 +176,18 @@
     </tbody>
   </table>
 
+  === Unordered list ===
+  <ul>
+    <li>First item</li>
+    <li>Second item with <code>inline code</code></li>
+  </ul>
+
+  === Ordered list ===
+  <ol>
+    <li>Step one</li>
+    <li>Step two</li>
+  </ol>
+
   === Section lead box ===
   <div class="lead">
     <strong>Core idea:</strong> One-sentence summary of what this page or section is about.
@@ -187,6 +223,23 @@
   </div>
 
   ═══════════════════════════════════════════════════════════════ -->
+
+  <button id="toc-toggle" class="toc-toggle" aria-label="Toggle table of contents">≡</button>
+  <nav id="toc" class="toc-panel collapsed"></nav>
+  <script>
+    (function () {
+      var toc = document.getElementById('toc');
+      var toggle = document.getElementById('toc-toggle');
+      if (!toc || !toggle) return;
+      if (typeof tocbot === 'undefined') { toggle.style.display = 'none'; return; }
+      tocbot.init({ tocSelector: '#toc', contentSelector: '.page-content', headingSelector: 'h2, h3', orderedList: false });
+      toggle.addEventListener('click', function () {
+        var collapsed = toc.classList.toggle('collapsed');
+        toggle.textContent = collapsed ? '≡' : '←';
+        document.body.classList.toggle('toc-open', !collapsed);
+      });
+    })();
+  </script>
 
   <section class="page-intro">
     <div class="eyebrow">Category · Subcategory</div>

@@ -40,11 +40,28 @@ export interface SkillSummary {
 
 export type Scope = 'workspace' | 'global';
 
+export interface BookPageMeta {
+  filename: string;
+  title: string;
+}
+
+export interface BookChapterMeta {
+  title: string;
+  pages: BookPageMeta[];
+}
+
+export interface BookSummary {
+  slug: string;
+  title: string;
+  chapters: BookChapterMeta[];
+}
+
 export interface ScopedData {
   data: DeskData;
   pages: PageMeta[];
   workflow: WorkflowConfig | null;
   skills: SkillSummary[];
+  books: BookSummary[];
 }
 
 export interface LibraryEntry {

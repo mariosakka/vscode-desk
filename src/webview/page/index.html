@@ -7,13 +7,19 @@
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src 'unsafe-inline' ${cspSource}; img-src data: ${cspSource};">
   <link rel="stylesheet" href="${cssUri}">
+  <style>:root { --zoom: ${zoom}; } html { font-size: calc(15px * var(--zoom)); }</style>
   <style>${customStyles}</style>
   ${libraryStyles}
+  ${bookNavCss}
 </head>
 <body>
-  <nav class="page-nav" id="page-nav" data-has-back="${hasBack}">
-    <button class="page-back-btn" id="back-btn" aria-label="Go back">← Back</button>
+  <nav class="page-nav" id="page-nav">
     <span class="page-nav-label">Desk</span>
+    <div class="page-nav-zoom">
+      <button id="zoom-out" class="zoom-btn" title="Zoom out (Ctrl+-)">−</button>
+      <span id="zoom-label" class="zoom-label">100%</span>
+      <button id="zoom-in" class="zoom-btn" title="Zoom in (Ctrl+=)">+</button>
+    </div>
   </nav>
   <div class="page-content">${content}</div>
   ${libraryScripts}

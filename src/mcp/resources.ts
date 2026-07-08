@@ -120,7 +120,7 @@ remove_library      → remove a library and delete its cached files
 
 Libraries are global only (no scope). After \`add_library\`, sync from the sidebar or wait for the next install cycle to download the files.
 
-## All 19 tools
+## All 39 static tools + dynamic skill tools
 
 | Tool | R | W | Required args |
 |------|---|---|---------------|
@@ -143,6 +143,30 @@ Libraries are global only (no scope). After \`add_library\`, sync from the sideb
 | list_libraries | ✓ | | — |
 | add_library | | ✓ | name, files |
 | remove_library | | ✓ | name |
+| list_sections | ✓ | | filename |
+| add_section | | ✓ | filename, heading |
+| update_section | | ✓ | filename, section_id |
+| remove_section | | ✓ | filename, section_id |
+| list_items | ✓ | | filename, section_id |
+| add_list_item | | ✓ | filename, section_id, text |
+| remove_list_item | | ✓ | filename, section_id, index |
+| update_list_item | | ✓ | filename, section_id, index, text |
+| set_list_type | | ✓ | filename, section_id, type |
+| list_section_types | ✓ | | — |
+| register_section_type | | ✓ | name, description, template |
+| remove_section_type | | ✓ | name |
+| create_book | | ✓ | title |
+| list_books | ✓ | | — |
+| get_book | ✓ | | slug |
+| delete_book | | ✓ | slug |
+| add_chapter | | ✓ | slug, title |
+| rename_chapter | | ✓ | slug, chapter_index, title |
+| remove_chapter | | ✓ | slug, chapter_index |
+| move_page | | ✓ | slug, filename, to_chapter |
+
+## Dynamic skill tools
+
+Skills that define a \`tools\` frontmatter key expose additional tools dynamically. Call \`tools/list\` to see the current full list including skill-defined tools. Workspace-scope skill tools override global tools with the same name.
 `,
 
   'desk://guide/desk-page-format': `# Desk Page Format (.desk)
@@ -192,6 +216,58 @@ Each section becomes a \`<div class="section" id="...">\` with an \`<h2 class="s
 \`\`\`json
 { "filename": "auth-flow.desk", "title": "New Title" }
 \`\`\`
+
+## Section CRUD (surgical edits)
+
+Use these instead of \`update_page\` when you want to change a single section without rebuilding the whole page:
+
+\`\`\`
+list_sections       → returns [{ id, heading }] for all sections in a page
+add_section         → append a new section (heading + content HTML, optional id/icon/type)
+update_section      → change heading or content of one section by id
+remove_section      → delete one section by id
+\`\`\`
+
+## List CRUD
+
+Sections that contain a \`<ul>\` or \`<ol>\` can be edited item by item:
+
+\`\`\`
+list_items          → returns { type: "ul"|"ol", items: string[] }
+add_list_item       → append one item (text)
+remove_list_item    → remove by 1-based index
+update_list_item    → replace text at 1-based index
+set_list_type       → switch between ul and ol
+\`\`\`
+
+## Section types
+
+Section types are named templates for common content patterns (steps, cards, key-value tables, etc.):
+
+\`\`\`
+list_section_types      → built-in + custom types with descriptions
+register_section_type   → save a custom Handlebars-like template (name, description, template)
+remove_section_type     → remove a custom type by name
+\`\`\`
+
+Pass \`type\` + \`data\` to \`add_section\` or \`update_section\` instead of raw \`content\` to render a typed section. Built-in types: \`steps\`, \`cards\`, \`kv-table\`.
+
+## Books
+
+A book groups related pages into chapters. Books live in \`desk-pages/<slug>/\` alongside a \`book.json\` manifest:
+
+\`\`\`
+create_book         → creates manifest (title, auto-slug)
+list_books          → summary list with page counts
+get_book            → chapter/page tree for one book
+delete_book         → removes manifest (pages remain on disk)
+add_chapter         → append or insert a chapter by title
+rename_chapter      → update chapter title by 0-based index
+remove_chapter      → delete chapter entry (pages remain on disk)
+move_page           → move a page between chapters (optional position)
+\`\`\`
+
+Book pages are created with \`create_page\` using \`filename: "<slug>/<page>.desk"\`.
 
 ## Theme CSS variables
 
