@@ -1,11 +1,12 @@
 import * as http from 'http';
+import { execSync } from 'child_process';
 import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
 import { SidebarViewProvider } from '../../sidebarViewProvider';
 import { PageReader } from '../../pages/pageReader';
 import { extractStyleFromTemplate, extractScriptFromTemplate, assembleSections, PageSection } from '../../pages/pageFormat';
 import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
-import { SkillRegistry } from '../../services/skillRegistry/skillRegistry';
+import { SkillRegistry, SkillTool } from '../../services/skillRegistry/skillRegistry';
 import { AgentAdapter } from '../../agents/agentAdapter';
 import { LibraryService } from '../../services/libraryService/libraryService';
 import { TOOLS } from '../toolSchemas';
@@ -139,7 +140,19 @@ export class McpServer {
       };
     }
     if (method === 'tools/list') {
-      return { tools: TOOLS };
+      const skillTools = this._getSkillTools().map(t => ({
+        name: t.name,
+        description: t.description,
+        inputSchema: {
+          type: 'object',
+          required: t.args.filter(a => a.required !== false).map(a => a.name),
+          properties: Object.fromEntries(
+            t.args.map(a => [a.name, { type: a.type, ...(a.description ? { description: a.description } : {}) }])
+          ),
+          additionalProperties: false,
+        },
+      }));
+      return { tools: [...TOOLS, ...skillTools] };
     }
     if (method === 'tools/call') {
       return this.callTool(params.name, params.arguments ?? {});
@@ -331,8 +344,40 @@ export class McpServer {
         return { content: [{ type: 'text', text: JSON.stringify({ removed: args.name }) }] };
       }
 
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+      default: {
+        const skillTool = this._getSkillTools().find(t => t.name === name);
+        if (!skillTool) throw new Error(`Unknown tool: ${name}`);
+        return this._callSkillTool(skillTool, args);
+      }
+    }
+  }
+
+  private _getSkillTools(): SkillTool[] {
+    const globalTools = this.globalSkillRegistry?.getAllTools() ?? [];
+    const workspaceTools = this.workspaceSkillRegistry?.getAllTools() ?? [];
+    const seen = new Set<string>();
+    const merged: SkillTool[] = [];
+    for (const t of [...workspaceTools, ...globalTools]) {
+      if (!seen.has(t.name)) { seen.add(t.name); merged.push(t); }
+    }
+    return merged;
+  }
+
+  private _callSkillTool(tool: SkillTool, args: Record<string, any>): { content: Array<{ type: string; text: string }> } {
+    const timeout = 30000;
+    let cmd = tool.command;
+    for (const arg of tool.args) {
+      const val = args[arg.name];
+      if (val !== undefined) {
+        cmd = cmd.replace(new RegExp(`\\{${arg.name}\\}`, 'g'), String(val));
+      }
+    }
+    try {
+      const output = execSync(cmd, { timeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+      return { content: [{ type: 'text', text: output.trim() }] };
+    } catch (err: any) {
+      const msg = err.stderr ? err.stderr.toString().trim() : String(err.message ?? err);
+      throw new Error(`Skill tool "${tool.name}" failed: ${msg}`);
     }
   }
 }

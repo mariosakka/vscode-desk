@@ -27,6 +27,7 @@ const mockWorkflowConfigService = {
 const mockSkillRegistry = {
   list: jest.fn().mockReturnValue([]),
   getAll: jest.fn().mockReturnValue([]),
+  getAllTools: jest.fn().mockReturnValue([]),
   get: jest.fn().mockReturnValue(null),
   validateFrontmatter: jest.fn().mockReturnValue({ valid: true }),
   setPending: jest.fn(),
@@ -602,5 +603,131 @@ describe('McpServer — page tools (sections-based)', () => {
     expect(title).toBe('Updated Title');
     expect(bodyHtml).toBe('<p>old body</p>');
     expect(customStyles).toBe('old { }');
+  });
+});
+
+describe('McpServer — dynamic skill tools', () => {
+  let server: McpServer;
+  const mockGlobalSkillRegistry = {
+    list: jest.fn().mockReturnValue([]),
+    getAll: jest.fn().mockReturnValue([]),
+    getAllTools: jest.fn().mockReturnValue([]),
+    get: jest.fn().mockReturnValue(null),
+    validateFrontmatter: jest.fn().mockReturnValue({ valid: true }),
+    setPending: jest.fn(),
+    getPending: jest.fn(),
+    clearPending: jest.fn(),
+    confirmPending: jest.fn(),
+    remove: jest.fn().mockResolvedValue(undefined),
+    installAll: jest.fn(),
+  };
+  const mockWorkspaceSkillRegistry = {
+    list: jest.fn().mockReturnValue([]),
+    getAll: jest.fn().mockReturnValue([]),
+    getAllTools: jest.fn().mockReturnValue([]),
+    get: jest.fn().mockReturnValue(null),
+    validateFrontmatter: jest.fn().mockReturnValue({ valid: true }),
+    setPending: jest.fn(),
+    getPending: jest.fn(),
+    clearPending: jest.fn(),
+    confirmPending: jest.fn(),
+    remove: jest.fn().mockResolvedValue(undefined),
+    installAll: jest.fn(),
+  };
+  const PORT = 13341;
+
+  beforeEach(done => {
+    jest.clearAllMocks();
+    mockGlobalSkillRegistry.getAllTools.mockReturnValue([]);
+    mockWorkspaceSkillRegistry.getAllTools.mockReturnValue([]);
+    server = new McpServer(
+      mockDataService as any,
+      null,
+      null,
+      mockGlobalSkillRegistry as any,
+      null,
+      null,
+      null,
+      mockWorkspaceSkillRegistry as any,
+      mockProvider as any,
+      mockFaviconService as any,
+    );
+    server.start(PORT);
+    setTimeout(done, 30);
+  });
+
+  afterEach(done => {
+    server.stop();
+    setTimeout(done, 30);
+  });
+
+  it('includes skill-defined tools in tools/list', async () => {
+    mockGlobalSkillRegistry.getAllTools.mockReturnValue([{
+      name: 'my-skill-tool',
+      description: 'Does something',
+      command: 'echo hello',
+      args: [],
+    }]);
+    const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 99 });
+    const names = res.result.tools.map((t: any) => t.name);
+    expect(names).toContain('my-skill-tool');
+    expect(names).toContain('list_bookmarks');
+  });
+
+  it('executes a skill tool command and returns output', async () => {
+    mockGlobalSkillRegistry.getAllTools.mockReturnValue([{
+      name: 'echo-tool',
+      description: 'Echoes a message',
+      command: 'echo {msg}',
+      args: [{ name: 'msg', type: 'string', required: true }],
+    }]);
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'echo-tool', arguments: { msg: 'hello world' } },
+      id: 100,
+    });
+    expect(res.result.content[0].text).toContain('hello world');
+  });
+
+  it('returns error when skill tool command fails', async () => {
+    mockGlobalSkillRegistry.getAllTools.mockReturnValue([{
+      name: 'fail-tool',
+      description: 'Always fails',
+      command: 'false',
+      args: [],
+    }]);
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'fail-tool', arguments: {} },
+      id: 101,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toContain('fail-tool');
+  });
+
+  it('workspace skill tool overrides global tool with same name', async () => {
+    mockGlobalSkillRegistry.getAllTools.mockReturnValue([{
+      name: 'shared-tool',
+      description: 'Global version',
+      command: 'echo global',
+      args: [],
+    }]);
+    mockWorkspaceSkillRegistry.getAllTools.mockReturnValue([{
+      name: 'shared-tool',
+      description: 'Workspace version',
+      command: 'echo workspace',
+      args: [],
+    }]);
+    const listRes = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 102 });
+    const tools = listRes.result.tools.filter((t: any) => t.name === 'shared-tool');
+    expect(tools).toHaveLength(1);
+    expect(tools[0].description).toBe('Workspace version');
+
+    const callRes = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'shared-tool', arguments: {} },
+      id: 103,
+    });
+    expect(callRes.result.content[0].text).toContain('workspace');
   });
 });

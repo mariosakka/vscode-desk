@@ -2,6 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgentAdapter } from '../../agents/agentAdapter';
 
+export interface SkillTool {
+  name: string;
+  description: string;
+  command: string;
+  args: Array<{ name: string; type: string; required?: boolean; description?: string }>;
+}
+
 export interface Skill {
   name: string;
   description: string;
@@ -9,6 +16,7 @@ export interface Skill {
   agents: string[];
   version: number;
   installedAt: number;
+  tools?: SkillTool[];
 }
 
 export class SkillRegistry {
@@ -41,6 +49,10 @@ export class SkillRegistry {
 
   get(name: string): Skill | null {
     return this.getAll().find(s => s.name === name) ?? null;
+  }
+
+  getAllTools(): SkillTool[] {
+    return this.getAll().flatMap(s => s.tools ?? []);
   }
 
   validateFrontmatter(content: string): { valid: boolean; error?: string } {
