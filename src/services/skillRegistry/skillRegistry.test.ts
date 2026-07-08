@@ -151,4 +151,63 @@ describe('SkillRegistry', () => {
       await expect(reg.remove('no-such', [])).rejects.toThrow('not found');
     });
   });
+
+  describe('tools block', () => {
+    let registry: SkillRegistry;
+    beforeEach(() => { registry = new SkillRegistry(tmpDir); });
+
+    it('rejects tool with invalid name', () => {
+      const r = registry.validateFrontmatter(
+        '---\nname: s\ndescription: d\ntools:\n  - name: Bad Name\n    command: echo hi\n---\nbody',
+      );
+      expect(r.valid).toBe(false);
+      expect(r.error).toContain('kebab-case or snake_case');
+    });
+
+    it('rejects tool that collides with built-in name', () => {
+      const r = registry.validateFrontmatter(
+        '---\nname: s\ndescription: d\ntools:\n  - name: list_pages\n    command: echo hi\n---\nbody',
+      );
+      expect(r.valid).toBe(false);
+      expect(r.error).toContain('conflicts with a built-in');
+    });
+
+    it('rejects placeholder with no matching arg', () => {
+      const r = registry.validateFrontmatter(
+        '---\nname: s\ndescription: d\ntools:\n  - name: my_tool\n    command: "echo {missing}"\n---\nbody',
+      );
+      expect(r.valid).toBe(false);
+      expect(r.error).toContain('no matching arg');
+    });
+
+    it('rejects arg not used in command', () => {
+      const r = registry.validateFrontmatter(
+        '---\nname: s\ndescription: d\ntools:\n  - name: my_tool\n    command: "echo hello"\n    args:\n      - { name: unused, type: string, required: true }\n---\nbody',
+      );
+      expect(r.valid).toBe(false);
+      expect(r.error).toContain('not used in command');
+    });
+
+    it('accepts valid tools block with matching args and placeholders', () => {
+      const r = registry.validateFrontmatter(
+        '---\nname: s\ndescription: d\ntools:\n  - name: my_tool\n    command: "echo {val}"\n    args:\n      - { name: val, type: string, required: true }\n---\nbody',
+      );
+      expect(r.valid).toBe(true);
+    });
+
+    it('getAllTools returns tools from stored skills', () => {
+      (registry as any).writeAll([{
+        name: 'my-skill',
+        description: 'd',
+        content: '',
+        agents: ['all'],
+        version: 1,
+        installedAt: 0,
+        tools: [{ name: 'my_cmd', description: 'does x', command: 'echo {val}', args: [{ name: 'val', type: 'string', required: true }] }],
+      }]);
+      const tools = registry.getAllTools();
+      expect(tools).toHaveLength(1);
+      expect(tools[0].name).toBe('my_cmd');
+    });
+  });
 });
