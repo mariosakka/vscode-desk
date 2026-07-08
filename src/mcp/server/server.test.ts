@@ -1,5 +1,9 @@
 import * as http from 'http';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { McpServer } from './server';
+import { BookService } from '../../services/bookService/bookService';
 
 const mockDataService = {
   get: jest.fn(),
@@ -95,9 +99,9 @@ describe('McpServer', () => {
     expect(res.result.protocolVersion).toBeDefined();
   });
 
-  it('lists 19 tools', async () => {
+  it('lists 39 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 2 });
-    expect(res.result.tools).toHaveLength(19);
+    expect(res.result.tools).toHaveLength(39);
     const names = res.result.tools.map((t: any) => t.name);
     expect(names).toContain('list_bookmarks');
     expect(names).toContain('add_bookmark');
@@ -109,6 +113,26 @@ describe('McpServer', () => {
     expect(names).toContain('delete_page');
     expect(names).toContain('get_page_template');
     expect(names).toContain('set_page_template');
+    expect(names).toContain('list_sections');
+    expect(names).toContain('add_section');
+    expect(names).toContain('update_section');
+    expect(names).toContain('remove_section');
+    expect(names).toContain('list_items');
+    expect(names).toContain('add_list_item');
+    expect(names).toContain('remove_list_item');
+    expect(names).toContain('update_list_item');
+    expect(names).toContain('set_list_type');
+    expect(names).toContain('list_section_types');
+    expect(names).toContain('register_section_type');
+    expect(names).toContain('remove_section_type');
+    expect(names).toContain('create_book');
+    expect(names).toContain('list_books');
+    expect(names).toContain('get_book');
+    expect(names).toContain('delete_book');
+    expect(names).toContain('add_chapter');
+    expect(names).toContain('rename_chapter');
+    expect(names).toContain('remove_chapter');
+    expect(names).toContain('move_page');
   });
 
   it('get_page_template returns error when not set', async () => {
@@ -273,9 +297,9 @@ describe('McpServer — workflow tools', () => {
     setTimeout(done, 30);
   });
 
-  it('lists 19 tools', async () => {
+  it('lists 39 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 });
-    expect(res.result.tools).toHaveLength(19);
+    expect(res.result.tools).toHaveLength(39);
   });
 
 
@@ -602,5 +626,391 @@ describe('McpServer — page tools (sections-based)', () => {
     expect(title).toBe('Updated Title');
     expect(bodyHtml).toBe('<p>old body</p>');
     expect(customStyles).toBe('old { }');
+  });
+});
+
+describe('McpServer — section, list, and section-type tools', () => {
+  let server: McpServer;
+  const PORT = 13339;
+
+  const SECTION_BODY = [
+    '<main>',
+    '<div class="section" id="sec-0">',
+    '  <h2 class="section-title">Hello</h2>',
+    '  <ul>',
+    '  <li>item one</li>',
+    '  <li>item two</li>',
+    '</ul>',
+    '</div>',
+    '</main>',
+  ].join('\n');
+
+  const sectionPageReader = {
+    list: jest.fn().mockReturnValue([]),
+    read: jest.fn(),
+    write: jest.fn(),
+    delete: jest.fn(),
+    dir: jest.fn().mockReturnValue('/tmp/desk-pages-sec'),
+    filePath: jest.fn((f: string) => `/tmp/desk-pages-sec/${f}`),
+  };
+
+  const mockSectionTypeService = {
+    listAll: jest.fn().mockReturnValue([{ name: 'steps', description: 'Steps', builtin: true }]),
+    getCustomTypes: jest.fn().mockReturnValue([]),
+    register: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const localDataService2 = {
+    ...mockDataService,
+    getPageTemplate: jest.fn().mockReturnValue(null),
+  };
+
+  function makePage(bodyHtml: string) {
+    return { filename: 'test.desk', title: 'Test', customStyles: '', bodyHtml, pageScripts: [] };
+  }
+
+  beforeEach(done => {
+    jest.clearAllMocks();
+    sectionPageReader.read.mockReturnValue(makePage(SECTION_BODY));
+    sectionPageReader.write.mockReset();
+    server = new McpServer(
+      localDataService2 as any,
+      null, null, null,
+      localDataService2 as any,
+      sectionPageReader as any,
+      null, null,
+      mockProvider as any,
+      mockFaviconService as any,
+      [], null, null, null, null,
+      null,
+      mockSectionTypeService as any,
+    );
+    server.start(PORT);
+    setTimeout(done, 30);
+  });
+
+  afterEach(done => {
+    server.stop();
+    setTimeout(done, 30);
+  });
+
+  it('list_sections returns id and heading for each section', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'list_sections', arguments: { filename: 'test.desk' } }, id: 1,
+    });
+    const sections = JSON.parse(res.result.content[0].text);
+    expect(sections).toHaveLength(1);
+    expect(sections[0].id).toBe('sec-0');
+    expect(sections[0].heading).toBe('Hello');
+  });
+
+  it('add_section with content calls write with new section appended', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'add_section',
+        arguments: { filename: 'test.desk', heading: 'New Section', content: '<p>new</p>', id: 'sec-1' },
+      },
+      id: 2,
+    });
+    expect(res.result.content[0].text).toBe('section added');
+    expect(sectionPageReader.write).toHaveBeenCalledTimes(1);
+    const [, , bodyHtml] = sectionPageReader.write.mock.calls[0];
+    expect(bodyHtml).toContain('id="sec-1"');
+    expect(bodyHtml).toContain('New Section');
+    expect(bodyHtml).toContain('<p>new</p>');
+  });
+
+  it('add_section with type "steps" renders steps HTML', async () => {
+    await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'add_section',
+        arguments: {
+          filename: 'test.desk',
+          heading: 'Steps',
+          type: 'steps',
+          data: { items: [{ label: 'First', body: 'Do this' }] },
+        },
+      },
+      id: 3,
+    });
+    expect(sectionPageReader.write).toHaveBeenCalledTimes(1);
+    const [, , bodyHtml] = sectionPageReader.write.mock.calls[0];
+    expect(bodyHtml).toContain('class="steps"');
+    expect(bodyHtml).toContain('First');
+    expect(bodyHtml).toContain('Do this');
+  });
+
+  it('update_section heading updates the h2 text', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'update_section',
+        arguments: { filename: 'test.desk', section_id: 'sec-0', heading: 'Updated Heading' },
+      },
+      id: 4,
+    });
+    expect(res.result.content[0].text).toBe('section updated');
+    const [, , bodyHtml] = sectionPageReader.write.mock.calls[0];
+    expect(bodyHtml).toContain('Updated Heading');
+  });
+
+  it('remove_section with known id removes it from body', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'remove_section', arguments: { filename: 'test.desk', section_id: 'sec-0' } }, id: 5,
+    });
+    expect(res.result.content[0].text).toBe('section removed');
+    const [, , bodyHtml] = sectionPageReader.write.mock.calls[0];
+    expect(bodyHtml).not.toContain('id="sec-0"');
+  });
+
+  it('remove_section with unknown id returns error', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'remove_section', arguments: { filename: 'test.desk', section_id: 'bad-id' } }, id: 6,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toContain('not found');
+  });
+
+  it('list_items returns type and items array', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'list_items', arguments: { filename: 'test.desk', section_id: 'sec-0' } }, id: 7,
+    });
+    const data = JSON.parse(res.result.content[0].text);
+    expect(data.type).toBe('ul');
+    expect(data.items).toEqual(['item one', 'item two']);
+  });
+
+  it('add_list_item appends an item resulting in 3 items', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'add_list_item', arguments: { filename: 'test.desk', section_id: 'sec-0', text: 'item three' } }, id: 8,
+    });
+    expect(res.result.content[0].text).toBe('item added');
+    const [, , bodyHtml] = sectionPageReader.write.mock.calls[0];
+    expect(bodyHtml).toContain('item three');
+    expect((bodyHtml.match(/<li>/g) ?? []).length).toBe(3);
+  });
+
+  it('remove_list_item index 1 leaves one item', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'remove_list_item', arguments: { filename: 'test.desk', section_id: 'sec-0', index: 1 } }, id: 9,
+    });
+    expect(res.result.content[0].text).toBe('item removed');
+    const [, , bodyHtml] = sectionPageReader.write.mock.calls[0];
+    expect(bodyHtml).not.toContain('item one');
+    expect(bodyHtml).toContain('item two');
+  });
+
+  it('remove_list_item index 99 returns out-of-range error', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'remove_list_item', arguments: { filename: 'test.desk', section_id: 'sec-0', index: 99 } }, id: 10,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toContain('out of range');
+  });
+
+  it('update_list_item index 2 replaces second item', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'update_list_item', arguments: { filename: 'test.desk', section_id: 'sec-0', index: 2, text: 'new text' } }, id: 11,
+    });
+    expect(res.result.content[0].text).toBe('item updated');
+    const [, , bodyHtml] = sectionPageReader.write.mock.calls[0];
+    expect(bodyHtml).toContain('new text');
+    expect(bodyHtml).not.toContain('item two');
+  });
+
+  it('set_list_type to ol changes tag to ol', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'set_list_type', arguments: { filename: 'test.desk', section_id: 'sec-0', type: 'ol' } }, id: 12,
+    });
+    expect(res.result.content[0].text).toBe('list type updated');
+    const [, , bodyHtml] = sectionPageReader.write.mock.calls[0];
+    expect(bodyHtml).toContain('<ol>');
+    expect(bodyHtml).not.toContain('<ul>');
+  });
+
+  it('list_section_types returns array of types from sectionTypeService', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'list_section_types', arguments: {} }, id: 13,
+    });
+    const types = JSON.parse(res.result.content[0].text);
+    expect(Array.isArray(types)).toBe(true);
+    expect(types[0].name).toBe('steps');
+    expect(mockSectionTypeService.listAll).toHaveBeenCalled();
+  });
+
+  it('register_section_type calls service.register', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'register_section_type',
+        arguments: { name: 'my-type', description: 'A custom type', template: '<div>{{content}}</div>' },
+      },
+      id: 14,
+    });
+    expect(res.result.content[0].text).toBe('type registered');
+    expect(mockSectionTypeService.register).toHaveBeenCalledWith('my-type', 'A custom type', '<div>{{content}}</div>');
+  });
+
+  it('remove_section_type calls service.remove', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'remove_section_type', arguments: { name: 'my-type' } }, id: 15,
+    });
+    expect(res.result.content[0].text).toBe('type removed');
+    expect(mockSectionTypeService.remove).toHaveBeenCalledWith('my-type');
+  });
+});
+
+describe('McpServer — book tools', () => {
+  let server: McpServer;
+  let bookSvc: BookService;
+  let tmpDir: string;
+  const PORT = 13340;
+
+  const localDataService3 = {
+    ...mockDataService,
+    getPageTemplate: jest.fn().mockReturnValue(null),
+  };
+
+  beforeEach(done => {
+    jest.clearAllMocks();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'desk-book-test-'));
+    bookSvc = new BookService(tmpDir);
+    server = new McpServer(
+      localDataService3 as any,
+      null, null, null, null, null, null, null,
+      mockProvider as any,
+      mockFaviconService as any,
+      [], null, null, null, null,
+      null, null,
+      bookSvc,
+    );
+    server.start(PORT);
+    setTimeout(done, 30);
+  });
+
+  afterEach(done => {
+    server.stop();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    setTimeout(done, 30);
+  });
+
+  it('create_book + list_books round-trip', async () => {
+    const createRes = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'create_book', arguments: { title: 'My Book' } }, id: 1,
+    });
+    const { slug } = JSON.parse(createRes.result.content[0].text);
+    expect(slug).toBe('my-book');
+    expect(mockProvider.refresh).toHaveBeenCalledTimes(1);
+
+    const listRes = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'list_books', arguments: {} }, id: 2,
+    });
+    const books = JSON.parse(listRes.result.content[0].text);
+    expect(books).toHaveLength(1);
+    expect(books[0].slug).toBe('my-book');
+    expect(books[0].title).toBe('My Book');
+    expect(books[0].pageCount).toBe(0);
+  });
+
+  it('get_book returns chapter/page tree', async () => {
+    bookSvc.create('Test Book', 'test-book');
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_book', arguments: { slug: 'test-book' } }, id: 3,
+    });
+    const book = JSON.parse(res.result.content[0].text);
+    expect(book.title).toBe('Test Book');
+    expect(book.chapters).toEqual([]);
+  });
+
+  it('get_book with unknown slug returns error', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'get_book', arguments: { slug: 'no-such-book' } }, id: 4,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toContain('not found');
+  });
+
+  it('delete_book removes the book', async () => {
+    bookSvc.create('Delete Me', 'delete-me');
+    expect(bookSvc.isBook('delete-me')).toBe(true);
+
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'delete_book', arguments: { slug: 'delete-me' } }, id: 5,
+    });
+    expect(res.result.content[0].text).toBe('deleted');
+    expect(bookSvc.isBook('delete-me')).toBe(false);
+    expect(mockProvider.refresh).toHaveBeenCalled();
+  });
+
+  it('add_chapter then rename_chapter changes chapter title', async () => {
+    bookSvc.create('Chapter Book', 'chapter-book');
+
+    await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'add_chapter', arguments: { slug: 'chapter-book', title: 'Introduction' } }, id: 6,
+    });
+
+    const afterAdd = bookSvc.get('chapter-book');
+    expect(afterAdd.chapters).toHaveLength(1);
+    expect(afterAdd.chapters[0].title).toBe('Introduction');
+
+    const renameRes = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'rename_chapter', arguments: { slug: 'chapter-book', chapter_index: 0, title: 'Preface' } }, id: 7,
+    });
+    expect(renameRes.result.content[0].text).toBe('renamed');
+
+    const afterRename = bookSvc.get('chapter-book');
+    expect(afterRename.chapters[0].title).toBe('Preface');
+  });
+
+  it('remove_chapter with out-of-range index returns error', async () => {
+    bookSvc.create('Small Book', 'small-book');
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'remove_chapter', arguments: { slug: 'small-book', chapter_index: 99 } }, id: 8,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toContain('out of range');
+  });
+
+  it('move_page moves page between chapters', async () => {
+    bookSvc.create('Movable Book', 'movable-book');
+    bookSvc.addChapter('movable-book', 'Chapter One');
+    bookSvc.addChapter('movable-book', 'Chapter Two');
+    bookSvc.addPageToChapter('movable-book', 'page.desk', 0);
+
+    const beforeMove = bookSvc.get('movable-book');
+    expect(beforeMove.chapters[0].pages).toContain('page.desk');
+    expect(beforeMove.chapters[1].pages).toHaveLength(0);
+
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: { name: 'move_page', arguments: { slug: 'movable-book', filename: 'page.desk', to_chapter: 1 } }, id: 9,
+    });
+    expect(res.result.content[0].text).toBe('moved');
+
+    const afterMove = bookSvc.get('movable-book');
+    expect(afterMove.chapters[0].pages).toHaveLength(0);
+    expect(afterMove.chapters[1].pages).toContain('page.desk');
   });
 });
