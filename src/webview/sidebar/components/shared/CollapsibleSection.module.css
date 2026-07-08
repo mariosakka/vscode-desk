@@ -40,6 +40,13 @@
   align-items: center;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
 .wrapper {
   display: grid;
   grid-template-rows: 1fr;
