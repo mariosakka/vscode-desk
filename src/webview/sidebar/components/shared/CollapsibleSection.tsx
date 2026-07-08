@@ -3,16 +3,17 @@ import styles from './CollapsibleSection.module.css';
 import { ChevronIcon } from './Icons';
 
 interface Props {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   title: string;
   badge?: number;
   defaultOpen?: boolean;
   action?: React.ReactNode;
+  headerActions?: React.ReactNode;
   onToggle?: (open: boolean) => void;
   children: React.ReactNode;
 }
 
-export function CollapsibleSection({ icon, title, badge, defaultOpen = true, action, onToggle, children }: Props) {
+export function CollapsibleSection({ icon, title, badge, defaultOpen = true, action, headerActions, onToggle, children }: Props) {
   const [open, setOpen] = useState(defaultOpen);
 
   const toggle = () => {
@@ -29,6 +30,7 @@ export function CollapsibleSection({ icon, title, badge, defaultOpen = true, act
           {icon}
           {title}{badge !== undefined ? ` (${badge})` : ''}
         </button>
+        {headerActions && <div className={styles.headerActions} onClick={e => e.stopPropagation()}>{headerActions}</div>}
         {action && <div className={styles.headerAction}>{action}</div>}
       </div>
       <div className={styles.wrapper} data-open={open ? 'true' : 'false'}>
