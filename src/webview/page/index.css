@@ -38,21 +38,6 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.page-back-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 12px;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: color .15s, border-color .15s;
-}
-.page-back-btn:hover { color: var(--text); border-color: var(--accent); }
-
-/* hide back button when there's no history */
-.page-nav[data-has-back="false"] .page-back-btn { visibility: hidden; }
-
 .page-nav-label {
   font-size: 11px;
   font-weight: 700;
@@ -184,3 +169,19 @@ img {
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Zoom controls ── */
+.page-nav-zoom { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.zoom-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+  transition: color .15s, border-color .15s;
+}
+.zoom-btn:hover { color: var(--text); border-color: var(--accent); }
+.zoom-label { font-size: 11px; color: var(--muted); min-width: 36px; text-align: center; }
