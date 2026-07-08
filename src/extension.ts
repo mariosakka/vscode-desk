@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const defaultTemplatePath = path.join(context.extensionPath, 'out', 'resources', 'default-page-template.desk');
   const globalDataService = new DataService(gDir, defaultTemplatePath);
   const libraryService = new LibraryService(gDir);
-  PageViewPanel.setup(libraryService);
+  PageViewPanel.setup(libraryService, context, bookService ?? undefined);
   libraryService.installAll().catch(() => {});
   const globalPageReader = new PageReader(path.join(gDir, 'pages'));
   const globalWorkflowService = new WorkflowConfigService(gDir);
@@ -62,7 +62,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Workspace services — only when a folder/workspace is open
   const workspaceDataService = wDir ? new DataService(wDir) : null;
-  const workspacePageReader = wDir ? new PageReader(path.join(wDir, 'pages')) : null;
+  const workspacePageReader = workspacePagesDir ? new PageReader(workspacePagesDir) : null;
   const workspaceWorkflowService = wDir ? new WorkflowConfigService(wDir) : null;
   const workspaceSkillRegistry = wDir ? new SkillRegistry(wDir) : null;
 
@@ -87,6 +87,7 @@ export function activate(context: vscode.ExtensionContext): void {
     faviconService,
     adapters,
     libraryService,
+    bookService,
   );
 
   const agentRegistry = new AgentRegistry(adapters, context, workspaceSkillRegistry ?? globalSkillRegistry);
@@ -117,6 +118,8 @@ export function activate(context: vscode.ExtensionContext): void {
     workspaceName,
     workspaceRoot,
     libraryService,
+    null,
+    bookService,
   );
 
   context.subscriptions.push(
