@@ -93,6 +93,7 @@ export const TOOLS: McpTool[] = [
         title: { type: 'string' },
         eyebrow: { type: 'string', description: 'Small label above the title, e.g. "Reference · Backend"' },
         subtitle: { type: 'string', description: 'One-sentence summary shown below the title' },
+        chapter: { type: 'number', description: 'Chapter index (0-based) — required when filename contains a book slug prefix' },
         sections: {
           type: 'array',
           description: 'Content sections. Each section becomes an <h2> + body block.',
@@ -437,6 +438,102 @@ export const TOOLS: McpTool[] = [
     inputSchema: {
       type: 'object', required: ['name'],
       properties: { name: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+
+  // ── Book tools ────────────────────────────────────────────────────────────
+  {
+    name: 'create_book',
+    description: 'Creates a book folder and empty manifest in the workspace. Returns the slug.',
+    inputSchema: {
+      type: 'object',
+      required: ['title'],
+      properties: {
+        title: { type: 'string' },
+        slug: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'list_books',
+    description: 'Returns all books with slug, title, and page count',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'get_book',
+    description: 'Returns the full chapter/page tree for a book',
+    inputSchema: {
+      type: 'object',
+      required: ['slug'],
+      properties: { slug: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'delete_book',
+    description: 'Deletes a book folder, its manifest, and all its page files',
+    inputSchema: {
+      type: 'object',
+      required: ['slug'],
+      properties: { slug: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'add_chapter',
+    description: 'Adds a chapter to a book. Appends at end unless position is specified.',
+    inputSchema: {
+      type: 'object',
+      required: ['slug', 'title'],
+      properties: {
+        slug: { type: 'string' },
+        title: { type: 'string' },
+        position: { type: 'number' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'rename_chapter',
+    description: 'Renames a chapter in a book',
+    inputSchema: {
+      type: 'object',
+      required: ['slug', 'chapter_index', 'title'],
+      properties: {
+        slug: { type: 'string' },
+        chapter_index: { type: 'number' },
+        title: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'remove_chapter',
+    description: 'Removes a chapter and deletes its page files from disk',
+    inputSchema: {
+      type: 'object',
+      required: ['slug', 'chapter_index'],
+      properties: {
+        slug: { type: 'string' },
+        chapter_index: { type: 'number' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'move_page',
+    description: 'Moves a page to a different chapter or position within a book',
+    inputSchema: {
+      type: 'object',
+      required: ['slug', 'filename', 'to_chapter'],
+      properties: {
+        slug: { type: 'string' },
+        filename: { type: 'string' },
+        to_chapter: { type: 'number' },
+        position: { type: 'number' },
+      },
       additionalProperties: false,
     },
   },

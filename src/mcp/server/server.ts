@@ -10,6 +10,7 @@ import { AgentAdapter } from '../../agents/agentAdapter';
 import { LibraryService } from '../../services/libraryService/libraryService';
 import { renderSectionType, BUILT_IN_TYPES } from '../../pages/sectionTypes';
 import { SectionTypeService } from '../../services/sectionTypeService/sectionTypeService';
+import { BookService } from '../../services/bookService/bookService';
 import { TOOLS } from '../toolSchemas';
 import { RESOURCES, RESOURCE_CONTENT } from '../resources';
 
@@ -34,6 +35,7 @@ export class McpServer {
     private readonly workspacePath: string | null = null,
     private readonly libraryService: LibraryService | null = null,
     private readonly sectionTypeService: SectionTypeService | null = null,
+    private readonly bookService: BookService | null = null,
   ) {}
 
   private _buildSectionHtml(heading: string, content: string, id?: string, icon?: string): string {
@@ -221,6 +223,10 @@ export class McpServer {
         });
         if (templateScript) bodyHtml += `\n<script>\n${templateScript}\n</script>`;
         pageReader.write(args.filename, args.title, bodyHtml, customStyles);
+        if (args.filename.includes('/') && args.chapter !== undefined && this.bookService) {
+          const parts = args.filename.split('/');
+          this.bookService.addPageToChapter(parts[0], parts[1], args.chapter);
+        }
         this.provider.refresh();
         return { content: [{ type: 'text', text: `created ${args.filename} in workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
@@ -254,6 +260,10 @@ export class McpServer {
         const { pageReader } = this._resolveScope(args);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         pageReader.delete(args.filename);
+        if (args.filename.includes('/') && this.bookService) {
+          const parts = args.filename.split('/');
+          this.bookService.removePageFromManifest(parts[0], parts[1]);
+        }
         this.provider.refresh();
         return { content: [{ type: 'text', text: `deleted ${args.filename} from workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
@@ -465,6 +475,49 @@ export class McpServer {
         if (!this.sectionTypeService) throw new Error('SectionTypeService not available');
         this.sectionTypeService.remove(args.name);
         return { content: [{ type: 'text', text: 'type removed' }] };
+      }
+
+      // ── Book tools ────────────────────────────────────────────────────────
+      case 'create_book': {
+        if (!this.bookService) throw new Error('No workspace open — books unavailable');
+        const slug = this.bookService.create(args.title, args.slug);
+        this.provider.refresh();
+        return { content: [{ type: 'text', text: JSON.stringify({ slug }) }] };
+      }
+      case 'list_books': {
+        if (!this.bookService) throw new Error('No workspace open — books unavailable');
+        return { content: [{ type: 'text', text: JSON.stringify(this.bookService.list()) }] };
+      }
+      case 'get_book': {
+        if (!this.bookService) throw new Error('No workspace open — books unavailable');
+        return { content: [{ type: 'text', text: JSON.stringify(this.bookService.get(args.slug)) }] };
+      }
+      case 'delete_book': {
+        if (!this.bookService) throw new Error('No workspace open — books unavailable');
+        this.bookService.delete(args.slug);
+        this.provider.refresh();
+        return { content: [{ type: 'text', text: 'deleted' }] };
+      }
+      case 'add_chapter': {
+        if (!this.bookService) throw new Error('No workspace open — books unavailable');
+        this.bookService.addChapter(args.slug, args.title, args.position);
+        return { content: [{ type: 'text', text: 'chapter added' }] };
+      }
+      case 'rename_chapter': {
+        if (!this.bookService) throw new Error('No workspace open — books unavailable');
+        this.bookService.renameChapter(args.slug, args.chapter_index, args.title);
+        return { content: [{ type: 'text', text: 'renamed' }] };
+      }
+      case 'remove_chapter': {
+        if (!this.bookService) throw new Error('No workspace open — books unavailable');
+        this.bookService.removeChapter(args.slug, args.chapter_index);
+        this.provider.refresh();
+        return { content: [{ type: 'text', text: 'removed' }] };
+      }
+      case 'move_page': {
+        if (!this.bookService) throw new Error('No workspace open — books unavailable');
+        this.bookService.movePage(args.slug, args.filename, args.to_chapter, args.position);
+        return { content: [{ type: 'text', text: 'moved' }] };
       }
 
       default:
