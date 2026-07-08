@@ -3,11 +3,13 @@ import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
 import { SidebarViewProvider } from '../../sidebarViewProvider';
 import { PageReader } from '../../pages/pageReader';
-import { extractStyleFromTemplate, extractScriptFromTemplate, assembleSections, PageSection } from '../../pages/pageFormat';
+import { extractStyleFromTemplate, extractScriptFromTemplate, assembleSections, PageSection, parseSections, getSectionHtml, replaceSectionHtml, removeSection as removeSectionHtml, insertSection, parseListItems, rebuildList } from '../../pages/pageFormat';
 import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
 import { SkillRegistry } from '../../services/skillRegistry/skillRegistry';
 import { AgentAdapter } from '../../agents/agentAdapter';
 import { LibraryService } from '../../services/libraryService/libraryService';
+import { renderSectionType, BUILT_IN_TYPES } from '../../pages/sectionTypes';
+import { SectionTypeService } from '../../services/sectionTypeService/sectionTypeService';
 import { TOOLS } from '../toolSchemas';
 import { RESOURCES, RESOURCE_CONTENT } from '../resources';
 
@@ -31,7 +33,14 @@ export class McpServer {
     private readonly workspaceName: string | null = null,
     private readonly workspacePath: string | null = null,
     private readonly libraryService: LibraryService | null = null,
+    private readonly sectionTypeService: SectionTypeService | null = null,
   ) {}
+
+  private _buildSectionHtml(heading: string, content: string, id?: string, icon?: string): string {
+    const sectionId = id ?? `sec-${Date.now()}`;
+    const iconHtml = icon ? `<span class="icon">${icon}</span> ` : '';
+    return `<div class="section" id="${sectionId}">\n  <h2 class="section-title">${iconHtml}${heading}</h2>\n${content}\n</div>`;
+  }
 
   start(port: number): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -329,6 +338,133 @@ export class McpServer {
         if (!this.libraryService) throw new Error('LibraryService not available');
         this.libraryService.remove(args.name);
         return { content: [{ type: 'text', text: JSON.stringify({ removed: args.name }) }] };
+      }
+
+      // ── Section CRUD ────────────────────────────────────────────────────────
+      case 'list_sections': {
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const page = pageReader.read(args.filename);
+        return { content: [{ type: 'text', text: JSON.stringify(parseSections(page.bodyHtml)) }] };
+      }
+      case 'add_section': {
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const page = pageReader.read(args.filename);
+        let content = args.content ?? '';
+        if (args.type) {
+          const customTypes = this.sectionTypeService?.getCustomTypes() ?? [];
+          content = renderSectionType(args.type, args.data ?? {}, customTypes);
+        }
+        const sectionHtml = this._buildSectionHtml(args.heading, content, args.id, args.icon);
+        const newBody = insertSection(page.bodyHtml, sectionHtml);
+        pageReader.write(args.filename, page.title, newBody, page.customStyles);
+        return { content: [{ type: 'text', text: 'section added' }] };
+      }
+      case 'update_section': {
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const page = pageReader.read(args.filename);
+        let sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
+        if (args.type) {
+          const customTypes = this.sectionTypeService?.getCustomTypes() ?? [];
+          const rendered = renderSectionType(args.type, args.data ?? {}, customTypes);
+          sectionHtml = sectionHtml.replace(/([\s\S]*?<\/h2>\n?)[\s\S]*(<\/div>)$/, `$1${rendered}\n$2`);
+        } else if (args.content !== undefined) {
+          sectionHtml = sectionHtml.replace(/([\s\S]*?<\/h2>\n?)[\s\S]*(<\/div>)$/, `$1${args.content}\n$2`);
+        }
+        if (args.heading !== undefined) {
+          sectionHtml = sectionHtml.replace(/(<h2[^>]*>)([\s\S]*?)(<\/h2>)/, `$1${args.heading}$3`);
+        }
+        const newBody = replaceSectionHtml(page.bodyHtml, args.section_id, sectionHtml);
+        pageReader.write(args.filename, page.title, newBody, page.customStyles);
+        return { content: [{ type: 'text', text: 'section updated' }] };
+      }
+      case 'remove_section': {
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const page = pageReader.read(args.filename);
+        const newBody = removeSectionHtml(page.bodyHtml, args.section_id);
+        pageReader.write(args.filename, page.title, newBody, page.customStyles);
+        return { content: [{ type: 'text', text: 'section removed' }] };
+      }
+
+      // ── List CRUD ────────────────────────────────────────────────────────────
+      case 'list_items': {
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const page = pageReader.read(args.filename);
+        const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
+        return { content: [{ type: 'text', text: JSON.stringify(parseListItems(sectionHtml)) }] };
+      }
+      case 'add_list_item': {
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const page = pageReader.read(args.filename);
+        const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
+        const { type, items } = parseListItems(sectionHtml);
+        const listType = (type ?? args.list_type ?? 'ul') as 'ul' | 'ol';
+        const newSectionHtml = rebuildList(sectionHtml, listType, [...items, args.text]);
+        const newBody = replaceSectionHtml(page.bodyHtml, args.section_id, newSectionHtml);
+        pageReader.write(args.filename, page.title, newBody, page.customStyles);
+        return { content: [{ type: 'text', text: 'item added' }] };
+      }
+      case 'remove_list_item': {
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const page = pageReader.read(args.filename);
+        const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
+        const { type, items } = parseListItems(sectionHtml);
+        const idx = args.index - 1;
+        if (idx < 0 || idx >= items.length) throw new Error(`index ${args.index} out of range (list has ${items.length} items)`);
+        const newItems = [...items]; newItems.splice(idx, 1);
+        const newSectionHtml = rebuildList(sectionHtml, (type ?? 'ul') as 'ul' | 'ol', newItems);
+        const newBody = replaceSectionHtml(page.bodyHtml, args.section_id, newSectionHtml);
+        pageReader.write(args.filename, page.title, newBody, page.customStyles);
+        return { content: [{ type: 'text', text: 'item removed' }] };
+      }
+      case 'update_list_item': {
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const page = pageReader.read(args.filename);
+        const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
+        const { type, items } = parseListItems(sectionHtml);
+        const idx = args.index - 1;
+        if (idx < 0 || idx >= items.length) throw new Error(`index ${args.index} out of range (list has ${items.length} items)`);
+        const newItems = [...items]; newItems[idx] = args.text;
+        const newSectionHtml = rebuildList(sectionHtml, (type ?? 'ul') as 'ul' | 'ol', newItems);
+        const newBody = replaceSectionHtml(page.bodyHtml, args.section_id, newSectionHtml);
+        pageReader.write(args.filename, page.title, newBody, page.customStyles);
+        return { content: [{ type: 'text', text: 'item updated' }] };
+      }
+      case 'set_list_type': {
+        const { pageReader } = this._resolveScope(args);
+        if (!pageReader) throw new Error('No workspace open — pages unavailable');
+        const page = pageReader.read(args.filename);
+        const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
+        const { items } = parseListItems(sectionHtml);
+        const newSectionHtml = rebuildList(sectionHtml, args.type as 'ul' | 'ol', items);
+        const newBody = replaceSectionHtml(page.bodyHtml, args.section_id, newSectionHtml);
+        pageReader.write(args.filename, page.title, newBody, page.customStyles);
+        return { content: [{ type: 'text', text: 'list type updated' }] };
+      }
+
+      // ── Section type registry ─────────────────────────────────────────────
+      case 'list_section_types': {
+        if (this.sectionTypeService) {
+          return { content: [{ type: 'text', text: JSON.stringify(this.sectionTypeService.listAll()) }] };
+        }
+        return { content: [{ type: 'text', text: JSON.stringify(BUILT_IN_TYPES.map(t => ({ name: t.name, description: t.description, builtin: true }))) }] };
+      }
+      case 'register_section_type': {
+        if (!this.sectionTypeService) throw new Error('SectionTypeService not available');
+        this.sectionTypeService.register(args.name, args.description, args.template);
+        return { content: [{ type: 'text', text: 'type registered' }] };
+      }
+      case 'remove_section_type': {
+        if (!this.sectionTypeService) throw new Error('SectionTypeService not available');
+        this.sectionTypeService.remove(args.name);
+        return { content: [{ type: 'text', text: 'type removed' }] };
       }
 
       default:

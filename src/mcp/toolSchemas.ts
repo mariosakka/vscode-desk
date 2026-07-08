@@ -305,4 +305,140 @@ export const TOOLS: McpTool[] = [
     },
   },
 
+  // ── Section CRUD ──────────────────────────────────────────────────────────
+  {
+    name: 'list_sections',
+    description: 'Lists all sections in a page, returning id and heading for each',
+    inputSchema: {
+      type: 'object', required: ['filename'],
+      properties: { filename: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'add_section',
+    description: 'Appends a new section to a page. Provide raw content HTML or a type+data pair.',
+    inputSchema: {
+      type: 'object', required: ['filename', 'heading'],
+      properties: {
+        filename: { type: 'string' },
+        heading: { type: 'string' },
+        content: { type: 'string' },
+        id: { type: 'string' },
+        icon: { type: 'string' },
+        type: { type: 'string' },
+        data: { type: 'object', additionalProperties: true },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'update_section',
+    description: 'Updates heading, icon, or content of an existing section',
+    inputSchema: {
+      type: 'object', required: ['filename', 'section_id'],
+      properties: {
+        filename: { type: 'string' },
+        section_id: { type: 'string' },
+        heading: { type: 'string' },
+        icon: { type: 'string' },
+        content: { type: 'string' },
+        type: { type: 'string' },
+        data: { type: 'object', additionalProperties: true },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'remove_section',
+    description: 'Removes a section from a page by id',
+    inputSchema: {
+      type: 'object', required: ['filename', 'section_id'],
+      properties: { filename: { type: 'string' }, section_id: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+
+  // ── List CRUD ─────────────────────────────────────────────────────────────
+  {
+    name: 'list_items',
+    description: 'Returns the list items in the first ul/ol inside a section',
+    inputSchema: {
+      type: 'object', required: ['filename', 'section_id'],
+      properties: { filename: { type: 'string' }, section_id: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'add_list_item',
+    description: 'Appends a list item to the first list in a section. Creates the list if absent.',
+    inputSchema: {
+      type: 'object', required: ['filename', 'section_id', 'text'],
+      properties: {
+        filename: { type: 'string' }, section_id: { type: 'string' },
+        text: { type: 'string' },
+        list_type: { type: 'string', enum: ['ul', 'ol'] },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'remove_list_item',
+    description: 'Removes the list item at the given 1-based index',
+    inputSchema: {
+      type: 'object', required: ['filename', 'section_id', 'index'],
+      properties: { filename: { type: 'string' }, section_id: { type: 'string' }, index: { type: 'number' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'update_list_item',
+    description: 'Replaces the text of a list item at the given 1-based index',
+    inputSchema: {
+      type: 'object', required: ['filename', 'section_id', 'index', 'text'],
+      properties: {
+        filename: { type: 'string' }, section_id: { type: 'string' },
+        index: { type: 'number' }, text: { type: 'string' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'set_list_type',
+    description: 'Swaps the list tag (ul/ol) without changing items',
+    inputSchema: {
+      type: 'object', required: ['filename', 'section_id', 'type'],
+      properties: {
+        filename: { type: 'string' }, section_id: { type: 'string' },
+        type: { type: 'string', enum: ['ul', 'ol'] },
+      },
+      additionalProperties: false,
+    },
+  },
+
+  // ── Section type registry ─────────────────────────────────────────────────
+  {
+    name: 'list_section_types',
+    description: 'Returns all available section types (built-in and custom)',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'register_section_type',
+    description: 'Creates or replaces a custom section type with a Mustache-style template',
+    inputSchema: {
+      type: 'object', required: ['name', 'description', 'template'],
+      properties: { name: { type: 'string' }, description: { type: 'string' }, template: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'remove_section_type',
+    description: 'Removes a custom section type (built-in types cannot be removed)',
+    inputSchema: {
+      type: 'object', required: ['name'],
+      properties: { name: { type: 'string' } },
+      additionalProperties: false,
+    },
+  },
+
 ];
