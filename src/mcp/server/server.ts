@@ -369,7 +369,8 @@ export class McpServer {
     for (const arg of tool.args) {
       const val = args[arg.name];
       if (val !== undefined) {
-        cmd = cmd.replace(new RegExp(`\\{${arg.name}\\}`, 'g'), String(val));
+        const safe = "'" + String(val).replace(/'/g, "'\\''") + "'";
+        cmd = cmd.replace(new RegExp(`\\{${arg.name}\\}`, 'g'), safe);
       }
     }
     try {
