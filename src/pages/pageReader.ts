@@ -12,14 +12,11 @@ export class PageReader {
   }
 
   filePath(filename: string): string {
-    return path.join(this.pagesDir, filename);
-  }
-
-  private ensureDir(): void {
-    const d = this.dir();
-    if (!fs.existsSync(d)) {
-      fs.mkdirSync(d, { recursive: true });
+    const parts = filename.split('/');
+    if (parts.length > 2 || parts.some(p => p === '..' || p === '.')) {
+      throw new Error(`Invalid page filename: ${filename}`);
     }
+    return path.join(this.pagesDir, ...parts);
   }
 
   list(): PageMeta[] {
@@ -43,8 +40,9 @@ export class PageReader {
   }
 
   write(filename: string, title: string, bodyHtml: string, customStyles = ''): void {
-    this.ensureDir();
-    fs.writeFileSync(path.join(this.dir(), filename), serialize(title, bodyHtml, customStyles), 'utf-8');
+    const p = this.filePath(filename);
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, serialize(title, bodyHtml, customStyles), 'utf-8');
   }
 
   delete(filename: string): void {
