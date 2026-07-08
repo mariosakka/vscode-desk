@@ -387,10 +387,10 @@ export function activate(context: vscode.ExtensionContext): void {
       provider.refresh();
     }),
 
-    vscode.commands.registerCommand('desk.zoomIn',    () => (PageViewPanel as any).zoomIn?.()),
-    vscode.commands.registerCommand('desk.zoomOut',   () => (PageViewPanel as any).zoomOut?.()),
-    vscode.commands.registerCommand('desk.zoomReset', () => (PageViewPanel as any).zoomReset?.()),
-    vscode.commands.registerCommand('desk.toggleToc', () => (PageViewPanel as any).toggleToc?.()),
+    vscode.commands.registerCommand('desk.zoomIn',    () => PageViewPanel.zoomIn()),
+    vscode.commands.registerCommand('desk.zoomOut',   () => PageViewPanel.zoomOut()),
+    vscode.commands.registerCommand('desk.zoomReset', () => PageViewPanel.zoomReset()),
+    vscode.commands.registerCommand('desk.toggleToc', () => PageViewPanel.toggleToc()),
   );
 
   context.subscriptions.push(
