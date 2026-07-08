@@ -113,3 +113,96 @@ export function assembleSections(args: AssembleArgs): string {
 
   return [sidebar, mainContent].join('\n');
 }
+
+export interface SectionMeta {
+  id: string;
+  heading: string;
+}
+
+export interface ListData {
+  type: 'ul' | 'ol' | null;
+  items: string[];
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function findSectionBounds(bodyHtml: string, sectionId: string): { start: number; end: number } | null {
+  const openRe = new RegExp(`<div[^>]*\\bid="${escapeRegex(sectionId)}"[^>]*>`);
+  const openMatch = openRe.exec(bodyHtml);
+  if (!openMatch) return null;
+  const start = openMatch.index;
+  let pos = start + openMatch[0].length;
+  let depth = 1;
+  while (pos < bodyHtml.length) {
+    const nextOpen = bodyHtml.indexOf('<div', pos);
+    const nextClose = bodyHtml.indexOf('</div>', pos);
+    if (nextClose === -1) break;
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      depth++;
+      pos = nextOpen + 4;
+    } else {
+      depth--;
+      pos = nextClose + 6;
+      if (depth === 0) return { start, end: pos };
+    }
+  }
+  return null;
+}
+
+export function parseSections(bodyHtml: string): SectionMeta[] {
+  const results: SectionMeta[] = [];
+  const idRe = /<div[^>]*\bclass="section"[^>]*\bid="([^"]+)"[^>]*>/g;
+  let m: RegExpExecArray | null;
+  while ((m = idRe.exec(bodyHtml)) !== null) {
+    const id = m[1];
+    const headingMatch = bodyHtml.slice(m.index).match(/<h2[^>]*>([\s\S]*?)<\/h2>/);
+    const heading = headingMatch ? headingMatch[1].replace(/<[^>]+>/g, '').trim() : id;
+    results.push({ id, heading });
+  }
+  return results;
+}
+
+export function getSectionHtml(bodyHtml: string, sectionId: string): string {
+  const bounds = findSectionBounds(bodyHtml, sectionId);
+  if (!bounds) throw new Error(`section "${sectionId}" not found`);
+  return bodyHtml.slice(bounds.start, bounds.end);
+}
+
+export function replaceSectionHtml(bodyHtml: string, sectionId: string, newSectionHtml: string): string {
+  const bounds = findSectionBounds(bodyHtml, sectionId);
+  if (!bounds) throw new Error(`section "${sectionId}" not found`);
+  return bodyHtml.slice(0, bounds.start) + newSectionHtml + bodyHtml.slice(bounds.end);
+}
+
+export function removeSection(bodyHtml: string, sectionId: string): string {
+  const bounds = findSectionBounds(bodyHtml, sectionId);
+  if (!bounds) throw new Error(`section "${sectionId}" not found`);
+  return bodyHtml.slice(0, bounds.start) + bodyHtml.slice(bounds.end);
+}
+
+export function insertSection(bodyHtml: string, sectionHtml: string): string {
+  const mainCloseIdx = bodyHtml.lastIndexOf('</main>');
+  if (mainCloseIdx === -1) return bodyHtml + '\n' + sectionHtml;
+  return bodyHtml.slice(0, mainCloseIdx) + sectionHtml + '\n' + bodyHtml.slice(mainCloseIdx);
+}
+
+export function parseListItems(sectionHtml: string): ListData {
+  const listMatch = sectionHtml.match(/<(ul|ol)>([\s\S]*?)<\/\1>/);
+  if (!listMatch) return { type: null, items: [] };
+  const type = listMatch[1] as 'ul' | 'ol';
+  const items: string[] = [];
+  const liRe = /<li>([\s\S]*?)<\/li>/g;
+  let m: RegExpExecArray | null;
+  while ((m = liRe.exec(listMatch[2])) !== null) items.push(m[1]);
+  return { type, items };
+}
+
+export function rebuildList(sectionHtml: string, type: 'ul' | 'ol', items: string[]): string {
+  const listHtml = `<${type}>\n${items.map(i => `  <li>${i}</li>`).join('\n')}\n</${type}>`;
+  const existingMatch = sectionHtml.match(/<(?:ul|ol)>[\s\S]*?<\/(?:ul|ol)>/);
+  if (existingMatch) return sectionHtml.replace(existingMatch[0], listHtml);
+  const lastDiv = sectionHtml.lastIndexOf('</div>');
+  return sectionHtml.slice(0, lastDiv) + listHtml + '\n' + sectionHtml.slice(lastDiv);
+}
