@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.0](https://github.com/mariosakka/vscode-desk/compare/v0.10.0...v0.11.0) (2026-07-01)
+
+
+### Features
+
+* install skills as symlinks to ~/.my-agent-skills instead of flat copies ([edad869](https://github.com/mariosakka/vscode-desk/commit/edad869484c17d5a8326ac8e329282b293bd063f))
+* install skills as symlinks to ~/.my-agent-skills instead of flat copies ([6b526cf](https://github.com/mariosakka/vscode-desk/commit/6b526cf29358eaaa816c75367541fdaba894d4da))
+
 ## [0.10.0](https://github.com/mariosakka/vscode-desk/compare/v0.9.0...v0.10.0) (2026-07-01)
 
 
