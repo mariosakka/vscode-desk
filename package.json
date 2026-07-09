@@ -2,7 +2,7 @@
   "name": "vscode-desk",
   "displayName": "Desk",
   "description": "Tabbed bookmarks with favicons, a built-in lightweight document viewer, an embedded MCP server for AI agents, and a team workflow skill manager — all in your sidebar.",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "publisher": "mariosakka",
   "icon": "media/lamp.png",
   "engines": {
@@ -108,18 +108,54 @@
         "command": "desk.viewWorkflow",
         "title": "Desk: View Workflow Config"
       },
-      { "command": "desk.newBook",       "title": "Desk: New Book" },
-      { "command": "desk.openBook",      "title": "Desk: Open Book" },
-      { "command": "desk.deleteBook",    "title": "Desk: Delete Book" },
-      { "command": "desk.addChapter",    "title": "Desk: Add Chapter" },
-      { "command": "desk.renameChapter", "title": "Desk: Rename Chapter" },
-      { "command": "desk.removeChapter", "title": "Desk: Remove Chapter" },
-      { "command": "desk.newBookPage",   "title": "Desk: New Book Page" },
-      { "command": "desk.moveBookPage",  "title": "Desk: Move Book Page" },
-      { "command": "desk.zoomIn",        "title": "Desk: Zoom In" },
-      { "command": "desk.zoomOut",       "title": "Desk: Zoom Out" },
-      { "command": "desk.zoomReset",     "title": "Desk: Reset Zoom" },
-      { "command": "desk.toggleToc",     "title": "Desk: Toggle Page Sidebar" }
+      {
+        "command": "desk.newBook",
+        "title": "Desk: New Book"
+      },
+      {
+        "command": "desk.openBook",
+        "title": "Desk: Open Book"
+      },
+      {
+        "command": "desk.deleteBook",
+        "title": "Desk: Delete Book"
+      },
+      {
+        "command": "desk.addChapter",
+        "title": "Desk: Add Chapter"
+      },
+      {
+        "command": "desk.renameChapter",
+        "title": "Desk: Rename Chapter"
+      },
+      {
+        "command": "desk.removeChapter",
+        "title": "Desk: Remove Chapter"
+      },
+      {
+        "command": "desk.newBookPage",
+        "title": "Desk: New Book Page"
+      },
+      {
+        "command": "desk.moveBookPage",
+        "title": "Desk: Move Book Page"
+      },
+      {
+        "command": "desk.zoomIn",
+        "title": "Desk: Zoom In"
+      },
+      {
+        "command": "desk.zoomOut",
+        "title": "Desk: Zoom Out"
+      },
+      {
+        "command": "desk.zoomReset",
+        "title": "Desk: Reset Zoom"
+      },
+      {
+        "command": "desk.toggleToc",
+        "title": "Desk: Toggle Page Sidebar"
+      }
     ],
     "configuration": {
       "title": "Desk",
@@ -141,7 +177,10 @@
         },
         "desk.pageViewer.openLinksIn": {
           "type": "string",
-          "enum": ["simpleBrowser", "externalBrowser"],
+          "enum": [
+            "simpleBrowser",
+            "externalBrowser"
+          ],
           "default": "simpleBrowser",
           "description": "Where external links in pages open: VS Code Simple Browser or the system browser."
         },
