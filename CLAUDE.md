@@ -40,10 +40,13 @@ A VS Code extension with four features:
 
 **DataService** owns all reads and writes under `~/.desk/` — `data.json` (bookmarks) and `page-template.desk`. Accepts an optional `defaultTemplatePath` so `getPageTemplate()` falls back to the bundled default when no user template is saved. No other class touches these files directly.  
 **FaviconService** fetches and caches favicons. No other class fetches favicons.  
-**PageReader** reads and writes `.desk` files. No other class touches the `desk-pages/` directory.  
+**PageReader** reads and writes `.desk` files, including one subdirectory level for book pages (e.g. `slug/page.desk`). No other class touches the `desk-pages/` directory.  
 **WorkflowConfigService** owns `workflow.json` and pending review state. No other class reads or writes workflow config directly.  
 **SkillRegistry** owns `skills.json`, validates skill frontmatter, and drives installation via `AgentAdapter`. No other class installs skill files directly.  
 **LibraryService** owns `libraries.json` (global only) and downloads JS/CSS bundles to `~/.desk/lib/<name>/`. `PageViewPanel` calls `getInstalledFiles()` to auto-inject libraries into every page. No other class touches library files directly.  
+**BookService** owns `desk-pages/<slug>/book.json` manifests. Provides `create`, `list`, `get`, `delete`, `addChapter`, `renameChapter`, `removeChapter`, `addPageToChapter`, `removePageFromManifest`, `movePage`, `isBook`. No other class touches book manifests directly.  
+**SectionTypeService** owns `~/.desk/global/section-types.json`. Stores custom section type templates used by `register_section_type` / `remove_section_type` / `list_section_types`.  
+**worktreeResolver** (`src/storage/worktreeResolver.ts`) — `resolveWorktree(workspacePath)` runs `git rev-parse --git-common-dir` to detect linked git worktrees. Returns `{ isLinkedWorktree, mainWorktreePath }`. Used in `extension.ts` to map linked worktrees to the main worktree's `~/.desk/` data directory.  
 **McpServer** has no business logic — it parses JSON-RPC and delegates to the services above.
 
 ---
@@ -58,10 +61,13 @@ src/
   resources/
     default-page-template.desk  Bundled default page template (CSS component library + usage guide);
                                 copied to out/resources/ at build time; used as fallback by DataService
+  storage/
+    worktreeResolver.ts         resolveWorktree() — detect linked git worktrees
   pages/
-    pageFormat.ts               Parse/serialize .desk XML; extract scripts for nonce re-injection
-    pageReader.ts               Read/write .desk files in desk-pages/
-    pageViewPanel.ts            Full-width WebviewPanel for the page viewer
+    pageFormat.ts               Parse/serialize .desk XML; extract scripts for nonce re-injection; parseSections, getSectionHtml, replaceSectionHtml, removeSection, insertSection, parseListItems, rebuildList, assembleSections, extractStyleFromTemplate, extractScriptFromTemplate
+    pageReader.ts               Read/write .desk files in desk-pages/; supports one subdirectory level (e.g. slug/page.desk)
+    pageViewPanel.ts            Multi-tab WebviewPanel (Map<filename, PageViewPanel>); zoom (globalState desk.page-zoom); book nav (_renderBookNav, _renderPrevNext); static: setup(), open(), zoomIn(), zoomOut(), zoomReset(), toggleToc()
+    sectionTypes.ts             Built-in section type renderers (steps, cards, kv-table); renderSectionType(name, data, customTypes) → HTML
   services/
     dataService/
       dataService.ts            JSON file CRUD (~/.desk/.../data.json) + page template with bundled default fallback
@@ -78,12 +84,18 @@ src/
     libraryService/
       libraryService.ts         Library config (libraries.json) + file download/cache (~/.desk/lib/)
       libraryService.test.ts
+    bookService/
+      bookService.ts            Book manifest CRUD (desk-pages/<slug>/book.json)
+      bookService.test.ts
+    sectionTypeService/
+      sectionTypeService.ts     Custom section type registry (~/.desk/global/section-types.json)
+      sectionTypeService.test.ts
   mcp/
     server/
       server.ts                 JSON-RPC 2.0 HTTP server
       server.test.ts
-    toolSchemas.ts              JSON schemas for all 16 tools
-    resources.ts                3 MCP resources (self-documentation for agents)
+    toolSchemas.ts              JSON schemas for all static tools
+    resources.ts                4 MCP resources (self-documentation for agents)
   agents/
     constants.ts                AgentId, ConfigDir, ConfigFile, CliBinary enums
     agentAdapter.ts             AgentAdapter interface
@@ -282,7 +294,10 @@ All data lives in plain JSON files under `~/.desk/`, written by the service laye
 | `~/.desk/global/libraries.json` | `Library[]` | Curated library config (name, description, files[]); managed by `LibraryService` |
 | `~/.desk/lib/<name>/<file>` | binary | Downloaded JS/CSS files; auto-injected into every page viewer by `PageViewPanel` |
 | `desk.favicon-cache` (globalState) | `Record<hostname, { data: string, fetchedAt: number }>` | Base64 favicon data URLs, 30-day TTL |
+| `desk.page-zoom` (globalState) | `number` | Page viewer zoom level (0.5–3.0) |
 | `<workspace>/desk-pages/*.desk` | XML | Page files managed by `PageReader` |
+| `<workspace>/desk-pages/<slug>/book.json` | `BookManifest` | Book chapter/page structure; managed by `BookService` |
+| `~/.desk/global/section-types.json` | `SectionType[]` | Custom section type templates; managed by `SectionTypeService` |
 
 `<slug>` is derived from the VS Code workspace name: lowercased, non-alphanumeric runs replaced with `-`.
 
@@ -311,6 +326,18 @@ Registered in `package.json` under `contributes.commands` and wired in `src/exte
 | `desk.listBookmarks` | Desk: List Bookmarks | QuickPick showing all bookmarks |
 | `desk.listSkills` | Desk: List Skills | QuickPick showing all installed skills |
 | `desk.viewWorkflow` | Desk: View Workflow Config | Shows current `WorkflowConfig` in a QuickPick |
+| `desk.newBook` | Desk: New Book | Create a new book |
+| `desk.openBook` | Desk: Open Book | QuickPick to open a book's first page |
+| `desk.deleteBook` | Desk: Delete Book | QuickPick to delete a book |
+| `desk.addChapter` | Desk: Add Chapter | Add a chapter to a book |
+| `desk.renameChapter` | Desk: Rename Chapter | Rename a chapter |
+| `desk.removeChapter` | Desk: Remove Chapter | Remove a chapter from a book |
+| `desk.newBookPage` | Desk: New Book Page | Create a new page inside a book chapter |
+| `desk.moveBookPage` | Desk: Move Book Page | Move a page between book chapters |
+| `desk.zoomIn` | Desk: Zoom In | Increase page viewer zoom |
+| `desk.zoomOut` | Desk: Zoom Out | Decrease page viewer zoom |
+| `desk.zoomReset` | Desk: Reset Zoom | Reset zoom to default |
+| `desk.toggleToc` | Desk: Toggle TOC | Toggle the collapsible TOC sidebar |
 
 ---
 
@@ -361,7 +388,7 @@ The page viewer has no host→webview messages — navigation replaces the entir
 - **Capabilities:** `{ tools: {}, resources: {} }`
 - **HTTP status:** always `200` for valid JSON-RPC. Errors arrive as `{ error: { code, message } }` in the response body.
 
-**19 tools:**
+**39 static tools** (plus dynamic skill-defined tools — skills with a `tools:` frontmatter key add tool entries dispatched via shell command execution; they appear in `tools/list` at runtime):
 
 | Tool | R/W | Required args |
 |------|-----|---------------|
@@ -384,6 +411,26 @@ The page viewer has no host→webview messages — navigation replaces the entir
 | `list_libraries` | R | — |
 | `add_library` | W | `name`, `files` |
 | `remove_library` | W | `name` |
+| `list_sections` | R | `filename` |
+| `add_section` | W | `filename`, `type`, `data` |
+| `update_section` | W | `filename`, `index`, `data` |
+| `remove_section` | W | `filename`, `index` |
+| `list_items` | R | `filename`, `section_index` |
+| `add_list_item` | W | `filename`, `section_index`, `item` |
+| `remove_list_item` | W | `filename`, `section_index`, `item_index` |
+| `update_list_item` | W | `filename`, `section_index`, `item_index`, `item` |
+| `set_list_type` | W | `filename`, `section_index`, `list_type` |
+| `list_section_types` | R | — |
+| `register_section_type` | W | `name`, `template` |
+| `remove_section_type` | W | `name` |
+| `create_book` | W | `slug`, `title` |
+| `list_books` | R | — |
+| `get_book` | R | `slug` |
+| `delete_book` | W | `slug` |
+| `add_chapter` | W | `slug`, `title` |
+| `rename_chapter` | W | `slug`, `chapter_index`, `title` |
+| `remove_chapter` | W | `slug`, `chapter_index` |
+| `move_page` | W | `slug`, `filename`, `chapter_index` |
 
 **4 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
 - `desk://guide/quick-start`
@@ -418,7 +465,7 @@ Tests run in Node via Jest. The `vscode` module is mocked at `src/__mocks__/vsco
 
 ### Unit tests
 
-Current test count: **164 total**
+Current test count: **275 total**
 
 | File | Count |
 |------|-------|
@@ -427,13 +474,19 @@ Current test count: **164 total**
 | `services/workflowConfigService/workflowConfigService.test.ts` | 6 |
 | `services/skillRegistry/skillRegistry.test.ts` | 15 |
 | `services/libraryService/libraryService.test.ts` | 16 |
-| `mcp/server/server.test.ts` | 34 |
+| `services/bookService/bookService.test.ts` | ~15 |
+| `services/sectionTypeService/sectionTypeService.test.ts` | ~8 |
+| `mcp/server/server.test.ts` | ~55 |
 | `agents/jsonFileAdapter/jsonFileAdapter.test.ts` | 15 |
 | `agents/adapters/claudeCode/claudeCode.test.ts` | 14 |
 | `agents/adapters/cursor/cursor.test.ts` | 10 |
 | `agents/adapters/codex/codex.test.ts` | 11 |
 | `agents/adapters/gemini/gemini.test.ts` | 8 |
 | `agents/registry/registry.test.ts` | 15 |
+| `storage/worktreeResolver.test.ts` | ~6 |
+| `pages/pageFormat.sections.test.ts` | ~12 |
+| `pages/sectionTypes.test.ts` | ~8 |
+| `pages/pageReader.test.ts` | ~5 |
 
 Unit test rules:
 - All tests must pass before any PR can merge.
@@ -444,11 +497,11 @@ Unit test rules:
 
 ### E2e tests (Playwright)
 
-**38 tests** across 3 spec files in `e2e/`:
+**34 tests** across 3 spec files in `e2e/`:
 
 | File | What it tests |
 |------|---------------|
-| `e2e/mcp.spec.ts` | JSON-RPC protocol, all 16 tools, 3 resources — uses a self-contained in-process HTTP stub (no VS Code dep) |
+| `e2e/mcp.spec.ts` | JSON-RPC protocol, all static tools, 4 resources — uses a self-contained in-process HTTP stub (no VS Code dep) |
 | `e2e/sidebar.spec.ts` | Sidebar webview HTML — tabs, bookmarks, icon rendering, postMessage bridge |
 | `e2e/page-viewer.spec.ts` | Page viewer webview HTML — navigation, link handling, custom styles |
 
@@ -497,6 +550,23 @@ Install paths per agent (managed by `SkillRegistry` via `AgentAdapter.installSki
 | Cursor | `.cursor/rules/<name>.mdc` (workspace) | wrapped in Cursor rule format |
 | Gemini | `~/.gemini/skills/<name>.md` | markdown as-is |
 | Codex | workspace `AGENTS.md` | named section appended |
+
+---
+
+## Configuration settings
+
+Registered in `package.json` under `contributes.configuration`.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `desk.mcpPort` | `3333` | Port for the embedded MCP server |
+| `desk.pageViewer.defaultZoom` | `1.0` | Default zoom level (0.5–3.0) |
+| `desk.pageViewer.tocCollapsed` | `false` | Start with TOC sidebar collapsed |
+| `desk.pageViewer.openLinksIn` | `"simpleBrowser"` | Where to open https:// links |
+| `desk.pageViewer.singleTab` | `false` | Open all pages in one tab |
+| `desk.skillTools.enabled` | `true` | Enable skill-defined MCP tools |
+| `desk.skillTools.timeoutSeconds` | `30` | Timeout for skill tool commands |
+| `desk.worktreeLinking.enabled` | `true` | Map linked worktrees to main worktree data |
 
 ---
 
