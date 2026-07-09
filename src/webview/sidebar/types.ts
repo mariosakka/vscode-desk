@@ -58,7 +58,6 @@ export interface BookSummary {
 
 export interface ScopedData {
   data: DeskData;
-  pages: PageMeta[];
   workflow: WorkflowConfig | null;
   skills: SkillSummary[];
   books: BookSummary[];

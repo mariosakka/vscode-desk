@@ -17,7 +17,6 @@ interface BookSummary { slug: string; title: string; chapters: BookChapterMeta[]
 
 interface ScopedData {
   data: import('./models').DeskData;
-  pages: import('./pages/pageFormat').PageMeta[];
   workflow: import('./services/workflowConfigService/workflowConfigService').WorkflowConfig | null;
   skills: Omit<import('./services/skillRegistry/skillRegistry').Skill, 'content'>[];
   books: BookSummary[];
@@ -129,33 +128,21 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           this.refresh();
           break;
         }
-        case 'openPage': {
-          const filename: string = message.filename;
+        case 'openBook': {
+          const slug: string = message.slug;
+          if (!this._bookService) break;
           const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          if (resolved.pageStore instanceof PageReader) {
-            PageViewPanel.open(this._extensionUri, resolved.pageStore, filename);
-          }
-          break;
-        }
-        case 'newPage': {
-          const title: string = message.title;
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          if (!title?.trim() || !resolved.pageStore) break;
-          const filename = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.desk';
-          if (resolved.pageStore.list().some(p => p.filename === filename)) {
-            vscode.window.showWarningMessage(`A page named "${filename}" already exists.`);
-            break;
-          }
-          resolved.pageStore.write(filename, title.trim(), `<p>${title.trim()}</p>`);
-          this.refresh();
-          break;
-        }
-        case 'deletePage': {
-          const filename: string = message.filename;
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          if (resolved.pageStore) {
-            resolved.pageStore.delete(filename);
-            this.refresh();
+          if (!(resolved.pageStore instanceof PageReader)) break;
+          try {
+            const manifest = this._bookService.get(slug);
+            const firstChapter = manifest.chapters.find(ch => ch.pages.length > 0);
+            if (!firstChapter) {
+              vscode.window.showInformationMessage(`"${manifest.title}" has no pages yet. Use Desk: New Book Page to add one.`);
+              break;
+            }
+            PageViewPanel.open(this._extensionUri, resolved.pageStore, `${slug}/${firstChapter.pages[0]}`);
+          } catch {
+            vscode.window.showErrorMessage('Could not open book.');
           }
           break;
         }
@@ -193,15 +180,6 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
         case 'submitSkill':
           vscode.commands.executeCommand('desk.submitSkill');
           break;
-        case 'editPage': {
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          if (!resolved.pageStore) break;
-          const filePath = resolved.pageStore.filePath(message.filename);
-          if (filePath === null) break;
-          const uri = vscode.Uri.file(filePath);
-          vscode.window.showTextDocument(uri);
-          break;
-        }
         case 'editPageTemplate': {
           if (!this._globalDataService.getPageTemplate()) {
             this._globalDataService.setPageTemplate(
@@ -235,21 +213,6 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'deleteBook':
           vscode.commands.executeCommand('desk.deleteBook', message.slug);
-          break;
-        case 'addChapter':
-          vscode.commands.executeCommand('desk.addChapter', message.slug);
-          break;
-        case 'renameChapter':
-          vscode.commands.executeCommand('desk.renameChapter', message.slug, message.chapterIndex);
-          break;
-        case 'removeChapter':
-          vscode.commands.executeCommand('desk.removeChapter', message.slug, message.chapterIndex);
-          break;
-        case 'newBookPage':
-          vscode.commands.executeCommand('desk.newBookPage', message.slug, message.chapterIndex);
-          break;
-        case 'moveBookPage':
-          vscode.commands.executeCommand('desk.moveBookPage', message.slug, message.filename, message.toChapter);
           break;
       }
     });
@@ -290,7 +253,6 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
       includeBooks = false,
     ): ScopedData => ({
       data: ds.get(),
-      pages: ps ? ps.list() : [],
       workflow: wf?.get() ?? null,
       skills: sr ? sr.list() : [],
       books: includeBooks ? buildBooks(ps) : [],
