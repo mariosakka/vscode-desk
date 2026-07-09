@@ -5,7 +5,6 @@ import { findSentMessage } from './helpers/vscode-mock';
 const DEFAULT_OPTS = {
   title: 'Auth Flow',
   content: '<h2>Login</h2><p>Details here.</p>',
-  hasBack: false,
 };
 
 test('renders title in <title>', async ({ page }) => {
@@ -19,24 +18,11 @@ test('renders body content', async ({ page }) => {
   await expect(page.locator('p')).toHaveText('Details here.');
 });
 
-test('back button is hidden when hasBack=false', async ({ page }) => {
-  await page.setContent(buildPageViewerHtml({ ...DEFAULT_OPTS, hasBack: false }));
-  const nav = page.locator('#page-nav');
-  await expect(nav).toHaveAttribute('data-has-back', 'false');
-});
-
-test('back button is visible when hasBack=true', async ({ page }) => {
-  await page.setContent(buildPageViewerHtml({ ...DEFAULT_OPTS, hasBack: true }));
-  const nav = page.locator('#page-nav');
-  await expect(nav).toHaveAttribute('data-has-back', 'true');
-});
-
-test('clicking back button posts back message', async ({ page }) => {
-  await page.setContent(buildPageViewerHtml({ ...DEFAULT_OPTS, hasBack: true }));
-  await page.locator('#back-btn').click();
-
-  const msg = await findSentMessage(page, 'back');
-  expect(msg).not.toBeNull();
+test('zoom controls are rendered in nav', async ({ page }) => {
+  await page.setContent(buildPageViewerHtml(DEFAULT_OPTS));
+  await expect(page.locator('#zoom-in')).toBeVisible();
+  await expect(page.locator('#zoom-out')).toBeVisible();
+  await expect(page.locator('#zoom-label')).toBeVisible();
 });
 
 test('clicking a .desk link posts navigate message', async ({ page }) => {
