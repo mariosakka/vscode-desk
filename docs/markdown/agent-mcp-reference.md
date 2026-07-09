@@ -2,7 +2,9 @@
 
 **Endpoint:** `POST http://127.0.0.1:<port>/mcp` (default port `3333`; auto-increments if in use — check the setup notification in VS Code for the actual port)  
 **Protocol:** JSON-RPC 2.0 (MCP Streamable HTTP transport, version `2024-11-05`)  
-**Server identity:** `{ "name": "vscode-desk", "version": "0.0.1" }`
+**Server identity:** `{ "name": "vscode-desk", "version": "0.0.1" }`  
+**Tools:** 39 static tools + dynamic skill-defined tools  
+**Resources:** 4
 
 ---
 
@@ -31,7 +33,7 @@ Successful response:
 Error response (HTTP status is still 200):
 
 ```json
-{ "jsonrpc": "2.0", "error": { "code": -32603, "message": "Project not found: proj_abc" }, "id": 1 }
+{ "jsonrpc": "2.0", "error": { "code": -32603, "message": "Bookmark not found: bm_abc" }, "id": 1 }
 ```
 
 Parse errors return HTTP 400; unknown routes return HTTP 404.
@@ -58,14 +60,14 @@ MCP clients send `initialize` before any tool call. Desk responds with its capab
 
 ## Scope parameter
 
-All tools accept an optional `scope` parameter:
+Most tools accept an optional `scope` parameter:
 
 | Value | Storage location |
 |-------|-----------------|
-| `"global"` (default) | `~/.desk/global/` |
 | `"workspace"` | `~/.desk/workspaces/<slug>/` |
+| `"global"` | `~/.desk/global/` |
 
-Omitting `scope` defaults to `"global"`.
+Omit `scope` to use workspace scope when a workspace is open; otherwise it falls back to `"global"`. Page tools, book tools, and section/list tools are always workspace-scoped and do not accept a scope argument. Library tools and page-template tools are always global and do not accept a scope argument.
 
 ---
 
@@ -79,7 +81,7 @@ Returns all bookmarks as a flat array.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
+| `scope` | string | no | `"global"` or `"workspace"` |
 
 **Returns:**
 ```json
@@ -108,7 +110,7 @@ Adds a bookmark. If `icon` is omitted, Desk fetches the site's favicon automatic
 | `url` | string | **yes** | Full URL including scheme |
 | `icon` | string | no | Emoji or base64 `data:` URL. Omit to auto-fetch favicon |
 | `description` | string | no | Short description shown below title |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
+| `scope` | string | no | `"global"` or `"workspace"` |
 
 **Returns:** the created bookmark object including its new `id`.
 
@@ -116,7 +118,7 @@ Adds a bookmark. If `icon` is omitted, Desk fetches the site's favicon automatic
 { "id": "bm_new001", "title": "GitHub", "url": "https://github.com", "icon": "data:image/png;base64,...", "description": "" }
 ```
 
-**Note:** To link a bookmark to a `.desk` page instead of a URL, set `url` to `desk-page:<filename>` (e.g. `desk-page:auth-flow.desk`). Clicking the card in the sidebar opens the page viewer.
+**Note:** To link a bookmark to a `.desk` page, set `url` to `desk-page:<filename>` (e.g. `desk-page:auth-flow.desk`). Clicking the card in the sidebar opens the page viewer.
 
 ---
 
@@ -129,7 +131,7 @@ Permanently removes a bookmark. Cannot be undone.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `bookmark_id` | string | **yes** | |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
+| `scope` | string | no | `"global"` or `"workspace"` |
 
 **Returns:** `"removed"`
 
@@ -145,12 +147,11 @@ Partially updates a bookmark. Only the fields present in `fields` are changed; e
 |-------|------|----------|-------------|
 | `bookmark_id` | string | **yes** | |
 | `fields` | object | **yes** | Any subset of `title`, `url`, `icon`, `description` |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
+| `scope` | string | no | `"global"` or `"workspace"` |
 
 **Returns:** the updated bookmark object.
 
 ```json
-// rename and re-point a bookmark
 {
   "bookmark_id": "bm_xyz789",
   "fields": { "title": "MDN — HTML", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML" }
@@ -161,27 +162,28 @@ Partially updates a bookmark. Only the fields present in `fields` are changed; e
 
 ## Page tools
 
-Pages are `.desk` files stored in `<workspace>/desk-pages/`. All page tools return an error if VS Code has no workspace folder open.
+Pages are `.desk` files stored in `<workspace>/desk-pages/`. All page tools return an error if VS Code has no workspace folder open. Page tools are workspace-only and do not accept a `scope` argument.
 
 ### The `.desk` file format
 
+Pages are structured XML. Use `create_page` with a `sections[]` array for new pages; use section/list tools for surgical edits.
+
 ```xml
-<desk-page title="Page Title">
+<desk-page title="Page Title" eyebrow="Reference · Backend" subtitle="Short subtitle.">
   <style>
     /* optional — CSS scoped to this page only */
-    /* use var(--accent), var(--accent2), var(--text), var(--muted) to stay on-theme */
     .my-class { color: var(--accent2); }
   </style>
 
-  <!-- HTML body -->
-  <h2>Section heading</h2>
-  <p>Paragraph with a <a href="other-page.desk">page link</a> or an
-     <a href="https://example.com">external link</a>.</p>
+  <div class="section" id="sec-0">
+    <h2 class="section-title">Section heading</h2>
+    <p>Paragraph with a <a href="other-page.desk">page link</a> or an
+       <a href="https://example.com">external link</a>.</p>
+  </div>
 
   <script>
     /* JS runs — extracted and re-injected at bottom of <body> after DOM is ready */
     document.getElementById('my-btn').addEventListener('click', function () { ... });
-    /* onclick="..." inline handlers also work */
   </script>
 </desk-page>
 ```
@@ -217,26 +219,43 @@ Returns all `.desk` files in `desk-pages/`.
 
 ### `create_page`
 
-Creates a new `.desk` file. Fails silently if the file already exists (use `update_page` to change it).
+Creates a new `.desk` file. Use `sections[]` to build structured content.
 
 **Arguments:**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `filename` | string | **yes** | Must end in `.desk`, e.g. `"auth-flow.desk"` |
+| `filename` | string | **yes** | Must end in `.desk`, e.g. `"auth-flow.desk"`. Book pages use `"<slug>/<page>.desk"` |
 | `title` | string | **yes** | Shown in the page header and panel tab |
-| `content` | string | **yes** | HTML body content (`<script>` blocks and inline handlers work) |
-| `customStyles` | string | no | CSS injected only for this page |
+| `sections` | array | no | Structured section objects (see below) |
+| `eyebrow` | string | no | Small text shown above the title (e.g. `"Reference · Backend"`) |
+| `subtitle` | string | no | Short description shown below the title |
+| `chapter` | integer | no | Chapter index (0-based) — used when adding the page to a book |
+
+**Section object fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | no | Section element id. Auto-generated if omitted |
+| `heading` | string | no | Section `<h2>` text |
+| `icon` | string | no | Emoji shown before the heading |
+| `content` | string | no | Inner HTML for the section body |
+| `type` | string | no | Built-in type (`steps`, `cards`, `kv-table`) or a registered custom type |
+| `data` | object | no | Structured data passed to typed section renderers |
 
 **Returns:** `"created auth-flow.desk"`
 
 **Example — create a structured doc:**
 ```json
 {
-  "filename": "onboarding.desk",
-  "title": "Team Onboarding",
-  "content": "<h2>Setup</h2><ol><li>Clone the repo</li><li>Run <code>npm install</code></li></ol><h2>Next steps</h2><p>See <a href=\"api-spec.desk\">API spec</a>.</p>",
-  "customStyles": "ol { padding-left: 20px; } li { margin-bottom: 8px; }"
+  "filename": "auth-flow.desk",
+  "title": "Auth Flow",
+  "eyebrow": "Reference · Backend",
+  "subtitle": "How JWT tokens are issued.",
+  "sections": [
+    { "id": "sec-0", "heading": "Overview", "icon": "🔐", "content": "<p>Body HTML.</p>" },
+    { "id": "sec-1", "heading": "Token Format", "content": "<table>...</table>" }
+  ]
 }
 ```
 
@@ -252,17 +271,11 @@ Reads the existing file and overwrites only the fields you provide. All other fi
 |-------|------|----------|-------------|
 | `filename` | string | **yes** | Must exist |
 | `title` | string | no | New title |
-| `content` | string | no | New body HTML (replaces entire body) |
-| `customStyles` | string | no | New custom CSS (replaces entire style block) |
+| `sections` | array | no | New sections array (replaces all sections) |
+| `eyebrow` | string | no | New eyebrow text |
+| `subtitle` | string | no | New subtitle |
 
-**Returns:** `"updated onboarding.desk"`
-
-**Example — append a note by reading first, then updating:**
-```
-1. list_pages → confirm "onboarding.desk" exists
-2. (read current content from list context or prior knowledge)
-3. update_page with new content that includes the original + the addition
-```
+**Returns:** `"updated auth-flow.desk"`
 
 ---
 
@@ -276,15 +289,466 @@ Deletes the `.desk` file. Cannot be undone.
 |-------|------|----------|
 | `filename` | string | **yes** |
 
-**Returns:** `"deleted onboarding.desk"`
+**Returns:** `"deleted auth-flow.desk"`
+
+---
+
+## Page template tools
+
+The page template is a global shared `<style>` block / HTML skeleton that agents use when creating new pages. Always global — no scope argument.
+
+### `get_page_template`
+
+Returns the current global page template content.
+
+**Arguments:** none
+
+**Returns:** the template string, or an empty string if none is set.
+
+---
+
+### `set_page_template`
+
+Replaces the global page template.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `content` | string | **yes** | Full template content |
+
+**Returns:** `"template saved"`
+
+---
+
+## Library tools
+
+Libraries are JS/CSS bundles downloaded to `~/.desk/lib/<name>/` and auto-injected into every page viewer. Always global — no scope argument.
+
+### `list_libraries`
+
+Returns all configured libraries with install status.
+
+**Arguments:** none
+
+**Returns:**
+```json
+[
+  {
+    "name": "highlight-js",
+    "description": "Syntax highlighting",
+    "files": ["highlight.min.js", "default.min.css"],
+    "installed": true
+  }
+]
+```
+
+---
+
+### `add_library`
+
+Adds a library to the global config and downloads its files.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **yes** | Short identifier, e.g. `"highlight-js"` |
+| `files` | array | **yes** | Array of file URLs to download |
+| `description` | string | no | Human-readable description |
+
+**Returns:** `"library added"`
+
+---
+
+### `remove_library`
+
+Removes a library from config and deletes its cached files.
+
+**Arguments:**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `name` | string | **yes** |
+
+**Returns:** `"library removed"`
+
+---
+
+## Section CRUD tools
+
+Surgical read/write tools for individual sections within a `.desk` page. Workspace-only — no scope argument.
+
+### `list_sections`
+
+Returns the section index for a page.
+
+**Arguments:**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `filename` | string | **yes** |
+
+**Returns:**
+```json
+[
+  { "id": "sec-0", "heading": "Overview" },
+  { "id": "sec-1", "heading": "Token Format" }
+]
+```
+
+---
+
+### `add_section`
+
+Appends a new section to a page.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `filename` | string | **yes** | |
+| `heading` | string | **yes** | Section `<h2>` text |
+| `content` | string | no | Inner HTML for the section body |
+| `id` | string | no | Section element id. Auto-generated if omitted |
+| `icon` | string | no | Emoji shown before the heading |
+| `type` | string | no | Built-in or registered section type |
+| `data` | object | no | Structured data for typed sections |
+
+**Returns:** `"section added"`
+
+---
+
+### `update_section`
+
+Updates a specific section within a page. Only provided fields are changed.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `filename` | string | **yes** | |
+| `section_id` | string | **yes** | Section element id |
+| `heading` | string | no | New heading text |
+| `content` | string | no | New inner HTML (replaces section body) |
+| `type` | string | no | New section type |
+| `data` | object | no | New structured data |
+
+**Returns:** `"section updated"`
+
+**Error:** Returns `-32603` with `"Section <id> not found"` if the id does not exist.
+
+---
+
+### `remove_section`
+
+Removes a section from a page.
+
+**Arguments:**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `filename` | string | **yes** |
+| `section_id` | string | **yes** |
+
+**Returns:** `"section removed"`
+
+**Error:** Returns `-32603` with `"Section <id> not found"` if the id does not exist.
+
+---
+
+## List CRUD tools
+
+Surgical tools for ordered and unordered lists within a section. Workspace-only — no scope argument. Indices are 1-based.
+
+### `list_items`
+
+Returns the list in a section.
+
+**Arguments:**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `filename` | string | **yes** |
+| `section_id` | string | **yes** |
+
+**Returns:**
+```json
+{ "type": "ol", "items": ["Clone the repo", "Run npm install", "Run npm test"] }
+```
+
+---
+
+### `add_list_item`
+
+Appends an item to the list in a section.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `filename` | string | **yes** | |
+| `section_id` | string | **yes** | |
+| `text` | string | **yes** | Item text (HTML allowed) |
+| `list_type` | string | no | `"ul"` or `"ol"` — sets list type if the section has no list yet |
+
+**Returns:** `"item added"`
+
+---
+
+### `remove_list_item`
+
+Removes an item by 1-based index.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `filename` | string | **yes** | |
+| `section_id` | string | **yes** | |
+| `index` | integer | **yes** | 1-based position |
+
+**Returns:** `"item removed"`
+
+**Error:** Returns `-32603` with `"index N out of range (list has M items)"` if the index is invalid.
+
+---
+
+### `update_list_item`
+
+Replaces the text of an item at a 1-based index.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `filename` | string | **yes** | |
+| `section_id` | string | **yes** | |
+| `index` | integer | **yes** | 1-based position |
+| `text` | string | **yes** | New item text |
+
+**Returns:** `"item updated"`
+
+**Error:** Returns `-32603` with `"index N out of range (list has M items)"` if the index is invalid.
+
+---
+
+### `set_list_type`
+
+Switches a section's list between ordered (`ol`) and unordered (`ul`).
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `filename` | string | **yes** | |
+| `section_id` | string | **yes** | |
+| `type` | string | **yes** | `"ul"` or `"ol"` |
+
+**Returns:** `"list type updated"`
+
+---
+
+## Section type tools
+
+Section types control how typed sections are rendered. Built-in types: `steps`, `cards`, `kv-table`. Custom types use Handlebars-like templates.
+
+### `list_section_types`
+
+Returns all available section types (built-in and custom).
+
+**Arguments:** none
+
+**Returns:**
+```json
+[
+  { "name": "steps", "description": "Numbered step list", "builtin": true },
+  { "name": "cards", "description": "Card grid layout", "builtin": true },
+  { "name": "kv-table", "description": "Key-value table", "builtin": true }
+]
+```
+
+---
+
+### `register_section_type`
+
+Registers a custom section type with a Handlebars-like template.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **yes** | Type identifier (must not conflict with built-in names) |
+| `description` | string | **yes** | Human-readable description |
+| `template` | string | **yes** | Handlebars-like template string used to render `data` into HTML |
+
+**Returns:** `"type registered"`
+
+---
+
+### `remove_section_type`
+
+Removes a custom section type. Cannot remove built-in types.
+
+**Arguments:**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `name` | string | **yes** |
+
+**Returns:** `"type removed"`
+
+---
+
+## Book tools
+
+Books are ordered collections of pages organized into chapters, stored as `desk-pages/<slug>/book.json`. Book pages use filenames like `"<slug>/<page>.desk"`. Book tools are workspace-only — no scope argument.
+
+### `create_book`
+
+Creates a new book manifest.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | **yes** | Book title |
+| `slug` | string | no | URL-safe identifier. Auto-derived from title if omitted |
+
+**Returns:** `"book created"`
+
+---
+
+### `list_books`
+
+Returns all books in the workspace.
+
+**Arguments:** none
+
+**Returns:**
+```json
+[
+  { "slug": "my-book", "title": "My Book", "pageCount": 5 }
+]
+```
+
+---
+
+### `get_book`
+
+Returns the full chapter and page tree for a book.
+
+**Arguments:**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `slug` | string | **yes** |
+
+**Returns:**
+```json
+{
+  "slug": "my-book",
+  "title": "My Book",
+  "chapters": [
+    {
+      "title": "Getting Started",
+      "pages": [
+        { "filename": "my-book/intro.desk", "title": "Introduction" }
+      ]
+    }
+  ]
+}
+```
+
+**Error:** Returns `-32603` with `"Book not found: <slug>"` if the slug does not exist.
+
+---
+
+### `delete_book`
+
+Removes the book manifest. Pages on disk are not deleted.
+
+**Arguments:**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `slug` | string | **yes** |
+
+**Returns:** `"book deleted"`
+
+---
+
+### `add_chapter`
+
+Adds a chapter to a book.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `slug` | string | **yes** | Book slug |
+| `title` | string | **yes** | Chapter title |
+| `position` | integer | no | 0-based insertion index. Appends if omitted |
+
+**Returns:** `"chapter added"`
+
+---
+
+### `rename_chapter`
+
+Renames an existing chapter.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `slug` | string | **yes** | Book slug |
+| `chapter_index` | integer | **yes** | 0-based chapter index |
+| `title` | string | **yes** | New chapter title |
+
+**Returns:** `"chapter renamed"`
+
+**Error:** Returns `-32603` with `"chapter_index N out of range"` if the index is invalid.
+
+---
+
+### `remove_chapter`
+
+Removes a chapter from a book. Pages assigned to the chapter are not deleted from disk.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `slug` | string | **yes** | Book slug |
+| `chapter_index` | integer | **yes** | 0-based chapter index |
+
+**Returns:** `"chapter removed"`
+
+**Error:** Returns `-32603` with `"chapter_index N out of range"` if the index is invalid.
+
+---
+
+### `move_page`
+
+Moves a page to a different chapter within a book.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `slug` | string | **yes** | Book slug |
+| `filename` | string | **yes** | Page filename (e.g. `"my-book/intro.desk"`) |
+| `to_chapter` | integer | **yes** | 0-based target chapter index |
+| `position` | integer | no | 0-based position within the target chapter. Appends if omitted |
+
+**Returns:** `"page moved"`
 
 ---
 
 ## Workflow tools
 
-These tools read and write team workflow config and skills. Config and skill submissions are **non-blocking** — they queue for user confirmation in VS Code and return immediately. The user must confirm before anything is persisted or installed.
-
----
+Config and skill submissions are **non-blocking** — they queue for user confirmation in VS Code and return immediately. The user must confirm before anything is persisted or installed.
 
 ### `get_workflow_config`
 
@@ -294,7 +758,7 @@ Returns the current team workflow configuration.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
+| `scope` | string | no | `"global"` or `"workspace"` |
 
 **Returns:**
 ```json
@@ -322,18 +786,18 @@ Returns the current team workflow configuration.
 
 ### `submit_workflow_config`
 
-Submits a partial config for user review. Fields are deep-merged with any existing config — you can submit only the fields you want to change. The user sees a VS Code prompt to review and confirm before anything is written.
+Submits a partial config for user review. Fields are deep-merged with any existing config. The user sees a VS Code prompt to review and confirm before anything is written.
 
 **Arguments:**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `config` | object | **yes** | Partial `WorkflowConfig` — any subset of top-level or nested fields |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
+| `scope` | string | no | `"global"` or `"workspace"` |
 
 **Returns:** `{ "status": "submitted" }`
 
-**Example — set Slack channels from a standards doc:**
+**Example — set Slack channels:**
 ```json
 {
   "config": {
@@ -344,16 +808,9 @@ Submits a partial config for user review. Fields are deep-merged with any existi
 }
 ```
 
-**Example — update identity on first run:**
-```json
-{
-  "config": {
-    "identity": { "githubUsername": "alice", "currentRepo": "acme/backend" }
-  }
-}
-```
-
 ---
+
+## Skill tools
 
 ### `list_skills`
 
@@ -363,7 +820,7 @@ Returns all stored workflow skills (metadata only — no content bodies).
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
+| `scope` | string | no | `"global"` or `"workspace"` |
 
 **Returns:**
 ```json
@@ -380,6 +837,23 @@ Returns all stored workflow skills (metadata only — no content bodies).
 
 ---
 
+### `get_skill`
+
+Returns the full content of a stored skill, including YAML frontmatter and markdown body.
+
+**Arguments:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **yes** | Kebab-case skill name |
+| `scope` | string | no | `"global"` or `"workspace"` |
+
+**Returns:** the full skill markdown string.
+
+**Error:** Returns `-32603` with `"Skill not found: <name>"` if no skill with that name exists.
+
+---
+
 ### `add_skill`
 
 Submits a workflow skill for user review. If a skill with the same `name` already exists, `version` is auto-incremented. The user sees a VS Code prompt showing the skill name and description; on confirm, Desk installs it on all detected agents in the appropriate format.
@@ -389,9 +863,9 @@ Submits a workflow skill for user review. If a skill with the same `name` alread
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `name` | string | **yes** | Kebab-case skill name, e.g. `"dev-flow"` |
-| `content` | string | **yes** | Full skill markdown with YAML frontmatter (see skill format below) |
-| `description` | string | no | Overrides the frontmatter description in the VS Code confirmation prompt |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
+| `content` | string | **yes** | Full skill markdown with YAML frontmatter |
+| `description` | string | no | Overrides the frontmatter description in the confirmation prompt |
+| `scope` | string | no | `"global"` or `"workspace"` |
 
 **Returns:** `{ "status": "submitted" }`
 
@@ -418,43 +892,22 @@ At startup, call `get_workflow_config` to read team-specific values
 ```
 
 **Required frontmatter:** `name` (kebab-case), `description`  
-**Optional:** `triggers`, `agents` (`all` or `[claude-code, cursor, gemini, codex]`), `version` (auto-incremented on resubmit — you can omit it)
-
-**Content rules:**
-- No hardcoded values — always read from `get_workflow_config` at runtime
-- No agent-specific syntax in the shared body — use a separate skill with `agents: [agent-id]`
+**Optional:** `triggers`, `agents` (`all` or `[claude-code, cursor, gemini, codex]`), `version` (auto-incremented on resubmit)
 
 Read `desk://guide/skill-format` for the full spec.
 
 ---
 
-### `get_skill`
-
-Returns the full content of a stored skill, including its YAML frontmatter and markdown body.
-
-**Arguments:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | **yes** | Kebab-case skill name |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
-
-**Returns:** the full skill markdown string.
-
-**Error:** Returns `-32603` with `"Skill not found: <name>"` if no skill with that name exists.
-
----
-
 ### `remove_skill`
 
-Removes a skill from storage and uninstalls it from all agent paths (deletes the installed file, or removes the section for Codex-style AGENTS.md installs).
+Removes a skill from storage and uninstalls it from all agent paths.
 
 **Arguments:**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `name` | string | **yes** | |
-| `scope` | string | no | `"global"` or `"workspace"` (default: `"global"`) |
+| `scope` | string | no | `"global"` or `"workspace"` |
 
 **Returns:** `{ "removed": "dev-flow" }`
 
@@ -462,19 +915,25 @@ Removes a skill from storage and uninstalls it from all agent paths (deletes the
 
 ---
 
+## Dynamic skill-defined tools
+
+Skills with a `tools:` frontmatter block expose additional tools. These appear in `tools/list` at runtime alongside the 39 static tools. Workspace-scoped dynamic tools override global tools with the same name. Argument values are shell-quoted before execution.
+
+---
+
 ## CSS variables available in page styles
 
-Desk maps its own variables onto VS Code's theme tokens, so they automatically adapt to whatever theme the user has installed. Use these in `customStyles` to stay on-theme across any VS Code color scheme:
+Desk maps its own variables onto VS Code's theme tokens so they automatically adapt to whatever theme the user has installed. Use these in page styles to stay on-theme across any VS Code color scheme:
 
-| Variable | Maps to (VS Code token) | Usage |
-|----------|------------------------|-------|
-| `--bg` | `--vscode-editor-background` | Page background |
-| `--surface` | `--vscode-editorWidget-background` | Cards, code blocks |
-| `--surface2` | `--vscode-list-hoverBackground` | Hover states, table headers |
-| `--border` | `--vscode-editorWidget-border` | Borders, dividers |
-| `--text` | `--vscode-editor-foreground` | Body text |
+| Variable | VS Code token | Usage |
+|----------|---------------|-------|
+| `--bg` | `--vscode-sideBar-background` | Page background |
+| `--surface` | `--vscode-input-background` | Cards, code blocks |
+| `--surface2` | `--vscode-list-hoverBackground` | Hover states, table rows |
+| `--border` | `--vscode-widget-border` | Borders, dividers |
+| `--text` | `--vscode-sideBar-foreground` | Body text |
 | `--muted` | `--vscode-descriptionForeground` | Secondary/hint text |
-| `--accent` | `--vscode-button-background` | Primary accent — highlights |
+| `--accent` | `--vscode-button-background` | Primary highlights |
 | `--accent2` | `--vscode-textLink-foreground` | Links, code, tip callouts |
 | `--radius` | *(fixed)* `10px` | Border radius |
 
@@ -485,11 +944,13 @@ Desk maps its own variables onto VS Code's theme tokens, so they automatically a
 | Situation | Code | Message pattern |
 |-----------|------|-----------------|
 | Bookmark not found | `-32603` | `"Bookmark not found: <id>"` |
-| Page file not found | `-32603` | `"ENOENT: no such file..."` |
 | No workspace open | `-32603` | `"No workspace open — pages unavailable"` |
 | Workflow config not set | `-32603` | `"Workflow config not configured"` |
 | Skill not found | `-32603` | `"Skill not found: <name>"` |
+| Book not found | `-32603` | `"Book not found: <slug>"` |
+| Section not found | `-32603` | `"Section <id> not found"` |
+| Chapter index out of range | `-32603` | `"chapter_index N out of range"` |
+| List index out of range | `-32603` | `"index N out of range (list has M items)"` |
 | Invalid skill frontmatter | `-32603` | `"Missing name"` / `"Missing description"` |
 | Unknown tool name | `-32603` | `"Unknown tool: <name>"` |
-| Unknown RPC method | `-32603` | `"Unknown method: <method>"` |
 | Malformed JSON body | `-32700` | `"Parse error"` |
