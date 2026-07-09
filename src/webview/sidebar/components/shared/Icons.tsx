@@ -12,6 +12,7 @@ import {
   Zap,
   GitBranch,
   Pencil,
+  BookOpen,
 } from 'lucide-react';
 
 type IconProps = { size?: number };
@@ -68,4 +69,8 @@ export function WorkflowIcon({ size = 13 }: IconProps) {
 
 export function PencilIcon({ size = 12 }: IconProps) {
   return <Pencil size={size} strokeWidth={1.75} />;
+}
+
+export function BookIcon({ size = 13 }: IconProps) {
+  return <BookOpen size={size} strokeWidth={1.75} />;
 }

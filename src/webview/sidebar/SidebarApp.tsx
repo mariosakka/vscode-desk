@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ScopedData, SidebarData } from './types';
 import { BookmarksPanel } from './components/BookmarksPanel/BookmarksPanel';
-import { PagesPanel } from './components/PagesPanel/PagesPanel';
+import { BooksPanel } from './components/BooksPanel/BooksPanel';
 import { SkillsPanel } from './components/SkillsPanel/SkillsPanel';
 import { WorkflowPanel } from './components/WorkflowPanel/WorkflowPanel';
 import { PageTemplatePanel } from './components/PageTemplatePanel/PageTemplatePanel';
@@ -41,20 +41,11 @@ function ScopedPane({ scopedData, scope, send }: ScopedPaneProps) {
         onAdd={(title, url) => send({ type: 'addBookmark', title, url, scope })}
         onOpenUrl={(url) => send({ type: 'openUrl', url, scope })}
       />
-      <PagesPanel
-        pages={scopedData.pages ?? []}
+      <BooksPanel
         books={scopedData.books ?? []}
-        onOpen={(filename) => send({ type: 'openPage', filename, scope })}
-        onNew={(title) => send({ type: 'newPage', title, scope })}
-        onDelete={(filename) => send({ type: 'deletePage', filename, scope })}
-        onEdit={(filename) => send({ type: 'editPage', filename, scope })}
-        onNewBook={() => send({ type: 'newBook', scope })}
-        onDeleteBook={(slug) => send({ type: 'deleteBook', slug, scope })}
-        onAddChapter={(slug) => send({ type: 'addChapter', slug, scope })}
-        onRenameChapter={(slug, chapterIndex) => send({ type: 'renameChapter', slug, chapterIndex, scope })}
-        onRemoveChapter={(slug, chapterIndex) => send({ type: 'removeChapter', slug, chapterIndex, scope })}
-        onNewBookPage={(slug, chapterIndex) => send({ type: 'newBookPage', slug, chapterIndex, scope })}
-        onMoveBookPage={(slug, filename, toChapter) => send({ type: 'moveBookPage', slug, filename, toChapter, scope })}
+        onOpen={(slug) => send({ type: 'openBook', slug, scope })}
+        onNew={() => send({ type: 'newBook', scope })}
+        onDelete={(slug) => send({ type: 'deleteBook', slug, scope })}
       />
       <SkillsPanel
         skills={scopedData.skills ?? []}
@@ -87,7 +78,7 @@ export function SidebarApp() {
 
   const send = (msg: unknown) => vscode.postMessage(msg);
 
-  const emptyScoped: ScopedData = { data: { bookmarks: [] }, pages: [], workflow: null, skills: [], books: [] };
+  const emptyScoped: ScopedData = { data: { bookmarks: [] }, workflow: null, skills: [], books: [] };
   const hasWorkspace = !!data?.workspace;
 
   return (
