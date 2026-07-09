@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.1](https://github.com/mariosakka/vscode-desk/compare/v0.12.0...v0.12.1) (2026-07-09)
+
+
+### Bug Fixes
+
+* remove stale back-button e2e tests and update page viewer helper ([7ca0504](https://github.com/mariosakka/vscode-desk/commit/7ca050434abf1203123607f8239addfdd9270e2f))
+* remove stale back-button e2e tests; update page-viewer helper for new HTML template ([0c3efcf](https://github.com/mariosakka/vscode-desk/commit/0c3efcfeb5d28566aa216c4546925b04b1a0fa45))
+
 ## [0.12.0](https://github.com/mariosakka/vscode-desk/compare/v0.11.0...v0.12.0) (2026-07-08)
 
 
