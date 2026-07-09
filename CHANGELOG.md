@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.0](https://github.com/mariosakka/vscode-desk/compare/v0.12.1...v0.13.0) (2026-07-09)
+
+
+### Features
+
+* replace pages panel with books panel in sidebar ([67d96d4](https://github.com/mariosakka/vscode-desk/commit/67d96d4a983b3869d66268f884912185974ccc3a))
+* replace pages panel with books panel in sidebar ([5f72dd0](https://github.com/mariosakka/vscode-desk/commit/5f72dd07793380e89a578667293df880c77cee6e))
+
 ## [0.12.1](https://github.com/mariosakka/vscode-desk/compare/v0.12.0...v0.12.1) (2026-07-09)
 
 
