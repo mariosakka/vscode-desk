@@ -23,6 +23,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
+          skip-github-release: true
 
   # Runs in the same workflow so GITHUB_TOKEN cascade is not an issue
   test-and-publish:
@@ -68,6 +69,11 @@ jobs:
 
       - name: Package extension
         run: npx @vscode/vsce package
+
+      - name: Create GitHub Release
+        run: gh release create ${{ steps.tag.outputs.tag_name }} --title "${{ steps.tag.outputs.tag_name }}" --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md) for details." 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Attach .vsix to GitHub Release
         run: gh release upload ${{ steps.tag.outputs.tag_name }} *.vsix --clobber
