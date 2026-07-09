@@ -42,7 +42,6 @@ export function buildSidebarHtml(): string {
 export interface PageViewerOpts {
   title: string;
   content: string;
-  hasBack?: boolean;
   customStyles?: string;
   pageScripts?: string;
 }
@@ -56,8 +55,11 @@ export function buildPageViewerHtml(opts: PageViewerOpts): string {
     .replace('<link rel="stylesheet" href="${cssUri}">', () => `<style>${css}</style>`)
     .replace('<style>${customStyles}</style>', () => `<style>${opts.customStyles ?? ''}</style>`)
     .replace(/<title>\$\{title\}<\/title>/, () => `<title>${opts.title}</title>`)
-    .replace('data-has-back="${hasBack}"', () => `data-has-back="${opts.hasBack ?? false}"`)
+    .replace('${zoom}', '1')
+    .replace('${libraryStyles}', '')
+    .replace('${bookNavCss}', '')
     .replace('${pageScripts}', () => opts.pageScripts ?? '')
+    .replace('${libraryScripts}', '')
     .replace('${content}', () => opts.content)
     .replace(
       '<script nonce="${nonce}" src="${scriptUri}"></script>',
