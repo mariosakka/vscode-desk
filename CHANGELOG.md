@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/mariosakka/vscode-desk/compare/v0.13.1...v0.13.2) (2026-07-20)
+
+
+### Bug Fixes
+
+* wire TOC toggle click handler after DOM is ready ([#70](https://github.com/mariosakka/vscode-desk/issues/70)) ([603d05f](https://github.com/mariosakka/vscode-desk/commit/603d05fedc1088c3de518b826aa7dec3275cb96a))
+
 ## [0.13.1](https://github.com/mariosakka/vscode-desk/compare/v0.13.0...v0.13.1) (2026-07-20)
 
 
