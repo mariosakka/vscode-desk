@@ -138,12 +138,26 @@ export function activate(context: vscode.ExtensionContext): void {
         .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'default';
       const registryPath = path.join(os.homedir(), '.desk', 'mcp-ports.json');
       const writeRegistry = () => {
-        let reg: Record<string, { port: number; slug: string }> = {};
+        let reg: Record<string, { port: number; slug: string; path: string }> = {};
         try { reg = JSON.parse(fs.readFileSync(registryPath, 'utf-8')); } catch {}
-        reg[workspaceRoot] = { port: actualPort, slug };
+        reg[workspaceRoot] = { port: actualPort, slug, path: workspaceRoot };
         fs.writeFileSync(registryPath, JSON.stringify(reg, null, 2));
       };
       writeRegistry();
+
+      const claudeSettingsPath = path.join(workspaceRoot, '.claude', 'settings.json');
+      const writeClaudeSettings = () => {
+        try {
+          fs.mkdirSync(path.join(workspaceRoot, '.claude'), { recursive: true });
+          let s: Record<string, unknown> = {};
+          try { s = JSON.parse(fs.readFileSync(claudeSettingsPath, 'utf-8')); } catch {}
+          (s as any).mcpServers = (s as any).mcpServers ?? {};
+          (s as any).mcpServers['vscode-desk'] = { type: 'http', url: `http://127.0.0.1:${actualPort}/mcp` };
+          fs.writeFileSync(claudeSettingsPath, JSON.stringify(s, null, 2));
+        } catch {}
+      };
+      writeClaudeSettings();
+
       context.subscriptions.push({
         dispose: () => {
           try {
@@ -151,6 +165,16 @@ export function activate(context: vscode.ExtensionContext): void {
             try { reg = JSON.parse(fs.readFileSync(registryPath, 'utf-8')); } catch {}
             delete reg[workspaceRoot];
             fs.writeFileSync(registryPath, JSON.stringify(reg, null, 2));
+          } catch {}
+          try {
+            const s: Record<string, any> = JSON.parse(fs.readFileSync(claudeSettingsPath, 'utf-8'));
+            delete s.mcpServers?.['vscode-desk'];
+            if (!Object.keys(s.mcpServers ?? {}).length) delete s.mcpServers;
+            if (Object.keys(s).length) {
+              fs.writeFileSync(claudeSettingsPath, JSON.stringify(s, null, 2));
+            } else {
+              fs.unlinkSync(claudeSettingsPath);
+            }
           } catch {}
         },
       });
