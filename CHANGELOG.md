@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.4](https://github.com/mariosakka/vscode-desk/compare/v0.13.3...v0.13.4) (2026-07-20)
+
+
+### Bug Fixes
+
+* move TOC toggle into nav bar and fix font sizes scaling with zoom ([#75](https://github.com/mariosakka/vscode-desk/issues/75)) ([c7d74e2](https://github.com/mariosakka/vscode-desk/commit/c7d74e219745ccfd60cfc794988ef22bb8e13833))
+
 ## [0.13.3](https://github.com/mariosakka/vscode-desk/compare/v0.13.2...v0.13.3) (2026-07-20)
 
 
