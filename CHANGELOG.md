@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/mariosakka/vscode-desk/compare/v0.13.0...v0.13.1) (2026-07-20)
+
+
+### Bug Fixes
+
+* auto-migrate old stdio proxy MCP config to direct HTTP on startup ([#68](https://github.com/mariosakka/vscode-desk/issues/68)) ([6e43481](https://github.com/mariosakka/vscode-desk/commit/6e4348145e87addc789260eef8f76b65c23c286d))
+
 ## [0.13.0](https://github.com/mariosakka/vscode-desk/compare/v0.12.1...v0.13.0) (2026-07-09)
 
 
