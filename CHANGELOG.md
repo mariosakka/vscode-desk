@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.3](https://github.com/mariosakka/vscode-desk/compare/v0.13.2...v0.13.3) (2026-07-20)
+
+
+### Bug Fixes
+
+* write per-workspace .claude/settings.json so each session connects to the right VS Code window ([#72](https://github.com/mariosakka/vscode-desk/issues/72)) ([5432b7d](https://github.com/mariosakka/vscode-desk/commit/5432b7d75863db4a14c53664d53929067e3796c0))
+
 ## [0.13.2](https://github.com/mariosakka/vscode-desk/compare/v0.13.1...v0.13.2) (2026-07-20)
 
 
