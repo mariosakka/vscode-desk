@@ -100,9 +100,9 @@ describe('McpServer', () => {
     expect(res.result.protocolVersion).toBeDefined();
   });
 
-  it('lists 39 tools', async () => {
+  it('lists 40 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 2 });
-    expect(res.result.tools).toHaveLength(39);
+    expect(res.result.tools).toHaveLength(40);
     const names = res.result.tools.map((t: any) => t.name);
     expect(names).toContain('list_bookmarks');
     expect(names).toContain('add_bookmark');
@@ -178,7 +178,7 @@ describe('McpServer', () => {
     expect(res.result.contents[0].mimeType).toBe('text/markdown');
   });
 
-  it('workspace/current resource returns workspaceName and workspacePath', async () => {
+  it('workspace/current resource returns full context including pagesDir and hasWorkspace', async () => {
     const srv = new McpServer(
       mockDataService as any, null, null, null, null, null, null, null,
       mockProvider as any, mockFaviconService as any, [], null, null,
@@ -194,13 +194,15 @@ describe('McpServer', () => {
       const info = JSON.parse(res.result.contents[0].text);
       expect(info.workspaceName).toBe('my-project');
       expect(info.workspacePath).toBe('/home/user/work/my-project');
+      expect(info.pagesDir).toBe('/home/user/work/my-project/desk-pages');
+      expect(info.hasWorkspace).toBe(true);
       expect(res.result.contents[0].mimeType).toBe('application/json');
     } finally {
       srv.stop();
     }
   });
 
-  it('workspace/current returns nulls when no workspace is open', async () => {
+  it('workspace/current returns nulls and hasWorkspace false when no workspace is open', async () => {
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'resources/read',
       params: { uri: 'desk://workspace/current' }, id: 51,
@@ -208,6 +210,31 @@ describe('McpServer', () => {
     const info = JSON.parse(res.result.contents[0].text);
     expect(info.workspaceName).toBeNull();
     expect(info.workspacePath).toBeNull();
+    expect(info.pagesDir).toBeNull();
+    expect(info.hasWorkspace).toBe(false);
+  });
+
+  it('get_workspace_context tool returns workspace name, path, pagesDir, and hasWorkspace', async () => {
+    const srv = new McpServer(
+      mockDataService as any, null, null, null, null, null, null, null,
+      mockProvider as any, mockFaviconService as any, [], null, null,
+      'my-project', '/home/user/work/my-project',
+    );
+    const port2 = PORT + 2;
+    await srv.start(port2);
+    try {
+      const res = await postMcp(port2, {
+        jsonrpc: '2.0', method: 'tools/call',
+        params: { name: 'get_workspace_context', arguments: {} }, id: 52,
+      });
+      const info = JSON.parse(res.result.content[0].text);
+      expect(info.workspaceName).toBe('my-project');
+      expect(info.workspacePath).toBe('/home/user/work/my-project');
+      expect(info.pagesDir).toBe('/home/user/work/my-project/desk-pages');
+      expect(info.hasWorkspace).toBe(true);
+    } finally {
+      srv.stop();
+    }
   });
 
   it('calls list_bookmarks and returns flat array of bookmarks', async () => {
@@ -298,9 +325,9 @@ describe('McpServer — workflow tools', () => {
     setTimeout(done, 30);
   });
 
-  it('lists 39 tools', async () => {
+  it('lists 40 tools', async () => {
     const res = await postMcp(PORT, { jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 });
-    expect(res.result.tools).toHaveLength(39);
+    expect(res.result.tools).toHaveLength(40);
   });
 
 
