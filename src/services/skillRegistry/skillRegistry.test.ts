@@ -14,6 +14,7 @@ const makeAdapter = (id: string): jest.Mocked<AgentAdapter> => ({
   isInstalled: jest.fn().mockResolvedValue(true),
   isConfigured: jest.fn().mockResolvedValue(true),
   configure: jest.fn().mockResolvedValue(undefined),
+  migrate: jest.fn().mockResolvedValue(undefined),
   skillInstallPath: `/tmp/${id}/skills`,
   isSkillInstalled: jest.fn().mockResolvedValue(false),
   installSkill: jest.fn().mockResolvedValue(undefined),

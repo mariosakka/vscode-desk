@@ -10,8 +10,15 @@ export class AgentRegistry {
   ) {}
 
   async showSetupPrompt(port: number): Promise<void> {
+    await this.runMigrations(port);
     if (this.context.globalState.get('desk.agentSetupDismissed')) return;
     await this.runPrompt(port, false);
+  }
+
+  private async runMigrations(port: number): Promise<void> {
+    await Promise.allSettled(
+      this.adapters.map(async a => { if (await a.isInstalled()) await a.migrate(port); }),
+    );
   }
 
   async showSetupPromptForced(port: number): Promise<void> {

@@ -29,6 +29,8 @@ export abstract class JsonFileAdapter implements AgentAdapter {
     }
   }
 
+  async migrate(_port: number): Promise<void> {}
+
   async configure(port: number): Promise<void> {
     const result = await this.configureViaCli(port);
     if (result === false) {

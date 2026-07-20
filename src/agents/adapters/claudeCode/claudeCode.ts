@@ -43,6 +43,19 @@ export class ClaudeCodeAdapter extends JsonFileAdapter {
     return { type: McpTransport.Http, url: `http://127.0.0.1:${port}/mcp` };
   }
 
+  async migrate(port: number): Promise<void> {
+    try {
+      const config = JSON.parse(fs.readFileSync(this.configPath, 'utf-8'));
+      const entry = config?.mcpServers?.[this.serverKey];
+      if (!entry || entry.type !== 'stdio' || !String(entry.args?.[0] ?? '').endsWith('desk-proxy.js')) return;
+      childProcess.execSync(`${CliBinary.ClaudeCode} mcp remove ${this.serverKey} --scope user`, { stdio: 'pipe' });
+      childProcess.execSync(
+        `${CliBinary.ClaudeCode} mcp add ${this.serverKey} -t ${McpTransport.Http} http://127.0.0.1:${port}/mcp --scope user`,
+        { stdio: 'pipe' },
+      );
+    } catch { /* leave unchanged if anything fails */ }
+  }
+
   async configure(port: number): Promise<void> {
     await super.configure(port);
     this.patchPermissions();
