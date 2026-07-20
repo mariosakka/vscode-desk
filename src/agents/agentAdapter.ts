@@ -4,6 +4,7 @@ export interface AgentAdapter {
   isInstalled(): Promise<boolean>;
   isConfigured(port: number): Promise<boolean>;
   configure(port: number): Promise<void>;
+  migrate(port: number): Promise<void>;
   readonly skillInstallPath: string | null;
   isSkillInstalled(skillName: string): Promise<boolean>;
   installSkill(skillName: string, content: string): Promise<void>;

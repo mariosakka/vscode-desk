@@ -9,6 +9,7 @@ function makeAdapter(installed: boolean, configured: boolean): AgentAdapter & { 
     isInstalled: jest.fn().mockResolvedValue(installed),
     isConfigured: jest.fn().mockResolvedValue(configured),
     configure: jest.fn().mockResolvedValue(undefined),
+    migrate: jest.fn().mockResolvedValue(undefined),
     skillInstallPath: null,
     isSkillInstalled: jest.fn().mockResolvedValue(false),
     installSkill: jest.fn().mockResolvedValue(undefined),

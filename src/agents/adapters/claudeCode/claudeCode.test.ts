@@ -183,3 +183,42 @@ describe('skill methods', () => {
     await expect(new ClaudeCodeAdapter().uninstallSkill('dev-flow')).resolves.toBeUndefined();
   });
 });
+
+describe('migrate', () => {
+  it('replaces old stdio proxy entry with direct HTTP via CLI', async () => {
+    const oldConfig = {
+      mcpServers: {
+        'vscode-desk': { type: 'stdio', command: 'node', args: ['/home/user/.desk/desk-proxy.js'], env: {} },
+      },
+    };
+    (fs.readFileSync as jest.Mock).mockImplementation((p: string) => {
+      if (p === mcpConfigPath) return JSON.stringify(oldConfig);
+      throw new Error('ENOENT');
+    });
+    (childProcess.execSync as jest.Mock).mockReturnValue('');
+    await new ClaudeCodeAdapter().migrate(3334);
+    const calls = (childProcess.execSync as jest.Mock).mock.calls.map((c: unknown[]) => c[0] as string);
+    expect(calls).toContain('claude mcp remove vscode-desk --scope user');
+    expect(calls).toContain('claude mcp add vscode-desk -t http http://127.0.0.1:3334/mcp --scope user');
+  });
+
+  it('does nothing when entry is already HTTP', async () => {
+    const httpConfig = {
+      mcpServers: { 'vscode-desk': { type: 'http', url: 'http://127.0.0.1:3334/mcp' } },
+    };
+    (fs.readFileSync as jest.Mock).mockImplementation((p: string) => {
+      if (p === mcpConfigPath) return JSON.stringify(httpConfig);
+      throw new Error('ENOENT');
+    });
+    (childProcess.execSync as jest.Mock).mockReturnValue('');
+    await new ClaudeCodeAdapter().migrate(3334);
+    expect(childProcess.execSync).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when entry is absent', async () => {
+    (fs.readFileSync as jest.Mock).mockImplementation(() => { throw new Error('ENOENT'); });
+    (childProcess.execSync as jest.Mock).mockReturnValue('');
+    await new ClaudeCodeAdapter().migrate(3334);
+    expect(childProcess.execSync).not.toHaveBeenCalled();
+  });
+});
