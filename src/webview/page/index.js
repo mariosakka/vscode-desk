@@ -80,4 +80,17 @@
     const initial = getCurrentZoom();
     zoomLabel.textContent = Math.round(initial * 100) + '%';
   }
+
+  const tocToggle = document.getElementById('toc-toggle');
+  const tocPanel = document.getElementById('book-nav');
+  if (tocToggle && tocPanel) {
+    if (!tocPanel.classList.contains('collapsed')) {
+      document.body.classList.add('toc-open');
+    }
+    tocToggle.addEventListener('click', function () {
+      const collapsed = tocPanel.classList.toggle('collapsed');
+      tocToggle.textContent = collapsed ? '≡' : '←';
+      document.body.classList.toggle('toc-open', !collapsed);
+    });
+  }
 }());

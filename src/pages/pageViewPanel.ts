@@ -147,7 +147,7 @@ export class PageViewPanel {
 <style>
 .toc-panel { position: fixed; left: 0; top: 44px; width: 220px; height: calc(100vh - 44px); overflow-y: auto; background: var(--surface); border-right: 1px solid var(--border); padding: 1rem 0.75rem; transition: transform .25s ease; z-index: 99; }
 .toc-panel.collapsed { transform: translateX(-100%); }
-.toc-toggle { position: fixed; left: 8px; top: 50px; z-index: 100; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--muted); transition: left .25s ease; }
+.toc-toggle { position: fixed; left: 8px; top: 44px; z-index: 100; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--muted); transition: left .25s ease; }
 body.toc-open .toc-toggle { left: 228px; }
 body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px); }
 .book-nav-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.75rem; }
@@ -159,19 +159,7 @@ body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px)
 .page-prevnext { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
 .prevnext-link { color: var(--accent2); text-decoration: none; font-size: 0.9rem; }
 .prevnext-link:hover { text-decoration: underline; }
-</style>
-<script>
-(function(){
-  var toggle=document.getElementById('toc-toggle');
-  var nav=document.getElementById('book-nav');
-  if(!toggle||!nav)return;
-  toggle.addEventListener('click',function(){
-    var collapsed=nav.classList.toggle('collapsed');
-    toggle.textContent=collapsed?'≡':'←';
-    document.body.classList.toggle('toc-open',!collapsed);
-  });
-})();
-</script>` : '';
+</style>` : '';
 
     const templatePath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'page', 'index.html');
     const template = fs.readFileSync(templatePath, 'utf-8');
@@ -207,8 +195,11 @@ body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px)
       return `<li class="book-chapter-item"><span class="book-chapter-label">${escHtml(ch.title)}</span><ul>${pages}</ul></li>`;
     }).join('');
 
-    return `<button id="toc-toggle" class="toc-toggle" aria-label="Toggle book navigation">≡</button>
-<nav id="book-nav" class="toc-panel collapsed">
+    const tocCollapsed = vscode.workspace.getConfiguration('desk').get<boolean>('pageViewer.tocCollapsed', false);
+    const panelClass = tocCollapsed ? 'toc-panel collapsed' : 'toc-panel';
+    const toggleText = tocCollapsed ? '≡' : '←';
+    return `<button id="toc-toggle" class="toc-toggle" aria-label="Toggle book navigation">${toggleText}</button>
+<nav id="book-nav" class="${panelClass}">
   <div class="book-nav-title">${escHtml(manifest.title)}</div>
   <ul class="book-chapters-list">${items}</ul>
 </nav>`;
