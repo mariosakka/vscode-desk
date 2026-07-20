@@ -79,15 +79,30 @@ general:       [{ label: "Language", value: "en" }, { label: "Repo", value: "my-
 
 ## Session start — verify workspace
 
-Multiple VS Code windows run separate Desk instances, but only one can own port 3333. Before doing any write operations, confirm you are connected to the intended window:
+Multiple VS Code windows run separate Desk instances, but only one can own a given port. Before doing any write operations, confirm you are connected to the intended window. Use either approach:
+
+\`\`\`
+get_workspace_context
+\`\`\`
+
+Or read the resource directly:
 
 \`\`\`
 resources/read desk://workspace/current
 \`\`\`
 
-This returns \`{ "workspaceName": "my-project", "workspacePath": "/home/user/work/my-project" }\`.
+Both return the same JSON shape:
 
-Compare \`workspacePath\` against the directory you are actually working in. If they do not match, **stop and tell the user** — they may have the wrong VS Code window in focus. Do not create, update, or delete anything until the mismatch is resolved.
+\`\`\`json
+{
+  "workspaceName": "my-project",
+  "workspacePath": "/home/user/work/my-project",
+  "pagesDir": "/home/user/work/my-project/desk-pages",
+  "hasWorkspace": true
+}
+\`\`\`
+
+Compare \`workspacePath\` against the directory you are actually working in. If they do not match, **stop and tell the user** — they may have the wrong VS Code window in focus. If \`hasWorkspace\` is \`false\`, page tools will return errors (no folder open in VS Code). Do not create, update, or delete anything until the mismatch is resolved.
 
 ## Key rules
 
@@ -120,7 +135,7 @@ remove_library      → remove a library and delete its cached files
 
 Libraries are global only (no scope). After \`add_library\`, sync from the sidebar or wait for the next install cycle to download the files.
 
-## All 39 static tools + dynamic skill tools
+## All 40 static tools + dynamic skill tools
 
 | Tool | R | W | Required args |
 |------|---|---|---------------|
@@ -163,6 +178,7 @@ Libraries are global only (no scope). After \`add_library\`, sync from the sideb
 | rename_chapter | | ✓ | slug, chapter_index, title |
 | remove_chapter | | ✓ | slug, chapter_index |
 | move_page | | ✓ | slug, filename, to_chapter |
+| get_workspace_context | ✓ | | — |
 
 ## Dynamic skill tools
 

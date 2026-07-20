@@ -1,4 +1,5 @@
 import * as http from 'http';
+import * as path from 'path';
 import { execSync } from 'child_process';
 import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
@@ -70,6 +71,20 @@ export class McpServer {
   stop(): void {
     this.server?.close();
     this.server = null;
+  }
+
+  private _workspaceContext(): {
+    workspaceName: string | null;
+    workspacePath: string | null;
+    pagesDir: string | null;
+    hasWorkspace: boolean;
+  } {
+    return {
+      workspaceName: this.workspaceName,
+      workspacePath: this.workspacePath,
+      pagesDir: this.workspacePath ? path.join(this.workspacePath, 'desk-pages') : null,
+      hasWorkspace: this.workspacePath !== null,
+    };
   }
 
   private _resolveScope(args: Record<string, unknown>): {
@@ -173,7 +188,7 @@ export class McpServer {
     }
     if (method === 'resources/read') {
       if (params.uri === 'desk://workspace/current') {
-        const info = { workspaceName: this.workspaceName, workspacePath: this.workspacePath };
+        const info = this._workspaceContext();
         return { contents: [{ uri: params.uri, mimeType: 'application/json', text: JSON.stringify(info, null, 2) }] };
       }
       const content = RESOURCE_CONTENT[params.uri];
@@ -531,6 +546,10 @@ export class McpServer {
         if (!this.bookService) throw new Error('No workspace open — books unavailable');
         this.bookService.movePage(args.slug, args.filename, args.to_chapter, args.position);
         return { content: [{ type: 'text', text: 'moved' }] };
+      }
+
+      case 'get_workspace_context': {
+        return { content: [{ type: 'text', text: JSON.stringify(this._workspaceContext(), null, 2) }] };
       }
 
       default: {

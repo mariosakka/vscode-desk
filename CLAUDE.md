@@ -388,7 +388,7 @@ The page viewer has no host→webview messages — navigation replaces the entir
 - **Capabilities:** `{ tools: {}, resources: {} }`
 - **HTTP status:** always `200` for valid JSON-RPC. Errors arrive as `{ error: { code, message } }` in the response body.
 
-**39 static tools** (plus dynamic skill-defined tools — skills with a `tools:` frontmatter key add tool entries dispatched via shell command execution; they appear in `tools/list` at runtime):
+**40 static tools** (plus dynamic skill-defined tools — skills with a `tools:` frontmatter key add tool entries dispatched via shell command execution; they appear in `tools/list` at runtime):
 
 | Tool | R/W | Required args |
 |------|-----|---------------|
@@ -431,6 +431,7 @@ The page viewer has no host→webview messages — navigation replaces the entir
 | `rename_chapter` | W | `slug`, `chapter_index`, `title` |
 | `remove_chapter` | W | `slug`, `chapter_index` |
 | `move_page` | W | `slug`, `filename`, `chapter_index` |
+| `get_workspace_context` | R | — |
 
 **4 resources** (self-documentation for agents — read via `resources/list` + `resources/read`):
 - `desk://guide/quick-start`

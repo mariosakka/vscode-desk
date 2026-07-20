@@ -537,5 +537,14 @@ export const TOOLS: McpTool[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: 'get_workspace_context',
+    description: 'Returns the VS Code workspace name, root folder path, and pages directory this MCP server instance is attached to. Call at session start to verify you are operating on the correct project before any write operations.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      additionalProperties: false,
+    },
+  },
 
 ];
