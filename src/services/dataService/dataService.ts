@@ -1,8 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Bookmark, DeskData } from '../../models';
-
-const DEFAULT_DATA: DeskData = { bookmarks: [] };
+import { readJson, writeJson } from '../../storage/jsonStore';
 
 function generateId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).substring(2, 9)}`;
@@ -12,16 +11,11 @@ export class DataService {
   constructor(private readonly dir: string, private readonly defaultTemplatePath?: string) {}
 
   get(): DeskData {
-    try {
-      return JSON.parse(fs.readFileSync(path.join(this.dir, 'data.json'), 'utf-8'));
-    } catch {
-      return JSON.parse(JSON.stringify(DEFAULT_DATA));
-    }
+    return readJson(path.join(this.dir, 'data.json'), { bookmarks: [] });
   }
 
   save(data: DeskData): void {
-    fs.mkdirSync(this.dir, { recursive: true });
-    fs.writeFileSync(path.join(this.dir, 'data.json'), JSON.stringify(data, null, 2), 'utf-8');
+    writeJson(path.join(this.dir, 'data.json'), data);
   }
 
   addBookmark(fields: Omit<Bookmark, 'id'>): Bookmark {

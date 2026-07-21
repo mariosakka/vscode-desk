@@ -4,6 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { McpServer } from './server';
 import { BookService } from '../../services/bookService/bookService';
+import { ServiceBundle } from '../../models';
 
 const mockDataService = {
   get: jest.fn(),
@@ -83,8 +84,8 @@ describe('McpServer', () => {
 
   beforeEach(done => {
     jest.clearAllMocks();
-    // globalDataService=mockDataService, all others null; workspaceDataService=null so resolver falls back to global
-    server = new McpServer(mockDataService as any, null, null, null, null, null, null, null, mockProvider as any, mockFaviconService as any);
+    const globalBundle: ServiceBundle = { dataService: mockDataService as any, pageReader: null, workflowService: null, skillRegistry: null };
+    server = new McpServer(globalBundle, null, mockProvider as any, mockFaviconService as any);
     server.start(PORT);
     setTimeout(done, 30);
   });
@@ -179,8 +180,9 @@ describe('McpServer', () => {
   });
 
   it('workspace/current resource returns full context including pagesDir and hasWorkspace', async () => {
+    const globalBundle: ServiceBundle = { dataService: mockDataService as any, pageReader: null, workflowService: null, skillRegistry: null };
     const srv = new McpServer(
-      mockDataService as any, null, null, null, null, null, null, null,
+      globalBundle, null,
       mockProvider as any, mockFaviconService as any, [], null, null,
       'my-project', '/home/user/work/my-project',
     );
@@ -215,8 +217,9 @@ describe('McpServer', () => {
   });
 
   it('get_workspace_context tool returns workspace name, path, pagesDir, and hasWorkspace', async () => {
+    const globalBundle: ServiceBundle = { dataService: mockDataService as any, pageReader: null, workflowService: null, skillRegistry: null };
     const srv = new McpServer(
-      mockDataService as any, null, null, null, null, null, null, null,
+      globalBundle, null,
       mockProvider as any, mockFaviconService as any, [], null, null,
       'my-project', '/home/user/work/my-project',
     );
@@ -301,14 +304,9 @@ describe('McpServer — workflow tools', () => {
     // Reset mock return values to defaults
     mockSkillRegistry.list.mockReturnValue([]);
     mockSkillRegistry.validateFrontmatter.mockReturnValue({ valid: true });
+    const globalBundle: ServiceBundle = { dataService: mockDataService as any, pageReader: null, workflowService: mockWorkflowConfigService as any, skillRegistry: mockSkillRegistry as any };
     server = new McpServer(
-      mockDataService as any,
-      null,
-      mockWorkflowConfigService as any,
-      mockSkillRegistry as any,
-      null,
-      null,
-      null,
+      globalBundle,
       null,
       mockProvider as any,
       mockFaviconService as any,
@@ -446,9 +444,10 @@ describe('McpServer — library tools', () => {
     jest.clearAllMocks();
     mockLibraryService.list.mockReturnValue([]);
     mockLibraryService.isInstalled.mockReturnValue(false);
+    const globalBundle: ServiceBundle = { dataService: mockDataService as any, pageReader: null, workflowService: null, skillRegistry: null };
     server = new McpServer(
-      mockDataService as any,
-      null, null, null, null, null, null, null,
+      globalBundle,
+      null,
       mockProvider as any, mockFaviconService as any,
       [], null, null, null, null,
       mockLibraryService as any,
@@ -537,11 +536,10 @@ describe('McpServer — page tools (sections-based)', () => {
     localDataService.getPageTemplate.mockReturnValue(
       '<desk-page title="T"><style>\n  h1 { color: red; }\n</style>\n<h1>hi</h1>\n</desk-page>'
     );
+    const globalBundle: ServiceBundle = { dataService: localDataService as any, pageReader: mockPageReader as any, workflowService: null, skillRegistry: null };
     server = new McpServer(
-      localDataService as any,
-      null, null, null, localDataService as any,
-      mockPageReader as any,
-      null, null,
+      globalBundle,
+      null,
       mockProvider as any,
       mockFaviconService as any,
     );
@@ -554,13 +552,26 @@ describe('McpServer — page tools (sections-based)', () => {
     setTimeout(done, 30);
   });
 
+  it('create_page rejects a flat filename', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'create_page',
+        arguments: { filename: 'standalone.desk', title: 'Bad', content: '' },
+      },
+      id: 99,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toMatch(/bookSlug\/page\.desk/);
+  });
+
   it('create_page assembles body from sections and passes template styles to pageReader.write', async () => {
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
       params: {
         name: 'create_page',
         arguments: {
-          filename: 'test.desk',
+          filename: 'my-book/test.desk',
           title: 'Test Page',
           eyebrow: 'Ref · Test',
           subtitle: 'A test page.',
@@ -575,7 +586,7 @@ describe('McpServer — page tools (sections-based)', () => {
     expect(res.result).toBeDefined();
     expect(mockPageReader.write).toHaveBeenCalledTimes(1);
     const [filename, title, bodyHtml, customStyles] = mockPageReader.write.mock.calls[0];
-    expect(filename).toBe('test.desk');
+    expect(filename).toBe('my-book/test.desk');
     expect(title).toBe('Test Page');
     expect(bodyHtml).toContain('<div class="eyebrow">Ref · Test</div>');
     expect(bodyHtml).toContain('<h1>Test Page</h1>');
@@ -593,7 +604,7 @@ describe('McpServer — page tools (sections-based)', () => {
       jsonrpc: '2.0', method: 'tools/call',
       params: {
         name: 'create_page',
-        arguments: { filename: 'no-tmpl.desk', title: 'X', sections: [{ heading: 'H', content: '<p>c</p>' }] },
+        arguments: { filename: 'my-book/no-tmpl.desk', title: 'X', sections: [{ heading: 'H', content: '<p>c</p>' }] },
       },
       id: 2,
     });
@@ -703,12 +714,10 @@ describe('McpServer — section, list, and section-type tools', () => {
     jest.clearAllMocks();
     sectionPageReader.read.mockReturnValue(makePage(SECTION_BODY));
     sectionPageReader.write.mockReset();
+    const globalBundle: ServiceBundle = { dataService: localDataService2 as any, pageReader: sectionPageReader as any, workflowService: null, skillRegistry: null };
     server = new McpServer(
-      localDataService2 as any,
-      null, null, null,
-      localDataService2 as any,
-      sectionPageReader as any,
-      null, null,
+      globalBundle,
+      null,
       mockProvider as any,
       mockFaviconService as any,
       [], null, null, null, null,
@@ -918,9 +927,10 @@ describe('McpServer — book tools', () => {
     jest.clearAllMocks();
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'desk-book-test-'));
     bookSvc = new BookService(tmpDir);
+    const globalBundle: ServiceBundle = { dataService: localDataService3 as any, pageReader: null, workflowService: null, skillRegistry: null };
     server = new McpServer(
-      localDataService3 as any,
-      null, null, null, null, null, null, null,
+      globalBundle,
+      null,
       mockProvider as any,
       mockFaviconService as any,
       [], null, null, null, null,
@@ -1078,15 +1088,11 @@ describe('McpServer — dynamic skill tools', () => {
     jest.clearAllMocks();
     mockGlobalSkillRegistry.getAllTools.mockReturnValue([]);
     mockWorkspaceSkillRegistry.getAllTools.mockReturnValue([]);
+    const globalBundle: ServiceBundle = { dataService: mockDataService as any, pageReader: null, workflowService: null, skillRegistry: mockGlobalSkillRegistry as any };
+    const workspaceBundle: ServiceBundle = { dataService: mockDataService as any, pageReader: null, workflowService: null, skillRegistry: mockWorkspaceSkillRegistry as any };
     server = new McpServer(
-      mockDataService as any,
-      null,
-      null,
-      mockGlobalSkillRegistry as any,
-      null,
-      null,
-      null,
-      mockWorkspaceSkillRegistry as any,
+      globalBundle,
+      workspaceBundle,
       mockProvider as any,
       mockFaviconService as any,
     );

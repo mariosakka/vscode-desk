@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { writeJson } from '../../storage/jsonStore';
 
 export interface BookChapter {
   title: string;
@@ -124,6 +125,6 @@ export class BookService {
   }
 
   private saveManifest(slug: string, m: BookManifest): void {
-    fs.writeFileSync(this.manifestPath(slug), JSON.stringify(m, null, 2), 'utf-8');
+    writeJson(this.manifestPath(slug), m);
   }
 }

@@ -185,3 +185,29 @@ img {
 }
 .zoom-btn:hover { color: var(--text); border-color: var(--accent); }
 .zoom-label { font-size: 11px; color: var(--muted); min-width: 36px; text-align: center; }
+
+/* ── Content zoom ── */
+.page-content { zoom: var(--zoom); }
+
+/* ── Book / page TOC sidebar ── */
+.toc-panel { position: fixed; left: 0; top: 44px; width: 220px; height: calc(100vh - 44px); overflow-y: auto; background: var(--surface); border-right: 1px solid var(--border); padding: 12px; transition: transform .25s ease; z-index: 99; font-size: 13px; }
+.toc-panel.collapsed { transform: translateX(-100%); }
+body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px); }
+.toc-nav-btn { background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; cursor: pointer; color: var(--muted); font-size: 15px; line-height: 1; display: flex; align-items: center; flex-shrink: 0; }
+.toc-nav-btn:hover { background: var(--surface2); color: var(--text); }
+.book-nav-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
+.book-chapters-list, .book-chapters-list ul { list-style: none; padding-left: 6px; margin: 0; }
+.book-chapter-item { margin-bottom: 6px; }
+.book-chapter-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 2px; }
+.book-chapters-list ul a { color: var(--muted); text-decoration: none; font-size: 12px; line-height: 1.7; display: block; }
+.book-chapters-list ul a:hover, .book-page-active { color: var(--accent2) !important; }
+.page-toc-divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+.page-toc-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; display: block; }
+.page-toc-list { list-style: none; padding: 0; margin: 0; }
+.page-toc-list li { padding-left: 8px; }
+.page-toc-list a { color: var(--muted); text-decoration: none; font-size: 12px; line-height: 1.7; display: block; }
+.page-toc-list a:hover { color: var(--accent2); }
+.page-toc-h3 { padding-left: 14px; }
+.page-prevnext { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.prevnext-link { color: var(--accent2); text-decoration: none; font-size: 0.9rem; }
+.prevnext-link:hover { text-decoration: underline; }

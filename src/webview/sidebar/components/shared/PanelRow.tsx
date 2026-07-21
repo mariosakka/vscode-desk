@@ -11,7 +11,7 @@ interface Props {
 
 export function PanelRow({ icon, label, sublabel, onClick, actions }: Props) {
   return (
-    <div className={styles.row}>
+    <div className={styles.row} data-hover-group>
       {icon}
       <div
         className={styles.body}

@@ -7,6 +7,11 @@
     if (!a) return;
     e.preventDefault();
     e.stopPropagation();
+    const deskPage = a.getAttribute('data-desk-page');
+    if (deskPage) {
+      vscode.postMessage({ type: 'navigate', filename: deskPage });
+      return;
+    }
     const href = a.getAttribute('href');
     if (!href) return;
 
@@ -66,12 +71,12 @@
     }
 
     if (msg.type === 'toggleToc') {
-      const panel = document.getElementById('toc') || document.getElementById('book-nav');
-      const toggle = document.getElementById('toc-toggle');
+      var panel = document.getElementById('book-nav') || document.getElementById('page-toc');
+      var toggle = document.getElementById('toc-toggle');
       if (panel && toggle) {
-        const collapsed = panel.classList.toggle('collapsed');
-        toggle.textContent = collapsed ? '≡' : '←';
-        document.body.classList.toggle('toc-open', !collapsed);
+        var nowCollapsed = panel.classList.toggle('collapsed');
+        toggle.textContent = nowCollapsed ? '≡' : '←';
+        document.body.classList.toggle('toc-open', !nowCollapsed);
       }
     }
   });
@@ -81,16 +86,48 @@
     zoomLabel.textContent = Math.round(initial * 100) + '%';
   }
 
-  const tocToggle = document.getElementById('toc-toggle');
-  const tocPanel = document.getElementById('book-nav');
-  if (tocToggle && tocPanel) {
-    if (!tocPanel.classList.contains('collapsed')) {
-      document.body.classList.add('toc-open');
+  (function buildPageToc() {
+    var headings = Array.from(
+      document.querySelectorAll('.page-content h2[id], .page-content h3[id]')
+    );
+    if (headings.length === 0) return;
+
+    var bookNav = document.getElementById('book-nav');
+    var listHtml = headings.map(function(h) {
+      var cls = h.tagName === 'H3' ? ' class="page-toc-h3"' : '';
+      return '<li' + cls + '><a href="#' + h.id + '">' + h.textContent.trim() + '</a></li>';
+    }).join('');
+
+    if (bookNav) {
+      bookNav.insertAdjacentHTML('beforeend',
+        '<hr class="page-toc-divider">' +
+        '<span class="page-toc-label">On this page</span>' +
+        '<ul class="page-toc-list">' + listHtml + '</ul>'
+      );
+    } else {
+      var nav = document.createElement('nav');
+      nav.id = 'page-toc';
+      nav.className = 'toc-panel collapsed';
+      nav.innerHTML =
+        '<span class="page-toc-label">On this page</span>' +
+        '<ul class="page-toc-list">' + listHtml + '</ul>';
+      var content = document.querySelector('.page-content');
+      document.body.insertBefore(nav, content);
     }
-    tocToggle.addEventListener('click', function () {
-      const collapsed = tocPanel.classList.toggle('collapsed');
-      tocToggle.textContent = collapsed ? '≡' : '←';
-      document.body.classList.toggle('toc-open', !collapsed);
+  }());
+
+  var tocToggle = document.getElementById('toc-toggle');
+  var tocPanel = document.getElementById('book-nav') || document.getElementById('page-toc');
+  if (tocToggle && tocPanel) {
+    var collapsed = tocPanel.classList.contains('collapsed');
+    tocToggle.textContent = collapsed ? '≡' : '←';
+    if (!collapsed) { document.body.classList.add('toc-open'); }
+    tocToggle.addEventListener('click', function() {
+      var isNowCollapsed = tocPanel.classList.toggle('collapsed');
+      tocToggle.textContent = isNowCollapsed ? '≡' : '←';
+      document.body.classList.toggle('toc-open', !isNowCollapsed);
     });
+  } else if (tocToggle) {
+    tocToggle.style.display = 'none';
   }
 }());

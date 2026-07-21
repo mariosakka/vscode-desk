@@ -9,11 +9,6 @@
   margin-bottom: 8px;
 }
 
-.error {
-  font-size: 11px;
-  color: var(--vscode-errorForeground, #f48771);
-}
-
 .actions {
   display: flex;
   gap: 6px;

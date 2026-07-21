@@ -1,23 +1,9 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import { AgentAdapter } from '../../agents/agentAdapter';
-
-export interface SkillTool {
-  name: string;
-  description: string;
-  command: string;
-  args: Array<{ name: string; type: string; required?: boolean; description?: string }>;
-}
-
-export interface Skill {
-  name: string;
-  description: string;
-  content: string;
-  agents: string[];
-  version: number;
-  installedAt: number;
-  tools?: SkillTool[];
-}
+import { readJson, writeJson } from '../../storage/jsonStore';
+import { PendingStore } from '../../storage/pendingStore';
+import { Skill, SkillSummary, SkillTool } from '../../models';
+export type { Skill, SkillTool };
 
 const BUILT_IN_TOOL_NAMES = new Set([
   'list_bookmarks', 'add_bookmark', 'remove_bookmark', 'update_bookmark',
@@ -34,31 +20,24 @@ const BUILT_IN_TOOL_NAMES = new Set([
 ]);
 
 export class SkillRegistry {
-  private pending: { name: string; content: string; descriptionOverride?: string } | null = null;
+  private readonly _pending = new PendingStore<{ name: string; content: string; descriptionOverride?: string }>();
 
   constructor(private readonly dir: string) {}
 
   private readAll(): Skill[] {
-    try {
-      return JSON.parse(fs.readFileSync(path.join(this.dir, 'skills.json'), 'utf-8'));
-    } catch {
-      return [];
-    }
+    return readJson<Skill[]>(path.join(this.dir, 'skills.json'), []);
   }
 
   private writeAll(skills: Skill[]): void {
-    fs.mkdirSync(this.dir, { recursive: true });
-    fs.writeFileSync(path.join(this.dir, 'skills.json'), JSON.stringify(skills, null, 2), 'utf-8');
+    writeJson(path.join(this.dir, 'skills.json'), skills);
   }
 
   getAll(): Skill[] {
     return this.readAll();
   }
 
-  list(): Omit<Skill, 'content'>[] {
-    return this.getAll().map(({ name, description, agents, version, installedAt, tools }) => ({
-      name, description, agents, version, installedAt, tools,
-    }));
+  list(): SkillSummary[] {
+    return this.getAll().map(({ content: _content, ...summary }) => summary);
   }
 
   get(name: string): Skill | null {
@@ -102,27 +81,29 @@ export class SkillRegistry {
   }
 
   setPending(name: string, content: string, descriptionOverride?: string): void {
-    this.pending = { name, content, descriptionOverride };
+    this._pending.set({ name, content, descriptionOverride });
   }
 
   getPending(): { name: string; content: string; descriptionOverride?: string } | null {
-    return this.pending;
+    return this._pending.get();
   }
 
   clearPending(): void {
-    this.pending = null;
+    this._pending.take();
   }
 
   getPendingToolSummary(): string | null {
-    if (!this.pending) return null;
-    const fm = parseFrontmatter(this.pending.content);
+    const pending = this._pending.get();
+    if (!pending) return null;
+    const fm = parseFrontmatter(pending.content);
     if (!fm.tools?.length) return null;
     return fm.tools.map(t => `• ${t.name}: ${t.command}`).join('\n');
   }
 
   async confirmPending(adapters: AgentAdapter[]): Promise<void> {
-    if (!this.pending) return;
-    const { name, content, descriptionOverride } = this.pending;
+    const pending = this._pending.take();
+    if (!pending) return;
+    const { name, content, descriptionOverride } = pending;
     const fm = parseFrontmatter(content);
     const skillName = fm.name ?? name;
     const description = descriptionOverride ?? fm.description ?? '';
@@ -151,7 +132,6 @@ export class SkillRegistry {
 
     const body = stripFrontmatter(content);
     await this.installOnAdapters(skillName, body, agents, adapters);
-    this.pending = null;
   }
 
   async remove(name: string, adapters: AgentAdapter[]): Promise<void> {

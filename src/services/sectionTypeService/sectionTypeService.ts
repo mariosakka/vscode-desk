@@ -1,6 +1,6 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import { CustomSectionType, BUILT_IN_TYPES } from '../../pages/sectionTypes';
+import { readJson, writeJson } from '../../storage/jsonStore';
 
 export class SectionTypeService {
   private readonly filePath: string;
@@ -10,16 +10,11 @@ export class SectionTypeService {
   }
 
   private readAll(): CustomSectionType[] {
-    try {
-      return JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
-    } catch {
-      return [];
-    }
+    return readJson<CustomSectionType[]>(this.filePath, []);
   }
 
   private writeAll(types: CustomSectionType[]): void {
-    fs.mkdirSync(this.dir, { recursive: true });
-    fs.writeFileSync(this.filePath, JSON.stringify(types, null, 2), 'utf-8');
+    writeJson(this.filePath, types);
   }
 
   listAll(): Array<{ name: string; description: string; builtin: boolean }> {

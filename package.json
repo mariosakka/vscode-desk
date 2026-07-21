@@ -53,10 +53,6 @@
         "title": "Desk: Open Page"
       },
       {
-        "command": "desk.newPage",
-        "title": "Desk: New Page"
-      },
-      {
         "command": "desk.setupAgents",
         "title": "Desk: Set Up Agent MCP Integration"
       },

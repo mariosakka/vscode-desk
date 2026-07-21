@@ -65,7 +65,7 @@ remove_bookmark     → clean up
 
 \`\`\`
 list_pages          → see what exists
-create_page         → write a new .desk file
+create_page         → write a new .desk file inside a book (filename must be "slug/page.desk")
 update_page         → update the title or rebuild the page from structured sections
 delete_page         → remove a page
 \`\`\`
@@ -144,7 +144,7 @@ Libraries are global only (no scope). After \`add_library\`, sync from the sideb
 | remove_bookmark | | ✓ | bookmark_id |
 | update_bookmark | | ✓ | bookmark_id, fields |
 | list_pages | ✓ | | — |
-| create_page | | ✓ | filename, title, sections[] |
+| create_page | | ✓ | filename (slug/page.desk), title, sections[] |
 | update_page | | ✓ | filename (+ title or sections[]) |
 | delete_page | | ✓ | filename |
 | get_workflow_config | ✓ | | — |
@@ -187,7 +187,7 @@ Skills that define a \`tools\` frontmatter key expose additional tools dynamical
 
   'desk://guide/desk-page-format': `# Desk Page Format (.desk)
 
-Pages are XML files stored in \`<workspace>/desk-pages/\`. You never write raw XML — use \`create_page\` with structured sections, then use \`update_page\` to change only the title or rebuild from sections.
+Pages are XML files stored in \`<workspace>/desk-pages/\`. You never write raw XML — use \`create_page\` with structured sections, then use \`update_page\` to change only the title or rebuild from sections. \`create_page\` requires \`filename\` in \`slug/page.desk\` format — standalone pages are not supported.
 
 ## Before creating a page
 
@@ -202,7 +202,7 @@ Optional: \`eyebrow\`, \`subtitle\`
 
 \`\`\`json
 {
-  "filename": "auth-flow.desk",
+  "filename": "my-book/auth-flow.desk",
   "title": "Auth Flow",
   "eyebrow": "Reference · Backend",
   "subtitle": "How JWT tokens are issued and validated across all services.",

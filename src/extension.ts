@@ -18,8 +18,10 @@ import { CodexAdapter } from './agents/adapters/codex/codex';
 import { GeminiAdapter } from './agents/adapters/gemini/gemini';
 import { LibraryService } from './services/libraryService/libraryService';
 import { globalDir, workspaceDir } from './storage/deskDir';
-import { BookService } from './services/bookService/bookService';
+import { BookService, BookManifest } from './services/bookService/bookService';
 import { resolveWorktree } from './storage/worktreeResolver';
+import { escHtml } from './utils';
+import { ServiceBundle } from './models';
 
 export function activate(context: vscode.ExtensionContext): void {
   const worktreeLinkingEnabled = vscode.workspace.getConfiguration('desk')
@@ -73,16 +75,23 @@ export function activate(context: vscode.ExtensionContext): void {
     new GeminiAdapter(),
   ];
 
+  const globalBundle: ServiceBundle = {
+    dataService: globalDataService,
+    pageReader: globalPageReader,
+    workflowService: globalWorkflowService,
+    skillRegistry: globalSkillRegistry,
+  };
+  const workspaceBundle: ServiceBundle | null = workspaceDataService ? {
+    dataService: workspaceDataService,
+    pageReader: workspacePageReader,
+    workflowService: workspaceWorkflowService,
+    skillRegistry: workspaceSkillRegistry,
+  } : null;
+
   const provider = new SidebarViewProvider(
     context.extensionUri,
-    globalDataService,
-    globalPageReader,
-    globalWorkflowService,
-    globalSkillRegistry,
-    workspaceDataService,
-    workspacePageReader,
-    workspaceWorkflowService,
-    workspaceSkillRegistry,
+    globalBundle,
+    workspaceBundle,
     workspaceName,
     faviconService,
     adapters,
@@ -90,17 +99,36 @@ export function activate(context: vscode.ExtensionContext): void {
     bookService,
   );
 
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  const scheduleRefresh = () => {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => provider.refresh(), 150);
+  };
+
+  const deskGlobalDir = path.join(os.homedir(), '.desk');
+
+  const watcherPages = workspaceRoot
+    ? vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(workspaceRoot, 'desk-pages/**')
+      )
+    : null;
+  const watcherGlobal = vscode.workspace.createFileSystemWatcher(
+    new vscode.RelativePattern(deskGlobalDir, '**')
+  );
+
+  [watcherPages, watcherGlobal].forEach(w => {
+    if (!w) return;
+    w.onDidCreate(scheduleRefresh);
+    w.onDidChange(scheduleRefresh);
+    w.onDidDelete(scheduleRefresh);
+    context.subscriptions.push(w);
+  });
+
   const agentRegistry = new AgentRegistry(adapters, context, workspaceSkillRegistry ?? globalSkillRegistry);
 
   const mcpServer = new McpServer(
-    globalDataService,
-    globalPageReader,
-    globalWorkflowService,
-    globalSkillRegistry,
-    workspaceDataService,
-    workspacePageReader,
-    workspaceWorkflowService,
-    workspaceSkillRegistry,
+    globalBundle,
+    workspaceBundle,
     provider,
     faviconService,
     adapters,
@@ -181,90 +209,100 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }).catch(() => {});
 
-  async function pickScope(): Promise<'workspace' | 'global' | undefined> {
-    if (!workspaceDataService) return 'global';
-    const pick = await vscode.window.showQuickPick(
+  async function pickScopedService<T>(
+    workspaceVal: T | null,
+    globalVal: T,
+  ): Promise<{ value: T; scope: 'workspace' | 'global' } | undefined> {
+    if (!workspaceVal) return { value: globalVal, scope: 'global' };
+    const scope = await vscode.window.showQuickPick(
       [
         { label: 'Workspace', description: workspaceName ?? '', value: 'workspace' as const },
         { label: 'Global', description: 'Available in all workspaces', value: 'global' as const },
       ],
       { placeHolder: 'Choose scope' },
     );
-    return pick?.value;
+    if (!scope) return undefined;
+    return { value: scope.value === 'workspace' ? workspaceVal : globalVal, scope: scope.value };
+  }
+
+  async function pickBook(): Promise<{ slug: string; label: string } | undefined> {
+    if (!bookService) { vscode.window.showErrorMessage('Desk: No workspace open'); return undefined; }
+    const books = bookService.list();
+    if (books.length === 0) { vscode.window.showInformationMessage('Desk: No books yet'); return undefined; }
+    return vscode.window.showQuickPick(
+      books.map(b => ({ label: b.title, description: `${b.pageCount} pages`, slug: b.slug })),
+      { placeHolder: 'Select book' },
+    );
+  }
+
+  async function pickChapter(manifest: BookManifest): Promise<{ index: number; label: string } | undefined> {
+    if (manifest.chapters.length === 0) return undefined;
+    return vscode.window.showQuickPick(
+      manifest.chapters.map((ch, i) => ({ label: ch.title, index: i })),
+      { placeHolder: 'Select chapter' },
+    );
   }
 
   context.subscriptions.push(
     vscode.commands.registerCommand('desk.addBookmark', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdAddBookmark(ds, faviconService, provider);
+      const picked = await pickScopedService(workspaceDataService, globalDataService);
+      if (!picked) return;
+      await cmdAddBookmark(picked.value, faviconService, provider);
     }),
     vscode.commands.registerCommand('desk.removeBookmark', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdRemoveBookmark(ds, provider);
+      const picked = await pickScopedService(workspaceDataService, globalDataService);
+      if (!picked) return;
+      await cmdRemoveBookmark(picked.value, provider);
     }),
     vscode.commands.registerCommand('desk.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageReader)),
-    vscode.commands.registerCommand('desk.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageReader)),
     vscode.commands.registerCommand('desk.setupAgents',           () => agentRegistry.showSetupPromptForced(resolvedPort)),
     vscode.commands.registerCommand('desk.configureWorkflow', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const svc = scope === 'workspace' ? (workspaceWorkflowService ?? globalWorkflowService) : globalWorkflowService;
-      await cmdConfigureWorkflow(svc);
+      const picked = await pickScopedService(workspaceWorkflowService, globalWorkflowService);
+      if (!picked) return;
+      await cmdConfigureWorkflow(picked.value);
     }),
     vscode.commands.registerCommand('desk.installWorkflowSkills', () => agentRegistry.showSkillInstallPromptForced()),
     vscode.commands.registerCommand('desk.openUrl',        () => cmdOpenUrl()),
     vscode.commands.registerCommand('desk.updateBookmark', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdUpdateBookmark(ds, faviconService, provider);
+      const picked = await pickScopedService(workspaceDataService, globalDataService);
+      if (!picked) return;
+      await cmdUpdateBookmark(picked.value, faviconService, provider);
     }),
     vscode.commands.registerCommand('desk.deletePage', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const store = scope === 'workspace' ? (workspacePageReader ?? globalPageReader) : globalPageReader;
-      await cmdDeletePage(store, provider);
+      const picked = await pickScopedService(workspacePageReader, globalPageReader);
+      if (!picked) return;
+      await cmdDeletePage(picked.value, provider);
     }),
     vscode.commands.registerCommand('desk.removeSkill', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
-      await cmdRemoveSkill(registry, adapters, provider);
+      const picked = await pickScopedService(workspaceSkillRegistry, globalSkillRegistry);
+      if (!picked) return;
+      await cmdRemoveSkill(picked.value, adapters, provider);
     }),
     vscode.commands.registerCommand('desk.newSkill',    () => cmdNewSkill()),
     vscode.commands.registerCommand('desk.editSkill', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
-      await cmdEditSkill(registry);
+      const picked = await pickScopedService(workspaceSkillRegistry, globalSkillRegistry);
+      if (!picked) return;
+      await cmdEditSkill(picked.value);
     }),
     vscode.commands.registerCommand('desk.submitSkill', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
-      await cmdSubmitSkill(registry, adapters, provider);
+      const picked = await pickScopedService(workspaceSkillRegistry, globalSkillRegistry);
+      if (!picked) return;
+      await cmdSubmitSkill(picked.value, adapters, provider);
     }),
     vscode.commands.registerCommand('desk.listBookmarks', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const ds = scope === 'workspace' ? (workspaceDataService ?? globalDataService) : globalDataService;
-      await cmdListBookmarks(ds);
+      const picked = await pickScopedService(workspaceDataService, globalDataService);
+      if (!picked) return;
+      await cmdListBookmarks(picked.value);
     }),
     vscode.commands.registerCommand('desk.listSkills', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const registry = scope === 'workspace' ? (workspaceSkillRegistry ?? globalSkillRegistry) : globalSkillRegistry;
-      await cmdListSkills(registry);
+      const picked = await pickScopedService(workspaceSkillRegistry, globalSkillRegistry);
+      if (!picked) return;
+      await cmdListSkills(picked.value);
     }),
     vscode.commands.registerCommand('desk.viewWorkflow', async () => {
-      const scope = await pickScope();
-      if (scope === undefined) return;
-      const svc = scope === 'workspace' ? (workspaceWorkflowService ?? globalWorkflowService) : globalWorkflowService;
-      await cmdViewWorkflow(svc);
+      const picked = await pickScopedService(workspaceWorkflowService, globalWorkflowService);
+      if (!picked) return;
+      await cmdViewWorkflow(picked.value);
     }),
 
     vscode.commands.registerCommand('desk.newBook', async () => {
@@ -276,141 +314,94 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
 
     vscode.commands.registerCommand('desk.openBook', async () => {
-      if (!bookService || !workspacePageReader) return;
-      const books = bookService.list();
-      if (!books.length) { vscode.window.showInformationMessage('Desk: No books found.'); return; }
-      const pick = await vscode.window.showQuickPick(
-        books.map(b => ({ label: b.title, description: `${b.pageCount} pages`, slug: b.slug })),
-        { placeHolder: 'Select a book to open' },
-      );
+      if (!workspacePageReader) return;
+      const pick = await pickBook();
       if (!pick) return;
-      const manifest = bookService.get(pick.slug);
+      const manifest = bookService!.get(pick.slug);
       const firstPage = manifest.chapters[0]?.pages[0];
       if (firstPage) PageViewPanel.open(context.extensionUri, workspacePageReader, `${pick.slug}/${firstPage}`);
       else vscode.window.showInformationMessage('Desk: This book has no pages yet.');
     }),
 
     vscode.commands.registerCommand('desk.deleteBook', async () => {
-      if (!bookService) return;
-      const books = bookService.list();
-      if (!books.length) { vscode.window.showInformationMessage('Desk: No books found.'); return; }
-      const pick = await vscode.window.showQuickPick(
-        books.map(b => ({ label: b.title, slug: b.slug })),
-        { placeHolder: 'Select a book to delete' },
-      );
+      const pick = await pickBook();
       if (!pick) return;
       const confirm = await vscode.window.showWarningMessage(
         `Delete book "${pick.label}" and all its pages?`, { modal: true }, 'Delete',
       );
       if (confirm !== 'Delete') return;
-      bookService.delete(pick.slug);
+      bookService!.delete(pick.slug);
       provider.refresh();
     }),
 
     vscode.commands.registerCommand('desk.addChapter', async () => {
-      if (!bookService) return;
-      const books = bookService.list();
-      if (!books.length) { vscode.window.showInformationMessage('Desk: No books found.'); return; }
-      const bookPick = await vscode.window.showQuickPick(
-        books.map(b => ({ label: b.title, slug: b.slug })), { placeHolder: 'Select a book' },
-      );
+      const bookPick = await pickBook();
       if (!bookPick) return;
       const title = await vscode.window.showInputBox({ prompt: 'Chapter title' });
       if (!title?.trim()) return;
-      bookService.addChapter(bookPick.slug, title.trim());
+      bookService!.addChapter(bookPick.slug, title.trim());
       provider.refresh();
     }),
 
     vscode.commands.registerCommand('desk.renameChapter', async () => {
-      if (!bookService) return;
-      const books = bookService.list();
-      if (!books.length) return;
-      const bookPick = await vscode.window.showQuickPick(
-        books.map(b => ({ label: b.title, slug: b.slug })), { placeHolder: 'Select a book' },
-      );
+      const bookPick = await pickBook();
       if (!bookPick) return;
-      const manifest = bookService.get(bookPick.slug);
+      const manifest = bookService!.get(bookPick.slug);
       if (!manifest.chapters.length) { vscode.window.showInformationMessage('Desk: This book has no chapters.'); return; }
-      const chPick = await vscode.window.showQuickPick(
-        manifest.chapters.map((c, i) => ({ label: c.title, index: i })), { placeHolder: 'Select a chapter' },
-      );
+      const chPick = await pickChapter(manifest);
       if (!chPick) return;
       const newTitle = await vscode.window.showInputBox({ prompt: 'New chapter title', value: chPick.label });
       if (!newTitle?.trim()) return;
-      bookService.renameChapter(bookPick.slug, chPick.index, newTitle.trim());
+      bookService!.renameChapter(bookPick.slug, chPick.index, newTitle.trim());
       provider.refresh();
     }),
 
     vscode.commands.registerCommand('desk.removeChapter', async () => {
-      if (!bookService) return;
-      const books = bookService.list();
-      if (!books.length) return;
-      const bookPick = await vscode.window.showQuickPick(
-        books.map(b => ({ label: b.title, slug: b.slug })), { placeHolder: 'Select a book' },
-      );
+      const bookPick = await pickBook();
       if (!bookPick) return;
-      const manifest = bookService.get(bookPick.slug);
-      if (!manifest.chapters.length) return;
-      const chPick = await vscode.window.showQuickPick(
-        manifest.chapters.map((c, i) => ({ label: c.title, index: i })), { placeHolder: 'Select a chapter to remove' },
-      );
+      const manifest = bookService!.get(bookPick.slug);
+      const chPick = await pickChapter(manifest);
       if (!chPick) return;
       const confirm = await vscode.window.showWarningMessage(
         `Remove chapter "${chPick.label}" and delete its pages?`, { modal: true }, 'Remove',
       );
       if (confirm !== 'Remove') return;
-      bookService.removeChapter(bookPick.slug, chPick.index);
+      bookService!.removeChapter(bookPick.slug, chPick.index);
       provider.refresh();
     }),
 
     vscode.commands.registerCommand('desk.newBookPage', async () => {
-      if (!bookService || !workspacePageReader) return;
-      const books = bookService.list();
-      if (!books.length) { vscode.window.showInformationMessage('Desk: No books found.'); return; }
-      const bookPick = await vscode.window.showQuickPick(
-        books.map(b => ({ label: b.title, slug: b.slug })), { placeHolder: 'Select a book' },
-      );
+      if (!workspacePageReader) return;
+      const bookPick = await pickBook();
       if (!bookPick) return;
-      const manifest = bookService.get(bookPick.slug);
-      if (!manifest.chapters.length) {
-        vscode.window.showInformationMessage('Desk: Add a chapter to this book first.');
-        return;
-      }
-      const chPick = await vscode.window.showQuickPick(
-        manifest.chapters.map((c, i) => ({ label: c.title, index: i })), { placeHolder: 'Select a chapter' },
-      );
+      const manifest = bookService!.get(bookPick.slug);
+      if (!manifest.chapters.length) { vscode.window.showInformationMessage('Desk: Add a chapter to this book first.'); return; }
+      const chPick = await pickChapter(manifest);
       if (!chPick) return;
       const title = await vscode.window.showInputBox({ prompt: 'Page title' });
       if (!title?.trim()) return;
       const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'page';
       const filename = `${bookPick.slug}/${slug}.desk`;
       workspacePageReader.write(filename, title.trim(), `<section class="page-intro"><h1>${title.trim()}</h1></section>\n`);
-      bookService.addPageToChapter(bookPick.slug, `${slug}.desk`, chPick.index);
+      bookService!.addPageToChapter(bookPick.slug, `${slug}.desk`, chPick.index);
       provider.refresh();
       const uri = vscode.Uri.file(workspacePageReader.filePath(filename));
       await vscode.window.showTextDocument(uri);
     }),
 
     vscode.commands.registerCommand('desk.moveBookPage', async () => {
-      if (!bookService) return;
-      const books = bookService.list();
-      if (!books.length) return;
-      const bookPick = await vscode.window.showQuickPick(
-        books.map(b => ({ label: b.title, slug: b.slug })), { placeHolder: 'Select a book' },
-      );
+      const bookPick = await pickBook();
       if (!bookPick) return;
-      const manifest = bookService.get(bookPick.slug);
+      const manifest = bookService!.get(bookPick.slug);
       const allPages = manifest.chapters.flatMap((c, ci) =>
         c.pages.map(p => ({ label: p, description: `Chapter: ${c.title}`, filename: p, chapterIndex: ci }))
       );
       if (!allPages.length) { vscode.window.showInformationMessage('Desk: This book has no pages.'); return; }
       const pagePick = await vscode.window.showQuickPick(allPages, { placeHolder: 'Select a page to move' });
       if (!pagePick) return;
-      const chPick = await vscode.window.showQuickPick(
-        manifest.chapters.map((c, i) => ({ label: c.title, index: i })), { placeHolder: 'Move to chapter' },
-      );
+      const chPick = await pickChapter(manifest);
       if (!chPick) return;
-      bookService.movePage(bookPick.slug, pagePick.filename, chPick.index);
+      bookService!.movePage(bookPick.slug, pagePick.filename, chPick.index);
       provider.refresh();
     }),
 
@@ -496,35 +487,9 @@ async function cmdOpenPage(extensionUri: vscode.Uri, pageStore: PageReader | nul
   PageViewPanel.open(extensionUri, pageStore, pick.filename);
 }
 
-async function cmdNewPage(pageStore: PageReader | null): Promise<void> {
-  if (!pageStore) {
-    vscode.window.showErrorMessage('Desk: No page store available.');
-    return;
-  }
-  const title = await vscode.window.showInputBox({ prompt: 'Page title', ignoreFocusOut: true });
-  if (!title) return;
-
-  const rawFilename = await vscode.window.showInputBox({
-    prompt: 'File name (leave blank to derive from title)',
-    ignoreFocusOut: true,
-  });
-  const filename = normalizeFilename(rawFilename?.trim() || title) + '.desk';
-
-  if (pageStore.list().some(p => p.filename === filename)) {
-    vscode.window.showWarningMessage(`A page named "${filename}" already exists.`);
-    return;
-  }
-
-  pageStore.write(filename, title, `<p>Start writing your <strong>${escHtml(title)}</strong> page here.</p>`);
-  vscode.window.showInformationMessage(`Desk: created ${filename} in pages/`);
-}
 
 function normalizeFilename(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-function escHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 async function showConfigConfirmPrompt(

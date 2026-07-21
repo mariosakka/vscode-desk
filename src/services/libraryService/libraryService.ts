@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as https from 'https';
+import { readJson, writeJson } from '../../storage/jsonStore';
 
 export interface LibraryFile {
   url: string;
@@ -72,11 +73,7 @@ export class LibraryService {
   }
 
   list(): Library[] {
-    try {
-      return JSON.parse(fs.readFileSync(this.configPath, 'utf-8')) as Library[];
-    } catch {
-      return DEFAULT_LIBRARIES.map(l => ({ ...l, files: [...l.files] }));
-    }
+    return readJson<Library[]>(this.configPath, DEFAULT_LIBRARIES.map(l => ({ ...l, files: [...l.files] })));
   }
 
   get(name: string): Library | null {
@@ -84,8 +81,7 @@ export class LibraryService {
   }
 
   private _save(libraries: Library[]): void {
-    fs.mkdirSync(this.dir, { recursive: true });
-    fs.writeFileSync(this.configPath, JSON.stringify(libraries, null, 2), 'utf-8');
+    writeJson(this.configPath, libraries);
   }
 
   add(entry: Library): void {

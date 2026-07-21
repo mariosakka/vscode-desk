@@ -40,6 +40,3 @@
   flex-shrink: 0;
 }
 
-.row:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
-.row:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
-.row:hover [data-hover-btn='accent']:hover { color: var(--accent2); }

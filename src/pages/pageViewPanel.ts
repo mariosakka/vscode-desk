@@ -4,6 +4,12 @@ import * as path from 'path';
 import { PageReader, PageContent } from './pageReader';
 import { LibraryService } from '../services/libraryService/libraryService';
 import { BookService, BookManifest } from '../services/bookService/bookService';
+import { getNonce, escHtml } from '../utils';
+
+function parseBookFilename(filename: string): { slug: string; pageFile: string } | null {
+  const parts = filename.split('/');
+  return parts.length === 2 ? { slug: parts[0], pageFile: parts[1] } : null;
+}
 
 export class PageViewPanel {
   private static _panels = new Map<string, PageViewPanel>();
@@ -143,28 +149,7 @@ export class PageViewPanel {
     const prevNextHtml = (isBookPage && PageViewPanel._bookService)
       ? this._renderPrevNext(filename)
       : '';
-    const bookNavCss = bookNavHtml ? `
-<style>
-.toc-panel { position: fixed; left: 0; top: 44px; width: 220px; height: calc(100vh - 44px); overflow-y: auto; background: var(--surface); border-right: 1px solid var(--border); padding: 12px; transition: transform .25s ease; z-index: 99; font-size: 13px; }
-.toc-panel.collapsed { transform: translateX(-100%); }
-body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px); }
-.toc-nav-btn { background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; cursor: pointer; color: var(--muted); font-size: 15px; line-height: 1; display: flex; align-items: center; flex-shrink: 0; }
-.toc-nav-btn:hover { background: var(--surface2); color: var(--text); }
-.book-nav-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
-.book-chapters-list, .book-chapters-list ul { list-style: none; padding-left: 6px; margin: 0; }
-.book-chapter-item { margin-bottom: 6px; }
-.book-chapter-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 2px; }
-.book-chapters-list ul a { color: var(--muted); text-decoration: none; font-size: 12px; line-height: 1.7; display: block; }
-.book-chapters-list ul a:hover, .book-page-active { color: var(--accent2) !important; }
-.page-prevnext { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
-.prevnext-link { color: var(--accent2); text-decoration: none; font-size: 0.9rem; }
-.prevnext-link:hover { text-decoration: underline; }
-</style>` : '';
-
-    const tocCollapsed = vscode.workspace.getConfiguration('desk').get<boolean>('pageViewer.tocCollapsed', false);
-    const tocToggleHtml = bookNavHtml
-      ? `<button id="toc-toggle" class="toc-nav-btn" aria-label="Toggle book navigation">${tocCollapsed ? '≡' : '←'}</button>`
-      : '';
+    const tocToggleHtml = `<button id="toc-toggle" class="toc-nav-btn" aria-label="Toggle navigation">≡</button>`;
 
     const templatePath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'page', 'index.html');
     const template = fs.readFileSync(templatePath, 'utf-8');
@@ -179,17 +164,17 @@ body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px)
       .replace(/\$\{libraryStyles\}/g, libraryStyles)
       .replace(/\$\{libraryScripts\}/g, libraryScripts)
       .replace(/\$\{pageScripts\}/g, pageScripts)
-      .replace(/\$\{content\}/g, bookNavHtml + page.bodyHtml + prevNextHtml)
-      .replace(/\$\{bookNavCss\}/g, bookNavCss)
+      .replace(/\$\{content\}/g, page.bodyHtml + prevNextHtml)
+      .replace(/\$\{bookNav\}/g, bookNavHtml)
       .replace(/\$\{tocToggle\}/g, tocToggleHtml)
       .replace(/\$\{zoom\}/g, String(zoom));
   }
 
   private _renderBookNav(filename: string): string {
     const svc = PageViewPanel._bookService;
-    if (!svc || !filename.includes('/')) return '';
-    const slug = filename.split('/')[0];
-    const pageFile = filename.split('/')[1];
+    const parsed = parseBookFilename(filename);
+    if (!svc || !parsed) return '';
+    const { slug, pageFile } = parsed;
     let manifest: BookManifest;
     try { manifest = svc.get(slug); } catch { return ''; }
 
@@ -211,8 +196,9 @@ body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px)
 
   private _renderPrevNext(filename: string): string {
     const svc = PageViewPanel._bookService;
-    if (!svc || !filename.includes('/')) return '';
-    const slug = filename.split('/')[0];
+    const parsed = parseBookFilename(filename);
+    if (!svc || !parsed) return '';
+    const { slug } = parsed;
     let flat: string[];
     try { flat = svc.getFlatPageList(slug); } catch { return ''; }
     const idx = flat.indexOf(filename);
@@ -220,22 +206,17 @@ body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px)
     const prev = idx > 0 ? flat[idx - 1] : null;
     const next = idx < flat.length - 1 ? flat[idx + 1] : null;
     const prevLink = prev
-      ? `<a class="prevnext-link prevnext-prev" href="#" data-desk-page="${escHtml(prev)}">← ${escHtml(prev.split('/')[1].replace(/\.desk$/, ''))}</a>`
+      ? (() => {
+          const prevParsed = parseBookFilename(prev);
+          return `<a class="prevnext-link prevnext-prev" href="#" data-desk-page="${escHtml(prev)}">← ${escHtml(prevParsed?.pageFile.replace(/\.desk$/, '') ?? '')}</a>`;
+        })()
       : '<span></span>';
     const nextLink = next
-      ? `<a class="prevnext-link prevnext-next" href="#" data-desk-page="${escHtml(next)}">${escHtml(next.split('/')[1].replace(/\.desk$/, ''))} →</a>`
+      ? (() => {
+          const nextParsed = parseBookFilename(next);
+          return `<a class="prevnext-link prevnext-next" href="#" data-desk-page="${escHtml(next)}">${escHtml(nextParsed?.pageFile.replace(/\.desk$/, '') ?? '')} →</a>`;
+        })()
       : '<span></span>';
     return `<div class="page-prevnext">${prevLink}${nextLink}</div>`;
   }
-}
-
-function getNonce(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let s = '';
-  for (let i = 0; i < 32; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
-  return s;
-}
-
-function escHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

@@ -45,7 +45,7 @@ export function InlineBookmarkForm({ existingTitles, onSubmit, onCancel }: Props
       <input className={inputStyles.field} value={url}
         onChange={e => setUrl(e.target.value)}
         onKeyDown={handleKeyDown} placeholder="URL (e.g. example.com)" />
-      {error && <span className={styles.error}>{error}</span>}
+      {error && <span className={inputStyles.error}>{error}</span>}
       <div className={styles.actions}>
         <button type="submit" className={btnStyles.primary} disabled={!title.trim() || !url.trim()}>Add</button>
         <button type="button" className={btnStyles.secondary} onClick={onCancel}>Cancel</button>

@@ -57,7 +57,7 @@ test('clicking a #hash link does not post a message', async ({ page }) => {
     content: '<p><a href="#section1">Jump</a></p><h2 id="section1">Section</h2>',
   }));
 
-  await page.locator('a[href="#section1"]').click();
+  await page.locator('a[href="#section1"]').filter({ hasText: 'Jump' }).click();
 
   const msgs = await page.evaluate(() => (window as any).__sentMessages);
   expect(msgs.length).toBe(0);

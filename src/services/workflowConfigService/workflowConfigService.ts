@@ -1,56 +1,39 @@
-import * as fs from 'fs';
 import * as path from 'path';
-
-export interface WorkflowChannel {
-  label: string;
-  channel: string;
-}
-
-export interface WorkflowSetting {
-  label: string;
-  value: string;
-}
-
-export interface WorkflowConfig {
-  communication: WorkflowChannel[];
-  general: WorkflowSetting[];
-}
+import { readJson, writeJson } from '../../storage/jsonStore';
+import { PendingStore } from '../../storage/pendingStore';
+import { WorkflowChannel, WorkflowSetting, WorkflowConfig } from '../../models';
+export type { WorkflowChannel, WorkflowSetting, WorkflowConfig };
 
 export class WorkflowConfigService {
-  private pending: WorkflowConfig | null = null;
+  private readonly _pending = new PendingStore<WorkflowConfig>();
 
   constructor(private readonly dir: string) {}
 
   get(): WorkflowConfig | undefined {
-    try {
-      return JSON.parse(fs.readFileSync(path.join(this.dir, 'workflow.json'), 'utf-8'));
-    } catch {
-      return undefined;
-    }
+    return readJson<WorkflowConfig | undefined>(path.join(this.dir, 'workflow.json'), undefined);
   }
 
   save(config: WorkflowConfig): void {
-    fs.mkdirSync(this.dir, { recursive: true });
-    fs.writeFileSync(path.join(this.dir, 'workflow.json'), JSON.stringify(config, null, 2), 'utf-8');
+    writeJson(path.join(this.dir, 'workflow.json'), config);
   }
 
   setPending(incoming: Partial<WorkflowConfig>): void {
     const existing = this.get() ?? { communication: [], general: [] };
-    this.pending = { ...existing, ...incoming };
+    this._pending.set({ ...existing, ...incoming });
   }
 
   getPending(): WorkflowConfig | null {
-    return this.pending;
+    return this._pending.get();
   }
 
   confirmPending(): void {
-    if (this.pending) {
-      this.save(this.pending);
-      this.pending = null;
+    const pending = this._pending.take();
+    if (pending) {
+      this.save(pending);
     }
   }
 
   clearPending(): void {
-    this.pending = null;
+    this._pending.take();
   }
 }
