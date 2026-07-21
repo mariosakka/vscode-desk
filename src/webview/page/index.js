@@ -7,6 +7,11 @@
     if (!a) return;
     e.preventDefault();
     e.stopPropagation();
+    const deskPage = a.getAttribute('data-desk-page');
+    if (deskPage) {
+      vscode.postMessage({ type: 'navigate', filename: deskPage });
+      return;
+    }
     const href = a.getAttribute('href');
     if (!href) return;
 
