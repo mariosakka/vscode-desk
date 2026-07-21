@@ -1,6 +1,6 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import { AgentAdapter } from '../../agents/agentAdapter';
+import { readJson, writeJson } from '../../storage/jsonStore';
 
 export interface SkillTool {
   name: string;
@@ -39,16 +39,11 @@ export class SkillRegistry {
   constructor(private readonly dir: string) {}
 
   private readAll(): Skill[] {
-    try {
-      return JSON.parse(fs.readFileSync(path.join(this.dir, 'skills.json'), 'utf-8'));
-    } catch {
-      return [];
-    }
+    return readJson<Skill[]>(path.join(this.dir, 'skills.json'), []);
   }
 
   private writeAll(skills: Skill[]): void {
-    fs.mkdirSync(this.dir, { recursive: true });
-    fs.writeFileSync(path.join(this.dir, 'skills.json'), JSON.stringify(skills, null, 2), 'utf-8');
+    writeJson(path.join(this.dir, 'skills.json'), skills);
   }
 
   getAll(): Skill[] {

@@ -1,5 +1,5 @@
-import * as fs from 'fs';
 import * as path from 'path';
+import { readJson, writeJson } from '../../storage/jsonStore';
 
 export interface WorkflowChannel {
   label: string;
@@ -22,16 +22,11 @@ export class WorkflowConfigService {
   constructor(private readonly dir: string) {}
 
   get(): WorkflowConfig | undefined {
-    try {
-      return JSON.parse(fs.readFileSync(path.join(this.dir, 'workflow.json'), 'utf-8'));
-    } catch {
-      return undefined;
-    }
+    return readJson<WorkflowConfig | undefined>(path.join(this.dir, 'workflow.json'), undefined);
   }
 
   save(config: WorkflowConfig): void {
-    fs.mkdirSync(this.dir, { recursive: true });
-    fs.writeFileSync(path.join(this.dir, 'workflow.json'), JSON.stringify(config, null, 2), 'utf-8');
+    writeJson(path.join(this.dir, 'workflow.json'), config);
   }
 
   setPending(incoming: Partial<WorkflowConfig>): void {
