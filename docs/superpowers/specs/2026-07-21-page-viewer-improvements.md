@@ -3,12 +3,13 @@ _2026-07-21_
 
 ## Overview
 
-Four related improvements to the `.desk` page viewer and its data model:
+Five related improvements to the `.desk` page viewer and its data model:
 
 1. **Zoom** — make content zoom actually work end-to-end
 2. **Auto-generated page TOC** — build a heading-anchor sidebar client-side and integrate it with the book navigation panel
 3. **Fix broken book navigation links** — `data-desk-page` links silently no-op because the click handler hits `href="#"` and exits early
 4. **No standalone page creation** — remove all creation entry points; enforce `slug/page.desk` format in the MCP `create_page` tool
+5. **Live sidebar refresh** — sidebar must reflect any data change (MCP mutations, external edits) without requiring a manual window reload
 
 ---
 
@@ -135,9 +136,33 @@ The `create_page` tool is not removed — agents use it to create book pages wit
 
 ---
 
+## 5. Live sidebar refresh
+
+### Root cause
+
+Every VS Code command handler calls `provider.refresh()` manually after mutating data. MCP tool calls go through the services directly with no path back to the sidebar, so any MCP mutation (adding a book page, updating a bookmark, installing a skill) leaves the sidebar stale until the webview is manually reloaded.
+
+### Fix
+
+Set up two `FileSystemWatcher` instances in `extension.ts` immediately after the sidebar provider is created:
+
+1. `vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceRoot, 'desk-pages/**'))` — watches for page and book-manifest changes inside the workspace
+2. `vscode.workspace.createFileSystemWatcher(path.join(os.homedir(), '.desk', '**'))` — watches for bookmark, skill, workflow, library, and template changes in the global data directory
+
+On any `onDidCreate`, `onDidChange`, or `onDidDelete` event from either watcher, call `provider.refresh()`. Debounce with a 150 ms trailing timeout so rapid successive writes (e.g. a script writing several files) coalesce into a single refresh.
+
+Both watchers must be pushed to `context.subscriptions` so they are disposed when the extension deactivates.
+
+The existing per-command `provider.refresh()` calls remain — they provide immediate feedback for in-VS-Code operations before the file watcher fires.
+
+**Files changed:** `src/extension.ts` (add two watchers + debounce helper after provider construction).
+
+---
+
 ## Testing
 
 - **Zoom**: open a book page, zoom in with Ctrl+=, verify body text, headings, images, and user-styled content all scale; verify the nav bar stays fixed size.
 - **Page TOC**: open a book page with h2/h3 headings → verify "On this page" section appears in the left sidebar; click a heading link → verify smooth scroll; open a standalone page with headings → verify a standalone `#page-toc` panel appears and the TOC toggle button shows.
 - **Navigation links**: click a chapter page link in the book nav → verify the page loads; click prev/next links → verify navigation works.
 - **No standalone creation**: verify "New Page" form is gone from the sidebar; verify `desk.newPage` command is absent from Ctrl+Shift+P; verify `create_page` MCP call with `filename: "standalone.desk"` returns an error; verify `create_page` with `filename: "mybook/page.desk"` still succeeds.
+- **Live refresh**: add a book page via MCP `create_page` → verify the sidebar updates within ~200 ms without any manual action; edit a bookmark file on disk → verify the sidebar reflects the change.
