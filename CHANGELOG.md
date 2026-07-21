@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.14.0](https://github.com/mariosakka/vscode-desk/compare/v0.13.4...v0.14.0) (2026-07-21)
+
+
+### Features
+
+* auto-generate page heading TOC and unify sidebar toggle wiring ([fea1d4a](https://github.com/mariosakka/vscode-desk/commit/fea1d4a2e00bdb0f1a29ba28dc721dc15845ddef))
+* centralize sidebar refresh after every MCP tool call and add file-system watchers ([e3e580f](https://github.com/mariosakka/vscode-desk/commit/e3e580fbf6adb114f4d09498c20fb284b2f33f57))
+* page viewer improvements and codebase refactoring ([9d8f7a2](https://github.com/mariosakka/vscode-desk/commit/9d8f7a26850099ed3313d78cb2bc7e635df9046e))
+* remove standalone page creation and enforce book-slug prefix in create_page ([fae2bdc](https://github.com/mariosakka/vscode-desk/commit/fae2bdcea8fc9a9914b23919c1954f6b53baa0ce))
+
+
+### Bug Fixes
+
+* apply zoom to page-content element and move TOC CSS to index.css ([fae03ff](https://github.com/mariosakka/vscode-desk/commit/fae03fff0fa58a0be06bf576be6051f3f12b8a08))
+* check data-desk-page attribute before href in page viewer click handler ([8716f41](https://github.com/mariosakka/vscode-desk/commit/8716f41834ac4d18c61f852c9d1e5e93a58c58d5))
+* filter hash-link locator by text to avoid matching auto-generated TOC link ([fc91842](https://github.com/mariosakka/vscode-desk/commit/fc91842459fdc0cfa8a0d2c8459678f1dc7f3cb5))
+* move book nav HTML outside page-content so zoom does not scale the sidebar ([0fbeda5](https://github.com/mariosakka/vscode-desk/commit/0fbeda568c4e77edd6be1d9d189044d5c0f74e41))
+* preserve pretty-printing in get_workspace_context response ([59656c1](https://github.com/mariosakka/vscode-desk/commit/59656c18d6b05eba17be21725a03094965e4a68e))
+* restore behavior regressions in pickScopedService, pickBook, pickChapter helpers ([e9deea5](https://github.com/mariosakka/vscode-desk/commit/e9deea53a79c34a7aedcd90f30d41f80a0fbb2dd))
+* restore workspace-default scope resolution when scope arg is omitted ([6dcf2d2](https://github.com/mariosakka/vscode-desk/commit/6dcf2d2e4f8e93deaf31090eed75eb4c63f37c17))
+* use .first() on hash-link locator in e2e test to handle auto-generated TOC links ([f9ae666](https://github.com/mariosakka/vscode-desk/commit/f9ae666f2f881371264f92682e80e909ab6a4222))
+
 ## [0.13.4](https://github.com/mariosakka/vscode-desk/compare/v0.13.3...v0.13.4) (2026-07-20)
 
 
