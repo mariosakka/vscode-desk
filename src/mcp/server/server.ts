@@ -523,7 +523,7 @@ export class McpServer {
       }
 
       case 'get_workspace_context': {
-        return textResult(this._workspaceContext());
+        return textResult(JSON.stringify(this._workspaceContext(), null, 2));
       }
 
       default: {
