@@ -6,6 +6,11 @@ import { LibraryService } from '../services/libraryService/libraryService';
 import { BookService, BookManifest } from '../services/bookService/bookService';
 import { getNonce, escHtml } from '../utils';
 
+function parseBookFilename(filename: string): { slug: string; pageFile: string } | null {
+  const parts = filename.split('/');
+  return parts.length === 2 ? { slug: parts[0], pageFile: parts[1] } : null;
+}
+
 export class PageViewPanel {
   private static _panels = new Map<string, PageViewPanel>();
   private static _libraryService: LibraryService | null = null;
@@ -167,9 +172,9 @@ export class PageViewPanel {
 
   private _renderBookNav(filename: string): string {
     const svc = PageViewPanel._bookService;
-    if (!svc || !filename.includes('/')) return '';
-    const slug = filename.split('/')[0];
-    const pageFile = filename.split('/')[1];
+    const parsed = parseBookFilename(filename);
+    if (!svc || !parsed) return '';
+    const { slug, pageFile } = parsed;
     let manifest: BookManifest;
     try { manifest = svc.get(slug); } catch { return ''; }
 
@@ -191,8 +196,9 @@ export class PageViewPanel {
 
   private _renderPrevNext(filename: string): string {
     const svc = PageViewPanel._bookService;
-    if (!svc || !filename.includes('/')) return '';
-    const slug = filename.split('/')[0];
+    const parsed = parseBookFilename(filename);
+    if (!svc || !parsed) return '';
+    const { slug } = parsed;
     let flat: string[];
     try { flat = svc.getFlatPageList(slug); } catch { return ''; }
     const idx = flat.indexOf(filename);
@@ -200,10 +206,16 @@ export class PageViewPanel {
     const prev = idx > 0 ? flat[idx - 1] : null;
     const next = idx < flat.length - 1 ? flat[idx + 1] : null;
     const prevLink = prev
-      ? `<a class="prevnext-link prevnext-prev" href="#" data-desk-page="${escHtml(prev)}">← ${escHtml(prev.split('/')[1].replace(/\.desk$/, ''))}</a>`
+      ? (() => {
+          const prevParsed = parseBookFilename(prev);
+          return `<a class="prevnext-link prevnext-prev" href="#" data-desk-page="${escHtml(prev)}">← ${escHtml(prevParsed?.pageFile.replace(/\.desk$/, '') ?? '')}</a>`;
+        })()
       : '<span></span>';
     const nextLink = next
-      ? `<a class="prevnext-link prevnext-next" href="#" data-desk-page="${escHtml(next)}">${escHtml(next.split('/')[1].replace(/\.desk$/, ''))} →</a>`
+      ? (() => {
+          const nextParsed = parseBookFilename(next);
+          return `<a class="prevnext-link prevnext-next" href="#" data-desk-page="${escHtml(next)}">${escHtml(nextParsed?.pageFile.replace(/\.desk$/, '') ?? '')} →</a>`;
+        })()
       : '<span></span>';
     return `<div class="page-prevnext">${prevLink}${nextLink}</div>`;
   }
