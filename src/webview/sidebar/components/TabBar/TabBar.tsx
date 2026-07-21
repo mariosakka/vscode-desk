@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import styles from './TabBar.module.css';
 import { TrashIcon } from '../shared/Icons';
 import { ConfirmButtons } from '../shared/ConfirmButtons';
 import { HoverIconButton } from '../shared/HoverIconButton';
+import { useConfirmDelete } from '../../hooks/useConfirmDelete';
 
 interface Props {
   tabs: { id: string; name: string }[];
@@ -13,7 +14,7 @@ interface Props {
 }
 
 export function TabBar({ tabs, activeTabId, onSelect, onRemove }: Props) {
-  const [pendingId, setPendingId] = useState<string | null>(null);
+  const { pendingId, setPending, clearPending } = useConfirmDelete();
   const pendingProject = pendingId ? tabs.find(p => p.id === pendingId) : null;
   const barRef = useRef<HTMLDivElement>(null);
 
@@ -38,12 +39,12 @@ export function TabBar({ tabs, activeTabId, onSelect, onRemove }: Props) {
               className={styles.tabBtn}
               data-testid="tab-button"
               data-active={project.id === activeTabId ? 'true' : 'false'}
-              onClick={() => { setPendingId(null); onSelect(project.id); }}
+              onClick={() => { clearPending(); onSelect(project.id); }}
             >
               {project.name}
             </button>
             <HoverIconButton title="Remove project" hoverColor="danger" size="sm"
-              onClick={() => setPendingId(project.id)}>
+              onClick={() => setPending(project.id)}>
               <TrashIcon size={14} />
             </HoverIconButton>
           </span>
@@ -53,8 +54,8 @@ export function TabBar({ tabs, activeTabId, onSelect, onRemove }: Props) {
         <div className={styles.confirmBar}>
           <span className={styles.confirmLabel}>Delete "{pendingProject.name}"?</span>
           <ConfirmButtons
-            onConfirm={() => { setPendingId(null); onRemove(pendingProject.id); }}
-            onCancel={() => setPendingId(null)}
+            onConfirm={() => { clearPending(); onRemove(pendingProject.id); }}
+            onCancel={() => clearPending()}
           />
         </div>
       )}

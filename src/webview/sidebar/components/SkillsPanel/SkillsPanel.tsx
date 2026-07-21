@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styles from './SkillsPanel.module.css';
 import sectionBtnStyles from '../shared/SectionBtn.module.css';
 import { SkillIcon, TrashIcon, PlusIcon, PencilIcon } from '../shared/Icons';
@@ -8,6 +8,7 @@ import { HoverIconButton } from '../shared/HoverIconButton';
 import { PanelRow } from '../shared/PanelRow';
 import { EmptyState } from '../shared/EmptyState';
 import { SkillSummary } from '../../types';
+import { useConfirmDelete } from '../../hooks/useConfirmDelete';
 
 interface Props {
   skills: SkillSummary[];
@@ -18,7 +19,7 @@ interface Props {
 }
 
 export function SkillsPanel({ skills, onRemove, onNew, onEdit, onSubmit }: Props) {
-  const [pendingName, setPendingName] = useState<string | null>(null);
+  const { pendingId, setPending, clearPending } = useConfirmDelete();
 
   const newBtn = (
     <button className={styles.newBtn} type="button" onClick={onNew} title="New skill">
@@ -36,17 +37,17 @@ export function SkillsPanel({ skills, onRemove, onNew, onEdit, onSubmit }: Props
           label={skill.name}
           sublabel={skill.description || undefined}
           actions={
-            pendingName === skill.name ? (
+            pendingId === skill.name ? (
               <ConfirmButtons
-                onConfirm={e => { e.stopPropagation(); onRemove(skill.name); setPendingName(null); }}
-                onCancel={e => { e.stopPropagation(); setPendingName(null); }}
+                onConfirm={e => { e.stopPropagation(); onRemove(skill.name); clearPending(); }}
+                onCancel={e => { e.stopPropagation(); clearPending(); }}
               />
             ) : (
               <>
                 <HoverIconButton title="Edit skill" hoverColor="accent" onClick={() => onEdit(skill.name)}>
                   <PencilIcon size={12} />
                 </HoverIconButton>
-                <HoverIconButton title="Remove skill" hoverColor="danger" onClick={() => setPendingName(skill.name)}>
+                <HoverIconButton title="Remove skill" hoverColor="danger" onClick={() => setPending(skill.name)}>
                   <TrashIcon size={12} />
                 </HoverIconButton>
               </>

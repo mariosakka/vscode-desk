@@ -6,6 +6,7 @@ import { SkillsPanel } from './components/SkillsPanel/SkillsPanel';
 import { WorkflowPanel } from './components/WorkflowPanel/WorkflowPanel';
 import { PageTemplatePanel } from './components/PageTemplatePanel/PageTemplatePanel';
 import { LibrariesPanel } from './components/LibrariesPanel/LibrariesPanel';
+import { ScopeToggle } from './components/ScopeToggle/ScopeToggle';
 
 declare function acquireVsCodeApi(): { postMessage: (msg: unknown) => void };
 const vscode = acquireVsCodeApi();
@@ -82,34 +83,7 @@ export function SidebarApp() {
   return (
     <div id="app">
       {hasWorkspace && (
-        <div style={{
-          display: 'flex',
-          gap: '4px',
-          padding: '8px 12px',
-          borderBottom: '1px solid var(--border)',
-        }}>
-          {(['workspace', 'global'] as Scope[]).map(s => (
-            <button
-              key={s}
-              onClick={() => setActiveScope(s)}
-              style={{
-                flex: 1,
-                padding: '5px 0',
-                fontSize: '11px',
-                fontWeight: 600,
-                textTransform: 'capitalize',
-                cursor: 'pointer',
-                border: 'none',
-                borderRadius: '6px',
-                background: activeScope === s ? 'var(--accent)' : 'transparent',
-                color: activeScope === s ? 'var(--vscode-button-foreground, #fff)' : 'var(--muted)',
-                transition: 'background 150ms, color 150ms',
-              }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        <ScopeToggle active={activeScope} onChange={setActiveScope} />
       )}
 
       {hasWorkspace && activeScope === 'workspace' ? (
