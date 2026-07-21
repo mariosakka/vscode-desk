@@ -7,16 +7,10 @@ import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { HoverIconButton } from '../shared/HoverIconButton';
 import { PanelRow } from '../shared/PanelRow';
 import { EmptyState } from '../shared/EmptyState';
-
-interface Skill {
-  name: string;
-  description: string;
-  agents: string[];
-  version: number;
-}
+import { SkillSummary } from '../../types';
 
 interface Props {
-  skills: Skill[];
+  skills: SkillSummary[];
   onRemove: (name: string) => void;
   onNew: () => void;
   onEdit: (name: string) => void;

@@ -1,21 +1,8 @@
 import * as path from 'path';
 import { readJson, writeJson } from '../../storage/jsonStore';
 import { PendingStore } from '../../storage/pendingStore';
-
-export interface WorkflowChannel {
-  label: string;
-  channel: string;
-}
-
-export interface WorkflowSetting {
-  label: string;
-  value: string;
-}
-
-export interface WorkflowConfig {
-  communication: WorkflowChannel[];
-  general: WorkflowSetting[];
-}
+import { WorkflowChannel, WorkflowSetting, WorkflowConfig } from '../../models';
+export type { WorkflowChannel, WorkflowSetting, WorkflowConfig };
 
 export class WorkflowConfigService {
   private readonly _pending = new PendingStore<WorkflowConfig>();

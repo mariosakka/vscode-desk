@@ -2,23 +2,8 @@ import * as path from 'path';
 import { AgentAdapter } from '../../agents/agentAdapter';
 import { readJson, writeJson } from '../../storage/jsonStore';
 import { PendingStore } from '../../storage/pendingStore';
-
-export interface SkillTool {
-  name: string;
-  description: string;
-  command: string;
-  args: Array<{ name: string; type: string; required?: boolean; description?: string }>;
-}
-
-export interface Skill {
-  name: string;
-  description: string;
-  content: string;
-  agents: string[];
-  version: number;
-  installedAt: number;
-  tools?: SkillTool[];
-}
+import { Skill, SkillSummary, SkillTool } from '../../models';
+export type { Skill, SkillTool };
 
 const BUILT_IN_TOOL_NAMES = new Set([
   'list_bookmarks', 'add_bookmark', 'remove_bookmark', 'update_bookmark',
@@ -51,10 +36,8 @@ export class SkillRegistry {
     return this.readAll();
   }
 
-  list(): Omit<Skill, 'content'>[] {
-    return this.getAll().map(({ name, description, agents, version, installedAt, tools }) => ({
-      name, description, agents, version, installedAt, tools,
-    }));
+  list(): SkillSummary[] {
+    return this.getAll().map(({ content: _content, ...summary }) => summary);
   }
 
   get(name: string): Skill | null {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ScopedData, SidebarData } from './types';
+import { ScopedData, SidebarData, Scope } from './types';
 import { BookmarksPanel } from './components/BookmarksPanel/BookmarksPanel';
 import { BooksPanel } from './components/BooksPanel/BooksPanel';
 import { SkillsPanel } from './components/SkillsPanel/SkillsPanel';
@@ -19,8 +19,6 @@ window.addEventListener('message', (e: MessageEvent) => {
     if (_onData) { _onData(d); } else { _pendingData = d; }
   }
 });
-
-type Scope = 'workspace' | 'global';
 
 interface ScopedPaneProps {
   scopedData: ScopedData;

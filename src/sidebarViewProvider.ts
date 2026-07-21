@@ -10,25 +10,7 @@ import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { AgentAdapter } from './agents/agentAdapter';
 import { LibraryService } from './services/libraryService/libraryService';
 import { BookService } from './services/bookService/bookService';
-
-interface BookPageMeta { filename: string; title: string; }
-interface BookChapterMeta { title: string; pages: BookPageMeta[]; }
-interface BookSummary { slug: string; title: string; chapters: BookChapterMeta[]; }
-
-interface ScopedData {
-  data: import('./models').DeskData;
-  workflow: import('./services/workflowConfigService/workflowConfigService').WorkflowConfig | null;
-  skills: Omit<import('./services/skillRegistry/skillRegistry').Skill, 'content'>[];
-  books: BookSummary[];
-}
-
-interface SidebarData {
-  workspaceName: string | null;
-  workspace: ScopedData | null;
-  global: ScopedData;
-  pageTemplate: string | null;
-  libraries: { name: string; description?: string; installed: boolean }[];
-}
+import { BookPageMeta, BookChapterMeta, BookSummary, ScopedData, SidebarData } from './models';
 
 export class SidebarViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'desk.sidebar';
