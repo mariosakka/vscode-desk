@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { readJson, writeJson } from '../../storage/jsonStore';
+import { PendingStore } from '../../storage/pendingStore';
 
 export interface WorkflowChannel {
   label: string;
@@ -17,7 +18,7 @@ export interface WorkflowConfig {
 }
 
 export class WorkflowConfigService {
-  private pending: WorkflowConfig | null = null;
+  private readonly _pending = new PendingStore<WorkflowConfig>();
 
   constructor(private readonly dir: string) {}
 
@@ -31,21 +32,21 @@ export class WorkflowConfigService {
 
   setPending(incoming: Partial<WorkflowConfig>): void {
     const existing = this.get() ?? { communication: [], general: [] };
-    this.pending = { ...existing, ...incoming };
+    this._pending.set({ ...existing, ...incoming });
   }
 
   getPending(): WorkflowConfig | null {
-    return this.pending;
+    return this._pending.get();
   }
 
   confirmPending(): void {
-    if (this.pending) {
-      this.save(this.pending);
-      this.pending = null;
+    const pending = this._pending.take();
+    if (pending) {
+      this.save(pending);
     }
   }
 
   clearPending(): void {
-    this.pending = null;
+    this._pending.take();
   }
 }

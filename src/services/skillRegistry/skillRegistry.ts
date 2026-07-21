@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { AgentAdapter } from '../../agents/agentAdapter';
 import { readJson, writeJson } from '../../storage/jsonStore';
+import { PendingStore } from '../../storage/pendingStore';
 
 export interface SkillTool {
   name: string;
@@ -34,7 +35,7 @@ const BUILT_IN_TOOL_NAMES = new Set([
 ]);
 
 export class SkillRegistry {
-  private pending: { name: string; content: string; descriptionOverride?: string } | null = null;
+  private readonly _pending = new PendingStore<{ name: string; content: string; descriptionOverride?: string }>();
 
   constructor(private readonly dir: string) {}
 
@@ -97,27 +98,29 @@ export class SkillRegistry {
   }
 
   setPending(name: string, content: string, descriptionOverride?: string): void {
-    this.pending = { name, content, descriptionOverride };
+    this._pending.set({ name, content, descriptionOverride });
   }
 
   getPending(): { name: string; content: string; descriptionOverride?: string } | null {
-    return this.pending;
+    return this._pending.get();
   }
 
   clearPending(): void {
-    this.pending = null;
+    this._pending.take();
   }
 
   getPendingToolSummary(): string | null {
-    if (!this.pending) return null;
-    const fm = parseFrontmatter(this.pending.content);
+    const pending = this._pending.get();
+    if (!pending) return null;
+    const fm = parseFrontmatter(pending.content);
     if (!fm.tools?.length) return null;
     return fm.tools.map(t => `• ${t.name}: ${t.command}`).join('\n');
   }
 
   async confirmPending(adapters: AgentAdapter[]): Promise<void> {
-    if (!this.pending) return;
-    const { name, content, descriptionOverride } = this.pending;
+    const pending = this._pending.take();
+    if (!pending) return;
+    const { name, content, descriptionOverride } = pending;
     const fm = parseFrontmatter(content);
     const skillName = fm.name ?? name;
     const description = descriptionOverride ?? fm.description ?? '';
@@ -146,7 +149,6 @@ export class SkillRegistry {
 
     const body = stripFrontmatter(content);
     await this.installOnAdapters(skillName, body, agents, adapters);
-    this.pending = null;
   }
 
   async remove(name: string, adapters: AgentAdapter[]): Promise<void> {
