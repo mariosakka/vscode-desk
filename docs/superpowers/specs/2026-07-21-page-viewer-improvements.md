@@ -173,6 +173,151 @@ Both watchers must be added to `context.subscriptions`.
 
 ---
 
+## 6. Codebase generalization and deduplication
+
+This section covers refactoring work that is independent of the five feature changes above and should be applied in a separate pass.
+
+---
+
+### 6a. Shared utilities — `src/utils.ts`
+
+`getNonce()` is defined identically in `pageViewPanel.ts:232` and `sidebarViewProvider.ts:317`.
+`escHtml()` is defined identically in `pageViewPanel.ts:239` and `extension.ts:526`.
+
+Extract both to a new `src/utils.ts` and import them everywhere they are used. Delete the local copies.
+
+---
+
+### 6b. JSON storage helpers — `src/storage/jsonStore.ts`
+
+Six services (`DataService`, `WorkflowConfigService`, `SkillRegistry`, `LibraryService`, `BookService`, `SectionTypeService`) all repeat the same two patterns:
+
+```ts
+// read
+try { return JSON.parse(fs.readFileSync(path, 'utf-8')); } catch { return fallback; }
+
+// write
+fs.mkdirSync(dir, { recursive: true });
+fs.writeFileSync(path, JSON.stringify(data, null, 2), 'utf-8');
+```
+
+Extract to `src/storage/jsonStore.ts`:
+
+```ts
+export function readJson<T>(filePath: string, fallback: T): T { ... }
+export function writeJson(filePath: string, data: unknown): void { ... }  // mkdirSync included
+```
+
+`writeJson` absorbs the `mkdirSync` so callers never do it manually. `BookService.saveManifest` (which currently skips `mkdirSync`) gets the guard for free.
+
+Also fix `DataService` line 18: replace `JSON.parse(JSON.stringify(DEFAULT_DATA))` with `return { bookmarks: [] }`.
+
+---
+
+### 6c. `PendingStore<T>` — `src/storage/pendingStore.ts`
+
+`WorkflowConfigService` and `SkillRegistry` both implement an identical in-memory pending-value cycle (set/get/clear/take). Extract a generic class:
+
+```ts
+export class PendingStore<T> {
+  private value: T | null = null;
+  set(v: T): void { this.value = v; }
+  get(): T | null { return this.value; }
+  take(): T | null { const v = this.value; this.value = null; return v; }
+}
+```
+
+Each service holds a `PendingStore` instance. Confirm methods differ (one writes JSON, one installs skills) so they stay on the service and call `this.pending.take()`.
+
+---
+
+### 6d. Type consolidation — `src/models.ts`
+
+**Move types out of service files.** `WorkflowChannel`, `WorkflowSetting`, `WorkflowConfig` are domain types currently defined in `workflowConfigService.ts`. Move them to `models.ts` and import them back into the service.
+
+**Move provider-local types into `models.ts`.** `SidebarViewProvider` defines `BookPageMeta`, `BookChapterMeta`, `BookSummary`, `ScopedData`, `SidebarData` inline. Move these to `models.ts` and import.
+
+**`SkillSummary` as a derived type.** Define `type SkillSummary = Omit<Skill, 'content'>` in `models.ts`. Use it as the `SkillRegistry.list()` return type, eliminating the 7-field manual destructuring at line 58–62.
+
+**Webview `types.ts` alignment.** The webview cannot import from the host, so `types.ts` stays. But `SkillsPanel.tsx:16–22` defines a local `Skill` interface that duplicates `SkillSummary` — delete the local one and use `SkillSummary` from `types.ts`. `SidebarApp.tsx:23` re-defines `Scope` — delete it and import from `types.ts`.
+
+---
+
+### 6e. `ServiceBundle` — collapse parallel constructor parameters
+
+`McpServer` and `SidebarViewProvider` each accept 8+ individual service parameters in global/workspace pairs and contain identical `_resolveScope()` methods.
+
+Define in `models.ts`:
+
+```ts
+export interface ServiceBundle {
+  dataService: DataService;
+  pageReader: PageReader | null;
+  workflowService: WorkflowConfigService | null;
+  skillRegistry: SkillRegistry | null;
+}
+
+export function resolveScope(
+  scope: Scope | undefined,
+  workspace: ServiceBundle | null,
+  global: ServiceBundle,
+): ServiceBundle { ... }
+```
+
+Both classes replace their 8 individual service params with `global: ServiceBundle, workspace: ServiceBundle | null`. Their `_resolveScope()` methods are deleted and replaced with the shared function. `extension.ts` builds the two bundles once and passes them to both.
+
+---
+
+### 6f. `McpServer.callTool()` — extract helpers
+
+**`textResult` helper** — `{ content: [{ type: 'text', text: JSON.stringify(x) }] }` appears ~25 times. Extract as a module-level function, one line each.
+
+**`_require*` guard helpers** — four null-check patterns repeat 3–10 times each (bookService, pageReader, skillRegistry, libraryService). Extract `_requireBook()`, `_requirePageReader()`, etc. — each throws the same error message and returns the non-null service. Every case body shrinks by 2–3 lines.
+
+**`_withList` helper** — `add_list_item`, `remove_list_item`, `update_list_item`, `set_list_type` all do: resolve → read page → get section → parse list → mutate → rebuild → write. Extract `_withList(args, mutate)` that handles the boilerplate and accepts a mutation callback.
+
+---
+
+### 6g. `extension.ts` — extract command helpers
+
+**`pickScopedService<T>`** — the pattern of calling `pickScope()`, guarding `undefined`, then picking workspace vs global appears 10+ times. Extract a single async helper.
+
+**`pickBook()` and `pickChapter(manifest)`** — the pattern of checking `!bookService`, listing books, showing QuickPick appears 5+ times across book commands. Extract these two pickers.
+
+---
+
+### 6h. `pageViewPanel.ts` — minor cleanups
+
+**`parseBookFilename`** — `filename.split('/')[0]` (slug) and `filename.split('/')[1]` (pageFile) are extracted independently in both `_renderBookNav` and `_renderPrevNext`. Extract a `parseBookFilename(filename): { slug, pageFile } | null` function.
+
+**`bookNavCss`** — the inline CSS string in `_render()` should move to `src/pages/bookNav.css`, read once at class init with `fs.readFileSync`. Eliminates string escaping and allows syntax highlighting.
+
+---
+
+### 6i. Sidebar component deduplication
+
+**`LibrariesPanel` → use `PanelRow`** — `LibrariesPanel.tsx:22–43` rolls its own `.row` / `.info` / `.name` / `.desc` layout that replicates `PanelRow` exactly. Switch to `PanelRow` with `label`, `sublabel`, and `actions` props. Replace the bespoke `.removeBtn` CSS with `<HoverIconButton hoverColor="danger">`. `LibrariesPanel.module.css` shrinks to ~10 lines.
+
+**`useConfirmDelete` hook** — `BooksPanel`, `SkillsPanel`, and `TabBar` all implement the same 3-line pending-ID state pattern. Extract a `useConfirmDelete()` hook returning `{ pendingId, setPending, clearPending }`.
+
+**`ScopeToggle` component** — the workspace/global switcher in `SidebarApp.tsx:86–115` is 30 lines of inline-styled JSX (the only use of raw `style={{}}` in the codebase). Extract to `components/ScopeToggle/ScopeToggle.tsx` with a module CSS file.
+
+**Delete `Header.tsx`** — not imported anywhere in the current codebase; dead code.
+
+---
+
+### 6j. CSS deduplication
+
+| Duplication | Files | Fix |
+|---|---|---|
+| Hover-reveal `[data-hover-btn]` rules | `BookmarkCard.module.css`, `PanelRow.module.css`, `TabBar.module.css` | Move to `global.css` |
+| `.error` span (11px, errorForeground) | `InlineBookmarkForm`, `InlineBarForm`, `InlineTabForm` module CSS | Move to `Inputs.module.css` |
+| Panel `.body` padding block | `LibrariesPanel`, `PageTemplatePanel`, `WorkflowPanel` module CSS | Single shared class in shared CSS |
+| Bottom action button row padding | `BookmarksPanel`, `BooksPanel`, `SkillsPanel` module CSS | Already in `SectionBtn.module.css` — remove the duplicates and use it |
+| `InlineTabForm.module.css` | identical to `QuickOpenForm.module.css` | Delete `InlineTabForm.module.css`; `InlineTabForm` imports from `InlineBarForm.module.css` |
+
+---
+
 ## Testing
 
 - **Zoom**: open a book page, zoom in with Ctrl+=, verify body text, headings, images, and user-styled content all scale; verify the nav bar stays fixed size.
@@ -180,3 +325,4 @@ Both watchers must be added to `context.subscriptions`.
 - **Navigation links**: click a chapter page link in the book nav → verify the page loads; click prev/next links → verify navigation works.
 - **No standalone creation**: verify "New Page" form is gone from the sidebar; verify `desk.newPage` command is absent from Ctrl+Shift+P; verify `create_page` MCP call with `filename: "standalone.desk"` returns an error; verify `create_page` with `filename: "mybook/page.desk"` still succeeds.
 - **Live refresh**: add a book page via MCP `create_page` → verify the sidebar updates within ~200 ms without any manual action; edit a bookmark file on disk → verify the sidebar reflects the change.
+- **Refactoring (section 6)**: `npm test` passes with 0 regressions; no new duplicate code introduced; `Header.tsx` deleted; `InlineTabForm.module.css` deleted; all helper functions imported from their canonical location.
