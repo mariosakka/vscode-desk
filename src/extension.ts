@@ -91,6 +91,31 @@ export function activate(context: vscode.ExtensionContext): void {
     bookService,
   );
 
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  const scheduleRefresh = () => {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => provider.refresh(), 150);
+  };
+
+  const deskGlobalDir = path.join(os.homedir(), '.desk');
+
+  const watcherPages = workspaceRoot
+    ? vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(workspaceRoot, 'desk-pages/**')
+      )
+    : null;
+  const watcherGlobal = vscode.workspace.createFileSystemWatcher(
+    new vscode.RelativePattern(deskGlobalDir, '**')
+  );
+
+  [watcherPages, watcherGlobal].forEach(w => {
+    if (!w) return;
+    w.onDidCreate(scheduleRefresh);
+    w.onDidChange(scheduleRefresh);
+    w.onDidDelete(scheduleRefresh);
+    context.subscriptions.push(w);
+  });
+
   const agentRegistry = new AgentRegistry(adapters, context, workspaceSkillRegistry ?? globalSkillRegistry);
 
   const mcpServer = new McpServer(

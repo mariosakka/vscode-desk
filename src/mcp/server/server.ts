@@ -199,6 +199,12 @@ export class McpServer {
   }
 
   private async callTool(name: string, args: any): Promise<any> {
+    const result = await this._dispatchTool(name, args);
+    this.provider.refresh();
+    return result;
+  }
+
+  private async _dispatchTool(name: string, args: any): Promise<any> {
     switch (name) {
       case 'list_bookmarks': {
         const { dataService } = this._resolveScope(args);
@@ -214,19 +220,16 @@ export class McpServer {
           icon,
           description: args.description ?? '',
         });
-        this.provider.refresh();
         return { content: [{ type: 'text', text: JSON.stringify(bm) }] };
       }
       case 'remove_bookmark': {
         const { dataService } = this._resolveScope(args);
         dataService.removeBookmark(args.bookmark_id);
-        this.provider.refresh();
         return { content: [{ type: 'text', text: 'removed' }] };
       }
       case 'update_bookmark': {
         const { dataService } = this._resolveScope(args);
         const bm = dataService.updateBookmark(args.bookmark_id, args.fields ?? {});
-        this.provider.refresh();
         return { content: [{ type: 'text', text: JSON.stringify(bm) }] };
       }
 
@@ -255,7 +258,6 @@ export class McpServer {
           const parts = args.filename.split('/');
           this.bookService.addPageToChapter(parts[0], parts[1], args.chapter);
         }
-        this.provider.refresh();
         return { content: [{ type: 'text', text: `created ${args.filename} in workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
       case 'update_page': {
@@ -281,7 +283,6 @@ export class McpServer {
           newCustomStyles = existing.customStyles;
         }
         pageReader.write(args.filename, newTitle, newBodyHtml, newCustomStyles);
-        this.provider.refresh();
         return { content: [{ type: 'text', text: `updated ${args.filename} in workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
       case 'delete_page': {
@@ -292,7 +293,6 @@ export class McpServer {
           const parts = args.filename.split('/');
           this.bookService.removePageFromManifest(parts[0], parts[1]);
         }
-        this.provider.refresh();
         return { content: [{ type: 'text', text: `deleted ${args.filename} from workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
 
@@ -509,7 +509,6 @@ export class McpServer {
       case 'create_book': {
         if (!this.bookService) throw new Error('No workspace open — books unavailable');
         const slug = this.bookService.create(args.title, args.slug);
-        this.provider.refresh();
         return { content: [{ type: 'text', text: JSON.stringify({ slug }) }] };
       }
       case 'list_books': {
@@ -523,7 +522,6 @@ export class McpServer {
       case 'delete_book': {
         if (!this.bookService) throw new Error('No workspace open — books unavailable');
         this.bookService.delete(args.slug);
-        this.provider.refresh();
         return { content: [{ type: 'text', text: 'deleted' }] };
       }
       case 'add_chapter': {
@@ -539,7 +537,6 @@ export class McpServer {
       case 'remove_chapter': {
         if (!this.bookService) throw new Error('No workspace open — books unavailable');
         this.bookService.removeChapter(args.slug, args.chapter_index);
-        this.provider.refresh();
         return { content: [{ type: 'text', text: 'removed' }] };
       }
       case 'move_page': {
