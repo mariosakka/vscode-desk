@@ -20,6 +20,7 @@ import { LibraryService } from './services/libraryService/libraryService';
 import { globalDir, workspaceDir } from './storage/deskDir';
 import { BookService } from './services/bookService/bookService';
 import { resolveWorktree } from './storage/worktreeResolver';
+import { escHtml } from './utils';
 
 export function activate(context: vscode.ExtensionContext): void {
   const worktreeLinkingEnabled = vscode.workspace.getConfiguration('desk')
@@ -521,10 +522,6 @@ async function cmdNewPage(pageStore: PageReader | null): Promise<void> {
 
 function normalizeFilename(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-function escHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 async function showConfigConfirmPrompt(

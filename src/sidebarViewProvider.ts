@@ -11,6 +11,7 @@ import { AgentAdapter } from './agents/agentAdapter';
 import { LibraryService } from './services/libraryService/libraryService';
 import { BookService } from './services/bookService/bookService';
 import { BookPageMeta, BookChapterMeta, BookSummary, ScopedData, SidebarData } from './models';
+import { getNonce } from './utils';
 
 export class SidebarViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'desk.sidebar';
@@ -294,13 +295,4 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
       .replace(/\$\{cssUri\}/g, styleUri.toString())
       .replace(/\$\{scriptUri\}/g, scriptUri.toString());
   }
-}
-
-function getNonce(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let nonce = '';
-  for (let i = 0; i < 32; i++) {
-    nonce += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return nonce;
 }

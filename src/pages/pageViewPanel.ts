@@ -4,6 +4,7 @@ import * as path from 'path';
 import { PageReader, PageContent } from './pageReader';
 import { LibraryService } from '../services/libraryService/libraryService';
 import { BookService, BookManifest } from '../services/bookService/bookService';
+import { getNonce, escHtml } from '../utils';
 
 export class PageViewPanel {
   private static _panels = new Map<string, PageViewPanel>();
@@ -206,15 +207,4 @@ export class PageViewPanel {
       : '<span></span>';
     return `<div class="page-prevnext">${prevLink}${nextLink}</div>`;
   }
-}
-
-function getNonce(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let s = '';
-  for (let i = 0; i < 32; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
-  return s;
-}
-
-function escHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
