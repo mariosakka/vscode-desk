@@ -158,7 +158,8 @@ export class PageViewPanel {
       .replace(/\$\{libraryStyles\}/g, libraryStyles)
       .replace(/\$\{libraryScripts\}/g, libraryScripts)
       .replace(/\$\{pageScripts\}/g, pageScripts)
-      .replace(/\$\{content\}/g, bookNavHtml + page.bodyHtml + prevNextHtml)
+      .replace(/\$\{content\}/g, page.bodyHtml + prevNextHtml)
+      .replace(/\$\{bookNav\}/g, bookNavHtml)
       .replace(/\$\{tocToggle\}/g, tocToggleHtml)
       .replace(/\$\{zoom\}/g, String(zoom));
   }
