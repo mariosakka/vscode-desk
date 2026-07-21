@@ -15,7 +15,7 @@ export function resolveScope(
   workspace: ServiceBundle | null,
   global: ServiceBundle,
 ): ServiceBundle {
-  if (scope === 'workspace' && workspace) return workspace;
+  if (scope !== 'global' && workspace) return workspace;
   return global;
 }
 
