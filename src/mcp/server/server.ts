@@ -1,13 +1,10 @@
 import * as http from 'http';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { DataService } from '../../services/dataService/dataService';
 import { FaviconService } from '../../services/faviconService/faviconService';
 import { SidebarViewProvider } from '../../sidebarViewProvider';
-import { PageReader } from '../../pages/pageReader';
 import { extractStyleFromTemplate, extractScriptFromTemplate, assembleSections, PageSection, parseSections, getSectionHtml, replaceSectionHtml, removeSection as removeSectionHtml, insertSection, parseListItems, rebuildList } from '../../pages/pageFormat';
-import { WorkflowConfigService } from '../../services/workflowConfigService/workflowConfigService';
-import { SkillRegistry, SkillTool } from '../../services/skillRegistry/skillRegistry';
+import { SkillTool } from '../../services/skillRegistry/skillRegistry';
 import { AgentAdapter } from '../../agents/agentAdapter';
 import { LibraryService } from '../../services/libraryService/libraryService';
 import { renderSectionType, BUILT_IN_TYPES } from '../../pages/sectionTypes';
@@ -15,19 +12,14 @@ import { SectionTypeService } from '../../services/sectionTypeService/sectionTyp
 import { BookService } from '../../services/bookService/bookService';
 import { TOOLS } from '../toolSchemas';
 import { RESOURCES, RESOURCE_CONTENT } from '../resources';
+import { ServiceBundle, resolveScope } from '../../models';
 
 export class McpServer {
   private server: http.Server | null = null;
 
   constructor(
-    private readonly globalDataService: DataService,
-    private readonly globalPageStore: PageReader | null,
-    private readonly globalWorkflowService: WorkflowConfigService | null,
-    private readonly globalSkillRegistry: SkillRegistry | null,
-    private readonly workspaceDataService: DataService | null,
-    private readonly workspacePageReader: PageReader | null,
-    private readonly workspaceWorkflowService: WorkflowConfigService | null,
-    private readonly workspaceSkillRegistry: SkillRegistry | null,
+    private readonly global: ServiceBundle,
+    private readonly workspace: ServiceBundle | null,
     private readonly provider: SidebarViewProvider,
     private readonly faviconService: FaviconService,
     private readonly adapters: AgentAdapter[] = [],
@@ -84,29 +76,6 @@ export class McpServer {
       workspacePath: this.workspacePath,
       pagesDir: this.workspacePath ? path.join(this.workspacePath, 'desk-pages') : null,
       hasWorkspace: this.workspacePath !== null,
-    };
-  }
-
-  private _resolveScope(args: Record<string, unknown>): {
-    dataService: DataService;
-    pageReader: PageReader | null;
-    workflowService: WorkflowConfigService | null;
-    skillRegistry: SkillRegistry | null;
-  } {
-    const scope = args.scope as string ?? 'workspace';
-    if (scope === 'global' || !this.workspaceDataService) {
-      return {
-        dataService: this.globalDataService,
-        pageReader: this.globalPageStore,
-        workflowService: this.globalWorkflowService,
-        skillRegistry: this.globalSkillRegistry,
-      };
-    }
-    return {
-      dataService: this.workspaceDataService,
-      pageReader: this.workspacePageReader,
-      workflowService: this.workspaceWorkflowService,
-      skillRegistry: this.workspaceSkillRegistry,
     };
   }
 
@@ -207,12 +176,12 @@ export class McpServer {
   private async _dispatchTool(name: string, args: any): Promise<any> {
     switch (name) {
       case 'list_bookmarks': {
-        const { dataService } = this._resolveScope(args);
+        const { dataService } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         const data = dataService.get();
         return { content: [{ type: 'text', text: JSON.stringify(data.bookmarks) }] };
       }
       case 'add_bookmark': {
-        const { dataService } = this._resolveScope(args);
+        const { dataService } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         const icon = args.icon ?? await this.faviconService.getIcon(args.url);
         const bm = dataService.addBookmark({
           title: args.title,
@@ -223,19 +192,19 @@ export class McpServer {
         return { content: [{ type: 'text', text: JSON.stringify(bm) }] };
       }
       case 'remove_bookmark': {
-        const { dataService } = this._resolveScope(args);
+        const { dataService } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         dataService.removeBookmark(args.bookmark_id);
         return { content: [{ type: 'text', text: 'removed' }] };
       }
       case 'update_bookmark': {
-        const { dataService } = this._resolveScope(args);
+        const { dataService } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         const bm = dataService.updateBookmark(args.bookmark_id, args.fields ?? {});
         return { content: [{ type: 'text', text: JSON.stringify(bm) }] };
       }
 
       // ── Page tools ────────────────────────────────────────────────────────
       case 'list_pages': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const pages = pageReader.list();
         return { content: [{ type: 'text', text: JSON.stringify(pages) }] };
@@ -244,9 +213,9 @@ export class McpServer {
         if (!String(args.filename ?? '').includes('/')) {
           throw new Error('create_page: filename must be in "bookSlug/page.desk" format — standalone pages are not supported');
         }
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
-        const templateRaw = this.globalDataService.getPageTemplate() ?? '';
+        const templateRaw = this.global.dataService.getPageTemplate() ?? '';
         const customStyles = extractStyleFromTemplate(templateRaw);
         const templateScript = extractScriptFromTemplate(templateRaw);
         let bodyHtml = assembleSections({
@@ -264,14 +233,14 @@ export class McpServer {
         return { content: [{ type: 'text', text: `created ${args.filename} in workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
       case 'update_page': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const existing = pageReader.read(args.filename);
         const newTitle = args.title ?? existing.title;
         let newBodyHtml: string;
         let newCustomStyles: string;
         if (args.sections !== undefined) {
-          const templateRaw = this.globalDataService.getPageTemplate() ?? '';
+          const templateRaw = this.global.dataService.getPageTemplate() ?? '';
           const templateScript = extractScriptFromTemplate(templateRaw);
           newCustomStyles = extractStyleFromTemplate(templateRaw);
           newBodyHtml = assembleSections({
@@ -289,7 +258,7 @@ export class McpServer {
         return { content: [{ type: 'text', text: `updated ${args.filename} in workspace "${this.workspaceName ?? '(none)'}"` }] };
       }
       case 'delete_page': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         pageReader.delete(args.filename);
         if (args.filename.includes('/') && this.bookService) {
@@ -301,14 +270,14 @@ export class McpServer {
 
       // ── Workflow tools ────────────────────────────────────────────────────
       case 'get_workflow_config': {
-        const { workflowService } = this._resolveScope(args);
+        const { workflowService } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         const config = workflowService?.get();
         if (!config) throw new Error('Workflow config not configured');
         return { content: [{ type: 'text', text: JSON.stringify(config) }] };
       }
 
       case 'submit_workflow_config': {
-        const { workflowService } = this._resolveScope(args);
+        const { workflowService } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!workflowService) throw new Error('WorkflowConfigService not available');
         const scope = args.scope as string ?? 'workspace';
         workflowService.setPending(args.config);
@@ -317,13 +286,13 @@ export class McpServer {
       }
 
       case 'list_skills': {
-        const { skillRegistry } = this._resolveScope(args);
+        const { skillRegistry } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!skillRegistry) throw new Error('SkillRegistry not available');
         return { content: [{ type: 'text', text: JSON.stringify(skillRegistry.list()) }] };
       }
 
       case 'get_skill': {
-        const { skillRegistry } = this._resolveScope(args);
+        const { skillRegistry } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!skillRegistry) throw new Error('SkillRegistry not available');
         const skill = skillRegistry.get(args.name);
         if (!skill) return { isError: true, content: [{ type: 'text', text: `Skill '${args.name}' not found` }] };
@@ -331,7 +300,7 @@ export class McpServer {
       }
 
       case 'add_skill': {
-        const { skillRegistry } = this._resolveScope(args);
+        const { skillRegistry } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!skillRegistry) throw new Error('SkillRegistry not available');
         const validation = skillRegistry.validateFrontmatter(args.content);
         if (!validation.valid) throw new Error(validation.error);
@@ -342,20 +311,20 @@ export class McpServer {
       }
 
       case 'remove_skill': {
-        const { skillRegistry } = this._resolveScope(args);
+        const { skillRegistry } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!skillRegistry) throw new Error('SkillRegistry not available');
         await skillRegistry.remove(args.name, this.adapters);
         return { content: [{ type: 'text', text: JSON.stringify({ removed: args.name }) }] };
       }
 
       case 'get_page_template': {
-        const template = this.globalDataService.getPageTemplate();
+        const template = this.global.dataService.getPageTemplate();
         if (!template) throw new Error('No page template set');
         return { content: [{ type: 'text', text: template }] };
       }
 
       case 'set_page_template': {
-        this.globalDataService.setPageTemplate(args.content);
+        this.global.dataService.setPageTemplate(args.content);
         return { content: [{ type: 'text', text: JSON.stringify({ status: 'saved' }) }] };
       }
 
@@ -383,13 +352,13 @@ export class McpServer {
 
       // ── Section CRUD ────────────────────────────────────────────────────────
       case 'list_sections': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const page = pageReader.read(args.filename);
         return { content: [{ type: 'text', text: JSON.stringify(parseSections(page.bodyHtml)) }] };
       }
       case 'add_section': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const page = pageReader.read(args.filename);
         let content = args.content ?? '';
@@ -403,7 +372,7 @@ export class McpServer {
         return { content: [{ type: 'text', text: 'section added' }] };
       }
       case 'update_section': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const page = pageReader.read(args.filename);
         let sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
@@ -422,7 +391,7 @@ export class McpServer {
         return { content: [{ type: 'text', text: 'section updated' }] };
       }
       case 'remove_section': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const page = pageReader.read(args.filename);
         const newBody = removeSectionHtml(page.bodyHtml, args.section_id);
@@ -432,14 +401,14 @@ export class McpServer {
 
       // ── List CRUD ────────────────────────────────────────────────────────────
       case 'list_items': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const page = pageReader.read(args.filename);
         const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
         return { content: [{ type: 'text', text: JSON.stringify(parseListItems(sectionHtml)) }] };
       }
       case 'add_list_item': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const page = pageReader.read(args.filename);
         const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
@@ -451,7 +420,7 @@ export class McpServer {
         return { content: [{ type: 'text', text: 'item added' }] };
       }
       case 'remove_list_item': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const page = pageReader.read(args.filename);
         const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
@@ -465,7 +434,7 @@ export class McpServer {
         return { content: [{ type: 'text', text: 'item removed' }] };
       }
       case 'update_list_item': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const page = pageReader.read(args.filename);
         const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
@@ -479,7 +448,7 @@ export class McpServer {
         return { content: [{ type: 'text', text: 'item updated' }] };
       }
       case 'set_list_type': {
-        const { pageReader } = this._resolveScope(args);
+        const { pageReader } = resolveScope(args.scope as string | undefined, this.workspace, this.global);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const page = pageReader.read(args.filename);
         const sectionHtml = getSectionHtml(page.bodyHtml, args.section_id);
@@ -561,8 +530,8 @@ export class McpServer {
   }
 
   private _getSkillTools(): SkillTool[] {
-    const globalTools = this.globalSkillRegistry?.getAllTools() ?? [];
-    const workspaceTools = this.workspaceSkillRegistry?.getAllTools() ?? [];
+    const globalTools = this.global.skillRegistry?.getAllTools() ?? [];
+    const workspaceTools = this.workspace?.skillRegistry?.getAllTools() ?? [];
     const seen = new Set<string>();
     const merged: SkillTool[] = [];
     for (const t of [...workspaceTools, ...globalTools]) {

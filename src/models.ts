@@ -1,3 +1,24 @@
+import { DataService } from './services/dataService/dataService';
+import { PageReader } from './pages/pageReader';
+import { WorkflowConfigService } from './services/workflowConfigService/workflowConfigService';
+import { SkillRegistry } from './services/skillRegistry/skillRegistry';
+
+export interface ServiceBundle {
+  dataService: DataService;
+  pageReader: PageReader | null;
+  workflowService: WorkflowConfigService | null;
+  skillRegistry: SkillRegistry | null;
+}
+
+export function resolveScope(
+  scope: string | undefined,
+  workspace: ServiceBundle | null,
+  global: ServiceBundle,
+): ServiceBundle {
+  if (scope === 'workspace' && workspace) return workspace;
+  return global;
+}
+
 export interface Bookmark {
   id: string;
   title: string;

@@ -21,6 +21,7 @@ import { globalDir, workspaceDir } from './storage/deskDir';
 import { BookService } from './services/bookService/bookService';
 import { resolveWorktree } from './storage/worktreeResolver';
 import { escHtml } from './utils';
+import { ServiceBundle } from './models';
 
 export function activate(context: vscode.ExtensionContext): void {
   const worktreeLinkingEnabled = vscode.workspace.getConfiguration('desk')
@@ -74,16 +75,23 @@ export function activate(context: vscode.ExtensionContext): void {
     new GeminiAdapter(),
   ];
 
+  const globalBundle: ServiceBundle = {
+    dataService: globalDataService,
+    pageReader: globalPageReader,
+    workflowService: globalWorkflowService,
+    skillRegistry: globalSkillRegistry,
+  };
+  const workspaceBundle: ServiceBundle | null = workspaceDataService ? {
+    dataService: workspaceDataService,
+    pageReader: workspacePageReader,
+    workflowService: workspaceWorkflowService,
+    skillRegistry: workspaceSkillRegistry,
+  } : null;
+
   const provider = new SidebarViewProvider(
     context.extensionUri,
-    globalDataService,
-    globalPageReader,
-    globalWorkflowService,
-    globalSkillRegistry,
-    workspaceDataService,
-    workspacePageReader,
-    workspaceWorkflowService,
-    workspaceSkillRegistry,
+    globalBundle,
+    workspaceBundle,
     workspaceName,
     faviconService,
     adapters,
@@ -119,14 +127,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const agentRegistry = new AgentRegistry(adapters, context, workspaceSkillRegistry ?? globalSkillRegistry);
 
   const mcpServer = new McpServer(
-    globalDataService,
-    globalPageReader,
-    globalWorkflowService,
-    globalSkillRegistry,
-    workspaceDataService,
-    workspacePageReader,
-    workspaceWorkflowService,
-    workspaceSkillRegistry,
+    globalBundle,
+    workspaceBundle,
     provider,
     faviconService,
     adapters,

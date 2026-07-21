@@ -10,7 +10,7 @@ import { SkillRegistry } from './services/skillRegistry/skillRegistry';
 import { AgentAdapter } from './agents/agentAdapter';
 import { LibraryService } from './services/libraryService/libraryService';
 import { BookService } from './services/bookService/bookService';
-import { BookPageMeta, BookChapterMeta, BookSummary, ScopedData, SidebarData } from './models';
+import { BookSummary, ScopedData, SidebarData, ServiceBundle, resolveScope } from './models';
 import { getNonce } from './utils';
 
 export class SidebarViewProvider implements vscode.WebviewViewProvider {
@@ -19,42 +19,14 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
-    private readonly _globalDataService: DataService,
-    private readonly _globalPageStore: PageReader,
-    private readonly _globalWorkflowService: WorkflowConfigService,
-    private readonly _globalSkillRegistry: SkillRegistry,
-    private readonly _workspaceDataService: DataService | null,
-    private readonly _workspacePageReader: PageReader | null,
-    private readonly _workspaceWorkflowService: WorkflowConfigService | null,
-    private readonly _workspaceSkillRegistry: SkillRegistry | null,
+    private readonly _global: ServiceBundle,
+    private readonly _workspace: ServiceBundle | null,
     private _workspaceName: string | null,
     private readonly _faviconService: FaviconService | null = null,
     private readonly _adapters: AgentAdapter[] = [],
     private readonly _libraryService: LibraryService | null = null,
     private readonly _bookService: BookService | null = null,
   ) {}
-
-  private _resolveScope(scope: 'workspace' | 'global' = 'workspace'): {
-    dataService: DataService;
-    pageStore: PageReader | null;
-    workflowService: WorkflowConfigService | null;
-    skillRegistry: SkillRegistry | null;
-  } {
-    if (scope === 'global' || !this._workspaceDataService) {
-      return {
-        dataService: this._globalDataService,
-        pageStore: this._globalPageStore,
-        workflowService: this._globalWorkflowService,
-        skillRegistry: this._globalSkillRegistry,
-      };
-    }
-    return {
-      dataService: this._workspaceDataService,
-      pageStore: this._workspacePageReader,
-      workflowService: this._workspaceWorkflowService,
-      skillRegistry: this._workspaceSkillRegistry,
-    };
-  }
 
   resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -77,11 +49,11 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'openUrl': {
           const url: string = message.url;
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          if (url.startsWith('desk-page:') && resolved.pageStore) {
+          const resolved = resolveScope(message.scope as string | undefined, this._workspace, this._global);
+          if (url.startsWith('desk-page:') && resolved.pageReader) {
             const filename = url.slice('desk-page:'.length);
-            if (resolved.pageStore instanceof PageReader) {
-              PageViewPanel.open(this._extensionUri, resolved.pageStore, filename);
+            if (resolved.pageReader instanceof PageReader) {
+              PageViewPanel.open(this._extensionUri, resolved.pageReader, filename);
             }
           } else {
             const openUrl = /^https?:\/\//i.test(url) ? url : `https://${url}`;
@@ -90,13 +62,13 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case 'removeBookmark': {
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          const resolved = resolveScope(message.scope as string | undefined, this._workspace, this._global);
           resolved.dataService.removeBookmark(message.bookmarkId);
           this.refresh();
           break;
         }
         case 'updateBookmark': {
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          const resolved = resolveScope(message.scope as string | undefined, this._workspace, this._global);
           resolved.dataService.updateBookmark(message.bookmarkId, message.fields);
           this.refresh();
           break;
@@ -105,7 +77,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           const title: string = message.title;
           const url: string = message.url;
           if (!title?.trim() || !url?.trim()) break;
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          const resolved = resolveScope(message.scope as string | undefined, this._workspace, this._global);
           const icon = this._faviconService ? await this._faviconService.getIcon(url.trim()) : '🌐';
           resolved.dataService.addBookmark({ title: title.trim(), url: url.trim(), icon, description: '' });
           this.refresh();
@@ -114,8 +86,8 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
         case 'openBook': {
           const slug: string = message.slug;
           if (!this._bookService) break;
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
-          if (!(resolved.pageStore instanceof PageReader)) break;
+          const resolved = resolveScope(message.scope as string | undefined, this._workspace, this._global);
+          if (!(resolved.pageReader instanceof PageReader)) break;
           try {
             const manifest = this._bookService.get(slug);
             const firstChapter = manifest.chapters.find(ch => ch.pages.length > 0);
@@ -123,7 +95,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
               vscode.window.showInformationMessage(`"${manifest.title}" has no pages yet. Use Desk: New Book Page to add one.`);
               break;
             }
-            PageViewPanel.open(this._extensionUri, resolved.pageStore, `${slug}/${firstChapter.pages[0]}`);
+            PageViewPanel.open(this._extensionUri, resolved.pageReader, `${slug}/${firstChapter.pages[0]}`);
           } catch {
             vscode.window.showErrorMessage('Could not open book.');
           }
@@ -131,7 +103,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
         }
         case 'removeSkill': {
           const name: string = message.name;
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          const resolved = resolveScope(message.scope as string | undefined, this._workspace, this._global);
           if (resolved.skillRegistry) {
             await resolved.skillRegistry.remove(name, this._adapters);
             this.refresh();
@@ -139,7 +111,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case 'saveWorkflow': {
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          const resolved = resolveScope(message.scope as string | undefined, this._workspace, this._global);
           if (resolved.workflowService) {
             resolved.workflowService.save(message.config);
             this.refresh();
@@ -151,7 +123,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'editSkill': {
           const skillName: string = message.name;
-          const resolved = this._resolveScope(message.scope as 'workspace' | 'global' | undefined);
+          const resolved = resolveScope(message.scope as string | undefined, this._workspace, this._global);
           const skill = resolved.skillRegistry?.getAll().find(s => s.name === skillName);
           if (skill) {
             const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: skill.content });
@@ -164,16 +136,16 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
           vscode.commands.executeCommand('desk.submitSkill');
           break;
         case 'editPageTemplate': {
-          if (!this._globalDataService.getPageTemplate()) {
-            this._globalDataService.setPageTemplate(
+          if (!this._global.dataService.getPageTemplate()) {
+            this._global.dataService.setPageTemplate(
               '<style>\n  /* Shared styles applied to all new pages */\n  /* Use: --bg --surface --surface2 --border --text --muted --accent --accent2 --radius */\n</style>',
             );
           }
-          vscode.window.showTextDocument(vscode.Uri.file(this._globalDataService.getPageTemplateFilePath()));
+          vscode.window.showTextDocument(vscode.Uri.file(this._global.dataService.getPageTemplateFilePath()));
           break;
         }
         case 'clearPageTemplate': {
-          this._globalDataService.clearPageTemplate();
+          this._global.dataService.clearPageTemplate();
           this.refresh();
           break;
         }
@@ -243,22 +215,22 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 
     const sidebarData: SidebarData = {
       workspaceName: this._workspaceName,
-      workspace: this._workspaceDataService
+      workspace: this._workspace
         ? buildScoped(
-            this._workspaceDataService,
-            this._workspacePageReader,
-            this._workspaceWorkflowService,
-            this._workspaceSkillRegistry,
+            this._workspace.dataService,
+            this._workspace.pageReader,
+            this._workspace.workflowService,
+            this._workspace.skillRegistry,
             true,
           )
         : null,
       global: buildScoped(
-        this._globalDataService,
-        this._globalPageStore,
-        this._globalWorkflowService,
-        this._globalSkillRegistry,
+        this._global.dataService,
+        this._global.pageReader,
+        this._global.workflowService,
+        this._global.skillRegistry,
       ),
-      pageTemplate: this._globalDataService.getPageTemplate(),
+      pageTemplate: this._global.dataService.getPageTemplate(),
       libraries: this._libraryService
         ? this._libraryService.list().map(l => ({
             name: l.name,
