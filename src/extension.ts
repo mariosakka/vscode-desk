@@ -215,8 +215,11 @@ export function activate(context: vscode.ExtensionContext): void {
   ): Promise<{ value: T; scope: 'workspace' | 'global' } | undefined> {
     if (!workspaceVal) return { value: globalVal, scope: 'global' };
     const scope = await vscode.window.showQuickPick(
-      [{ label: 'Workspace', value: 'workspace' as const }, { label: 'Global', value: 'global' as const }],
-      { placeHolder: 'Scope' },
+      [
+        { label: 'Workspace', description: workspaceName ?? '', value: 'workspace' as const },
+        { label: 'Global', description: 'Available in all workspaces', value: 'global' as const },
+      ],
+      { placeHolder: 'Choose scope' },
     );
     if (!scope) return undefined;
     return { value: scope.value === 'workspace' ? workspaceVal : globalVal, scope: scope.value };
@@ -227,16 +230,13 @@ export function activate(context: vscode.ExtensionContext): void {
     const books = bookService.list();
     if (books.length === 0) { vscode.window.showInformationMessage('Desk: No books yet'); return undefined; }
     return vscode.window.showQuickPick(
-      books.map(b => ({ label: b.title, slug: b.slug })),
+      books.map(b => ({ label: b.title, description: `${b.pageCount} pages`, slug: b.slug })),
       { placeHolder: 'Select book' },
     );
   }
 
   async function pickChapter(manifest: BookManifest): Promise<{ index: number; label: string } | undefined> {
-    if (manifest.chapters.length === 0) {
-      vscode.window.showInformationMessage('Desk: This book has no chapters');
-      return undefined;
-    }
+    if (manifest.chapters.length === 0) return undefined;
     return vscode.window.showQuickPick(
       manifest.chapters.map((ch, i) => ({ label: ch.title, index: i })),
       { placeHolder: 'Select chapter' },
@@ -347,6 +347,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const bookPick = await pickBook();
       if (!bookPick) return;
       const manifest = bookService!.get(bookPick.slug);
+      if (!manifest.chapters.length) { vscode.window.showInformationMessage('Desk: This book has no chapters.'); return; }
       const chPick = await pickChapter(manifest);
       if (!chPick) return;
       const newTitle = await vscode.window.showInputBox({ prompt: 'New chapter title', value: chPick.label });
@@ -374,6 +375,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const bookPick = await pickBook();
       if (!bookPick) return;
       const manifest = bookService!.get(bookPick.slug);
+      if (!manifest.chapters.length) { vscode.window.showInformationMessage('Desk: Add a chapter to this book first.'); return; }
       const chPick = await pickChapter(manifest);
       if (!chPick) return;
       const title = await vscode.window.showInputBox({ prompt: 'Page title' });
