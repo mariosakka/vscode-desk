@@ -37,7 +37,7 @@ export function BookmarkCard({ bookmark, onOpen, onRemove, onEdit }: Props) {
 
   if (editing) {
     return (
-      <div className={styles.card} data-testid="bookmark-card">
+      <div className={styles.card} data-hover-group data-testid="bookmark-card">
         <form className={styles.editForm} onSubmit={handleEditSave}>
           <input
             className={inputStyles.field}
@@ -67,6 +67,7 @@ export function BookmarkCard({ bookmark, onOpen, onRemove, onEdit }: Props) {
   return (
     <div
       className={styles.card}
+      data-hover-group
       data-testid="bookmark-card"
       onClick={() => { if (!confirming) onOpen(bookmark.url); }}
     >

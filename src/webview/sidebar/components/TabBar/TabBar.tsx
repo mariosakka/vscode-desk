@@ -33,6 +33,7 @@ export function TabBar({ tabs, activeTabId, onSelect, onRemove }: Props) {
           <span
             key={project.id}
             className={styles.tabWrap}
+            data-hover-group
             data-active={project.id === activeTabId ? 'true' : 'false'}
           >
             <button

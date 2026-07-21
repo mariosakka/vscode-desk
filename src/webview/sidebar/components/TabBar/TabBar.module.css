@@ -47,9 +47,6 @@
   border-bottom: none;
 }
 
-.tabWrap:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
-.tabWrap:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
-
 .confirmBar {
   display: flex;
   align-items: center;

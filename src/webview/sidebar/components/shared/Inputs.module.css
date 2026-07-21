@@ -31,3 +31,5 @@
 
 .field:focus { border-color: var(--accent); }
 .field::placeholder { color: var(--muted); }
+
+.error { width: 100%; font-size: 11px; color: var(--vscode-errorForeground, #f48771); padding: 0 2px; }

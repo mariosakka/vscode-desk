@@ -52,10 +52,6 @@
   white-space: nowrap;
 }
 
-.card:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
-.card:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
-.card:hover [data-hover-btn='accent']:hover { color: var(--accent2); }
-
 .editForm {
   display: flex;
   flex-direction: column;

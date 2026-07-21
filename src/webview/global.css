@@ -23,3 +23,7 @@ body {
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+[data-hover-group]:hover [data-hover-btn] { opacity: 1; pointer-events: auto; color: var(--muted); }
+[data-hover-group]:hover [data-hover-btn='danger']:hover { color: var(--vscode-errorForeground, #ef4444); }
+[data-hover-group]:hover [data-hover-btn='accent']:hover { color: var(--accent2); }

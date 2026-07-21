@@ -42,7 +42,7 @@ export function InlineBarForm({ placeholder, maxLength, validate, onSubmit, onCa
         maxLength={maxLength}
       />
       <DismissButton onClick={onCancel} />
-      {error && <span className={styles.error}>{error}</span>}
+      {error && <span className={inputStyles.error}>{error}</span>}
     </form>
   );
 }
