@@ -7,10 +7,9 @@
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src 'unsafe-inline' ${cspSource}; img-src data: ${cspSource};">
   <link rel="stylesheet" href="${cssUri}">
-  <style>:root { --zoom: ${zoom}; } html { font-size: calc(15px * var(--zoom)); }</style>
+  <style>:root { --zoom: ${zoom}; }</style>
   <style>${customStyles}</style>
   ${libraryStyles}
-  ${bookNavCss}
 </head>
 <body>
   <nav class="page-nav" id="page-nav">

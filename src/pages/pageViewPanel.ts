@@ -143,28 +143,7 @@ export class PageViewPanel {
     const prevNextHtml = (isBookPage && PageViewPanel._bookService)
       ? this._renderPrevNext(filename)
       : '';
-    const bookNavCss = bookNavHtml ? `
-<style>
-.toc-panel { position: fixed; left: 0; top: 44px; width: 220px; height: calc(100vh - 44px); overflow-y: auto; background: var(--surface); border-right: 1px solid var(--border); padding: 12px; transition: transform .25s ease; z-index: 99; font-size: 13px; }
-.toc-panel.collapsed { transform: translateX(-100%); }
-body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px); }
-.toc-nav-btn { background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; cursor: pointer; color: var(--muted); font-size: 15px; line-height: 1; display: flex; align-items: center; flex-shrink: 0; }
-.toc-nav-btn:hover { background: var(--surface2); color: var(--text); }
-.book-nav-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
-.book-chapters-list, .book-chapters-list ul { list-style: none; padding-left: 6px; margin: 0; }
-.book-chapter-item { margin-bottom: 6px; }
-.book-chapter-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 2px; }
-.book-chapters-list ul a { color: var(--muted); text-decoration: none; font-size: 12px; line-height: 1.7; display: block; }
-.book-chapters-list ul a:hover, .book-page-active { color: var(--accent2) !important; }
-.page-prevnext { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
-.prevnext-link { color: var(--accent2); text-decoration: none; font-size: 0.9rem; }
-.prevnext-link:hover { text-decoration: underline; }
-</style>` : '';
-
-    const tocCollapsed = vscode.workspace.getConfiguration('desk').get<boolean>('pageViewer.tocCollapsed', false);
-    const tocToggleHtml = bookNavHtml
-      ? `<button id="toc-toggle" class="toc-nav-btn" aria-label="Toggle book navigation">${tocCollapsed ? '≡' : '←'}</button>`
-      : '';
+    const tocToggleHtml = `<button id="toc-toggle" class="toc-nav-btn" aria-label="Toggle navigation">≡</button>`;
 
     const templatePath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'page', 'index.html');
     const template = fs.readFileSync(templatePath, 'utf-8');
@@ -180,7 +159,6 @@ body.toc-open .page-content { margin-left: 230px; max-width: calc(860px + 230px)
       .replace(/\$\{libraryScripts\}/g, libraryScripts)
       .replace(/\$\{pageScripts\}/g, pageScripts)
       .replace(/\$\{content\}/g, bookNavHtml + page.bodyHtml + prevNextHtml)
-      .replace(/\$\{bookNavCss\}/g, bookNavCss)
       .replace(/\$\{tocToggle\}/g, tocToggleHtml)
       .replace(/\$\{zoom\}/g, String(zoom));
   }
