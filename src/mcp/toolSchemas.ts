@@ -84,12 +84,12 @@ export const TOOLS: McpTool[] = [
   },
   {
     name: 'create_page',
-    description: 'Creates a new .desk page assembled from the active page template. Provide structured sections — do not include raw <style> blocks; styles come from the template automatically.',
+    description: 'Create a new page inside a book. filename must be in "bookSlug/page.desk" format (e.g. "my-book/intro.desk"). Standalone pages are not supported.',
     inputSchema: {
       type: 'object',
       required: ['filename', 'title', 'sections'],
       properties: {
-        filename: { type: 'string', description: 'File name including .desk extension, e.g. "auth-flow.desk"' },
+        filename: { type: 'string', description: 'File name in "bookSlug/page.desk" format, e.g. "my-book/intro.desk"' },
         title: { type: 'string' },
         eyebrow: { type: 'string', description: 'Small label above the title, e.g. "Reference · Backend"' },
         subtitle: { type: 'string', description: 'One-sentence summary shown below the title' },

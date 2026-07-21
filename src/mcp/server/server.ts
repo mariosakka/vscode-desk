@@ -241,6 +241,9 @@ export class McpServer {
         return { content: [{ type: 'text', text: JSON.stringify(pages) }] };
       }
       case 'create_page': {
+        if (!String(args.filename ?? '').includes('/')) {
+          throw new Error('create_page: filename must be in "bookSlug/page.desk" format — standalone pages are not supported');
+        }
         const { pageReader } = this._resolveScope(args);
         if (!pageReader) throw new Error('No workspace open — pages unavailable');
         const templateRaw = this.globalDataService.getPageTemplate() ?? '';

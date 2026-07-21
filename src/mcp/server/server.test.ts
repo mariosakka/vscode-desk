@@ -554,13 +554,26 @@ describe('McpServer — page tools (sections-based)', () => {
     setTimeout(done, 30);
   });
 
+  it('create_page rejects a flat filename', async () => {
+    const res = await postMcp(PORT, {
+      jsonrpc: '2.0', method: 'tools/call',
+      params: {
+        name: 'create_page',
+        arguments: { filename: 'standalone.desk', title: 'Bad', content: '' },
+      },
+      id: 99,
+    });
+    expect(res.error).toBeDefined();
+    expect(res.error.message).toMatch(/bookSlug\/page\.desk/);
+  });
+
   it('create_page assembles body from sections and passes template styles to pageReader.write', async () => {
     const res = await postMcp(PORT, {
       jsonrpc: '2.0', method: 'tools/call',
       params: {
         name: 'create_page',
         arguments: {
-          filename: 'test.desk',
+          filename: 'my-book/test.desk',
           title: 'Test Page',
           eyebrow: 'Ref · Test',
           subtitle: 'A test page.',
@@ -575,7 +588,7 @@ describe('McpServer — page tools (sections-based)', () => {
     expect(res.result).toBeDefined();
     expect(mockPageReader.write).toHaveBeenCalledTimes(1);
     const [filename, title, bodyHtml, customStyles] = mockPageReader.write.mock.calls[0];
-    expect(filename).toBe('test.desk');
+    expect(filename).toBe('my-book/test.desk');
     expect(title).toBe('Test Page');
     expect(bodyHtml).toContain('<div class="eyebrow">Ref · Test</div>');
     expect(bodyHtml).toContain('<h1>Test Page</h1>');
@@ -593,7 +606,7 @@ describe('McpServer — page tools (sections-based)', () => {
       jsonrpc: '2.0', method: 'tools/call',
       params: {
         name: 'create_page',
-        arguments: { filename: 'no-tmpl.desk', title: 'X', sections: [{ heading: 'H', content: '<p>c</p>' }] },
+        arguments: { filename: 'my-book/no-tmpl.desk', title: 'X', sections: [{ heading: 'H', content: '<p>c</p>' }] },
       },
       id: 2,
     });

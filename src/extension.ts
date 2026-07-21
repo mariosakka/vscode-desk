@@ -233,7 +233,6 @@ export function activate(context: vscode.ExtensionContext): void {
       await cmdRemoveBookmark(ds, provider);
     }),
     vscode.commands.registerCommand('desk.openPage',              () => cmdOpenPage(context.extensionUri, workspacePageReader ?? globalPageReader)),
-    vscode.commands.registerCommand('desk.newPage',               () => cmdNewPage(workspacePageReader ?? globalPageReader)),
     vscode.commands.registerCommand('desk.setupAgents',           () => agentRegistry.showSetupPromptForced(resolvedPort)),
     vscode.commands.registerCommand('desk.configureWorkflow', async () => {
       const scope = await pickScope();
@@ -522,28 +521,6 @@ async function cmdOpenPage(extensionUri: vscode.Uri, pageStore: PageReader | nul
   PageViewPanel.open(extensionUri, pageStore, pick.filename);
 }
 
-async function cmdNewPage(pageStore: PageReader | null): Promise<void> {
-  if (!pageStore) {
-    vscode.window.showErrorMessage('Desk: No page store available.');
-    return;
-  }
-  const title = await vscode.window.showInputBox({ prompt: 'Page title', ignoreFocusOut: true });
-  if (!title) return;
-
-  const rawFilename = await vscode.window.showInputBox({
-    prompt: 'File name (leave blank to derive from title)',
-    ignoreFocusOut: true,
-  });
-  const filename = normalizeFilename(rawFilename?.trim() || title) + '.desk';
-
-  if (pageStore.list().some(p => p.filename === filename)) {
-    vscode.window.showWarningMessage(`A page named "${filename}" already exists.`);
-    return;
-  }
-
-  pageStore.write(filename, title, `<p>Start writing your <strong>${escHtml(title)}</strong> page here.</p>`);
-  vscode.window.showInformationMessage(`Desk: created ${filename} in pages/`);
-}
 
 function normalizeFilename(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
