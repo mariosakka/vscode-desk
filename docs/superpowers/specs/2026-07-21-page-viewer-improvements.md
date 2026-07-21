@@ -142,20 +142,34 @@ The `create_page` tool is not removed — agents use it to create book pages wit
 
 Every VS Code command handler calls `provider.refresh()` manually after mutating data. MCP tool calls go through the services directly with no path back to the sidebar, so any MCP mutation (adding a book page, updating a bookmark, installing a skill) leaves the sidebar stale until the webview is manually reloaded.
 
-### Fix
+### Fix — two-layer approach
 
-Set up two `FileSystemWatcher` instances in `extension.ts` immediately after the sidebar provider is created:
+**Layer 1 — centralized MCP refresh (`src/mcp/server/server.ts`)**
 
-1. `vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceRoot, 'desk-pages/**'))` — watches for page and book-manifest changes inside the workspace
-2. `vscode.workspace.createFileSystemWatcher(path.join(os.homedir(), '.desk', '**'))` — watches for bookmark, skill, workflow, library, and template changes in the global data directory
+`McpServer` already holds `this.provider` (a `SidebarViewProvider`). Add a single `this.provider.refresh()` call at the end of `callTool()`, after the dispatch switch returns a result and before the JSON-RPC response is sent. This covers all 40 tools unconditionally — no per-tool wiring, no new constructor parameter.
 
-On any `onDidCreate`, `onDidChange`, or `onDidDelete` event from either watcher, call `provider.refresh()`. Debounce with a 150 ms trailing timeout so rapid successive writes (e.g. a script writing several files) coalesce into a single refresh.
+```ts
+// inside callTool(), after the switch block resolves `result`
+this.provider.refresh();
+return result;
+```
 
-Both watchers must be pushed to `context.subscriptions` so they are disposed when the extension deactivates.
+Calling refresh after read-only tools (list_bookmarks, get_skill, etc.) is harmless — the sidebar re-renders with identical data, which the webview diffing absorbs silently.
 
-The existing per-command `provider.refresh()` calls remain — they provide immediate feedback for in-VS-Code operations before the file watcher fires.
+**Layer 2 — FileSystemWatcher for external edits (`src/extension.ts`)**
 
-**Files changed:** `src/extension.ts` (add two watchers + debounce helper after provider construction).
+MCP mutations and VS Code commands are now covered. But a user or script editing files on disk directly (e.g. hand-editing `data.json` or dropping a `.desk` file) still needs to be picked up.
+
+Set up two watchers after the sidebar provider is created:
+
+1. `vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceRoot, 'desk-pages/**'))` — page and book-manifest changes in the workspace
+2. `vscode.workspace.createFileSystemWatcher(deskGlobalDir + '/**')` where `deskGlobalDir` is `~/.desk/global` and `~/.desk/workspaces/<slug>` — bookmark, skill, workflow, library, template changes
+
+On `onDidCreate`, `onDidChange`, `onDidDelete` from either watcher, call `provider.refresh()`. Debounce with 150 ms so rapid successive writes (e.g. a script touching several files) coalesce into one refresh.
+
+Both watchers must be added to `context.subscriptions`.
+
+**Files changed:** `src/mcp/server/server.ts` (1 line in `callTool`), `src/extension.ts` (two watchers + debounce helper).
 
 ---
 
